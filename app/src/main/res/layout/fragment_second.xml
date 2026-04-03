@@ -130,7 +130,6 @@
         android:layout_marginTop="24dp"
         android:layout_marginBottom="32dp"
         android:background="@drawable/level_item_unlocked"
-        android:src="@drawable/ic_home"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/guideline_v"
         app:layout_constraintHorizontal_bias="0.8"
