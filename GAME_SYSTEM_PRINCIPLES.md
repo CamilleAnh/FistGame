@@ -1,104 +1,110 @@
-# NGUYÊN LÝ HỆ THỐNG GAME (Nguồn duy nhất)
+# NGUYÊN LÝ VẬN HÀNH APP (KHÔNG DÙNG UNITY)
 
-Phiên bản: 1.0
+Phiên bản: 2.0
 Cập nhật lần cuối: 2026-04-03
-Áp dụng cho: lớp Android shell và lớp gameplay Unity trong repository này
+Áp dụng cho: toàn bộ app Android Native (Kotlin/XML)
 
 ## 1) Mục đích
 
-Tệp này là hợp đồng hệ thống cho trò chơi.
-Từ nay mọi thay đổi hành vi của game phải cập nhật tệp này trước, rồi mới sửa mã.
+Tệp này là nguồn chân lý duy nhất cho kiến trúc và hành vi của app.
+Từ thời điểm này, app không còn sử dụng Unity trong runtime.
 
 Mục tiêu chính:
-- Duy trì một vòng lặp game rõ ràng giữa giao diện Android và lớp gameplay Unity.
-- Ngăn chặn các thay đổi trạng thái ngẫu nhiên và các tác dụng phụ ẩn.
-- Giúp các thay đổi trong tương lai dễ dự đoán.
+- Duy trì một vòng đời rõ ràng cho menu, chọn level và gameplay ngay trong Android Native.
+- Loại bỏ phụ thuộc Unity để đơn giản build, debug và bảo trì.
+- Giữ logic nhất quán giữa các màn hình và các level.
 
-## 2) Sơ đồ hệ thống hiện tại
+## 2) Kiến trúc hiện tại
 
-Lớp Android shell:
-- `app/src/main/java/com/example/a2dgame/MainActivity.kt`: Activity chủ toàn màn hình.
-- `app/src/main/java/com/example/a2dgame/FirstFragment.kt`: Menu chính (Play).
-- `app/src/main/java/com/example/a2dgame/SecondFragment.kt`: Màn chọn level.
+Lớp điều hướng và giao diện:
+- `app/src/main/java/com/example/a2dgame/MainActivity.kt`: Activity host toàn màn hình.
+- `app/src/main/java/com/example/a2dgame/FirstFragment.kt`: Main Menu.
+- `app/src/main/java/com/example/a2dgame/SecondFragment.kt`: Level Select.
 
-Lớp gameplay Unity:
-- `Assets/Scripts/GameManager.cs`: Máy trạng thái game toàn cục và chuyển cảnh.
-- `Assets/Scripts/ClickableMover.cs`: Xử lý input (click/chạm) và di chuyển theo lưới.
+Lớp gameplay (mục tiêu mới):
+- Gameplay được triển khai bằng Kotlin trong module Android (`app`).
+- Dùng View hệ thống Android hoặc custom view để render board và xử lý input.
+- Không gọi hoặc phụ thuộc scene/script Unity khi chạy app.
 
-## 3) Nguyên tắc cốt lõi (BẮT BUỘC TUÂN THỦ)
+## 3) Quy tắc bắt buộc (BẮT BUỘC TUÂN THỦ)
 
-1. Quyền duy nhất cho trạng thái game
-- `GameManager` là nguồn quyền duy nhất quản lý trạng thái runtime.
-- Các script khác không được thay đổi trực tiếp `Time.timeScale`.
+1. Không dùng Unity runtime
+- Không nhúng UnityPlayer, không load scene Unity, không dùng script C# cho gameplay runtime.
+- Thư mục `Assets/Scripts` (nếu còn) chỉ mang tính lịch sử hoặc tài liệu tham khảo.
 
-2. Các trạng thái cho phép
-- `MainMenu`, `Playing`, `Paused`, `GameOver`.
-- Mọi trạng thái mới phải được thêm vào tài liệu này trước khi đưa vào mã.
+2. Nguồn quyền trạng thái duy nhất
+- Trạng thái app/gameplay phải được quản lý tập trung trong lớp Kotlin (ví dụ `GameStateManager` hoặc `ViewModel` cấp màn hình).
+- Không để nhiều nơi tự ý đổi trạng thái cùng lúc.
 
-3. Chuyển trạng thái có kiểm soát
-- `MainMenu -> Playing`: khi gọi `StartGame`.
-- `Playing -> Paused`: khi gọi `PauseGame`.
-- `Paused -> Playing`: khi gọi `ResumeGame`.
-- `Playing -> GameOver`: khi gọi `TriggerGameOver`.
-- `Playing -> Paused -> next scene`: khi gọi `LevelComplete`.
-- Các chuyển trạng thái không hợp lệ phải bị bỏ qua một cách an toàn.
+3. Trạng thái hợp lệ
+- `MainMenu`, `LevelSelect`, `Playing`, `Paused`, `GameOver`, `LevelComplete`.
+- Trạng thái mới chỉ được thêm sau khi cập nhật tài liệu này.
 
-4. Chính sách `Time.timeScale`
-- `MainMenu`, `Paused`, `GameOver`: `Time.timeScale = 0`.
-- `Playing`: `Time.timeScale = 1`.
-- Con đường tải cảnh phải luôn khôi phục `Time.timeScale` về `1` trước khi load cảnh.
+4. Chuyển trạng thái có kiểm soát
+- `MainMenu -> LevelSelect`.
+- `LevelSelect -> Playing`.
+- `Playing -> Paused`.
+- `Paused -> Playing`.
+- `Playing -> GameOver` hoặc `Playing -> LevelComplete`.
+- `LevelComplete -> Playing` (level kế tiếp) hoặc về `LevelSelect`.
 
-5. Chính sách hiển thị UI
-- `mainMenuUI` chỉ hiển thị khi ở `MainMenu`.
-- `pauseUI` chỉ hiển thị khi ở `Paused`.
-- `gameOverUI` chỉ hiển thị khi ở `GameOver`.
-- `levelCompleteUI` chỉ hiển thị trong luồng hoàn thành level.
+5. Chính sách điều hướng
+- Điều hướng màn hình thực hiện qua Navigation Component.
+- Mọi chuyển màn phải đi qua action đã khai báo trong `nav_graph.xml`.
+- Cấm điều hướng "tắt" gây sai back stack.
 
-6. Chính sách input cho di chuyển nhân vật
-- Nhận input chỉ khi object chưa đang di chuyển (`isMoving == false`).
-- Thứ tự ưu tiên di chuyển cạnh kề: Up -> Right -> Down -> Left.
-- Vị trí mục tiêu phải vượt kiểm tra chướng ngại bằng `Physics2D.OverlapCircle`.
-- Không cho phép teleport nếu không có tính năng này rõ ràng.
+6. Chính sách gameplay puzzle màu
+- Rule gameplay được xử lý thuần Kotlin.
+- Dữ liệu level gồm danh sách thùng, block màu, capacity, số thùng rỗng.
+- Điều kiện qua màn: tất cả thùng đều rỗng hoặc đầy và đồng nhất 1 màu.
 
-7. Chính sách scene và level
-- Scene tiếp theo = buildIndex hiện tại + 1.
-- Nếu vượt phạm vi, quay về scene 0 (menu/start scene).
-- Khóa chuyển cảnh (`isTransitioning`) phải ngăn chặn việc load trùng lặp.
+7. Chính sách random level
+- Random phải có kiểm soát seed (để debug/replay).
+- Không sinh level vô nghiệm.
+- Man 1: chỉ dùng 4-5 màu; tổng hệ màu game: 7-8 màu cơ bản.
 
-## 4) Hợp đồng sự kiện
+## 4) Hợp đồng dữ liệu và sự kiện
 
-- `OnStateChanged(GameState)` được phát sau khi trạng thái đã được cập nhật.
-- Các listener UI và gameplay phải subscribe/unsubscribe một cách an toàn.
-- Hệ thống mới nên phản ứng theo sự kiện, tránh việc polling mỗi frame nếu có thể.
+- UI chỉ render theo state/data hiện tại, không tự suy diễn luật.
+- Event người dùng (chọn ống nguồn, ống đích, undo, restart) đi qua lớp xử lý trung tâm.
+- Mọi thay đổi board phải phát ra state mới để UI cập nhật.
 
-## 5) Quy tắc sở hữu dữ liệu
+## 5) Quy tắc mã nguồn
 
-- Các giá trị có thể tinh chỉnh được lưu trong script chủ sở hữu:
-  - `nextLevelDelay` trong `GameManager`.
-  - `gridSize`, `moveDuration`, `checkRadius` trong `ClickableMover`.
-- Tránh nhân bản cấu hình ở nhiều nơi.
+- Tách rõ 3 lớp:
+  - UI (`Fragment`, `View`, `Adapter`)
+  - Domain (luật game, kiểm tra nước đi, kiểm tra win)
+  - Data (định nghĩa level, seed, lưu tiến độ)
+- Không trộn logic game nặng vào XML hoặc callback UI rời rạc.
+- Ưu tiên code thuần, dễ test unit cho luật game.
 
-## 6) Quy trình bắt buộc từ nay
+## 6) Quy trình phát triển bắt buộc
 
-Với mọi tính năng, sửa lỗi hoặc thay đổi cân bằng:
+Với mọi tính năng/sửa lỗi:
+1. Cập nhật tệp này trước nếu có thay đổi quy tắc vận hành.
+2. Xác định thay đổi thuộc UI, Domain hay Data.
+3. Sửa mã Kotlin/XML tương ứng.
+4. Chạy kiểm tra nhanh:
+   - Main Menu mở đúng.
+   - Level Select mở đúng.
+   - Vào gameplay và thao tác hợp lệ.
+   - Qua màn/khởi động lại hoạt động đúng.
+5. Nếu hành vi khác tài liệu: sửa mã hoặc cập nhật tài liệu có phê duyệt.
 
-1. Cập nhật tệp này trước (ghi rõ thay đổi và lý do).
-2. Thực hiện thay đổi trong mã.
-3. Chạy kiểm tra nhanh:
-   - Mở app/menu.
-   - Vào màn chọn level.
-   - Bắt đầu gameplay.
-   - Kiểm tra các chuyển trạng thái: pause, game over, hoàn thành level.
-4. Nếu hành vi khác với tài liệu, thì:
-   - Sửa mã để đúng theo tài liệu, hoặc
-   - Cập nhật tài liệu này với hành vi mới đã được phê duyệt.
+## 7) Phạm vi không làm (hiện tại)
 
-## 7) Những điều không thuộc phạm vi (hiện tại)
+- Không multiplayer online.
+- Không server authoritative gameplay.
+- Không remote config cho luật game.
 
-- Không có logic đồng bộ multiplayer.
-- Không có gameplay điều khiển bởi server.
-- Không có cấu hình động từ xa.
+## 8) Kế hoạch chuyển đổi khỏi Unity
 
-## 8) Lịch sử thay đổi
+1. Freeze logic Unity cũ, không phát triển tính năng mới ở C#.
+2. Port luật gameplay cần thiết sang Kotlin.
+3. Điều hướng level hoàn toàn qua Android.
+4. Sau khi port đủ, loại bỏ phụ thuộc Unity còn lại khỏi build/runtime.
 
-- v1.0 (2026-04-03): Tạo baseline nguyên tắc hệ thống.
+## 9) Lịch sử thay đổi
+
+- v2.0 (2026-04-03): Chuyển nguyên lý hệ thống sang Android Native hoàn toàn, không dùng Unity runtime.
+- v1.0 (2026-04-03): Baseline cũ Android shell + Unity core.
