@@ -1,141 +1,123 @@
-# THIET KE MAN 1 - XEP HOP MAU VAO THUNG
+# THIET KE MAN 1 - LOGIC ANDROID NATIVE (THEO MASTER)
 
-Phien ban: 2.0  
+Phien ban: 3.0
 Ngay cap nhat: 2026-04-03
 
-## 1) Muc tieu gameplay Man 1
+Tai lieu nay duoc cap nhat theo:
+- `MASTER_PROMPT.md`
+- `GAME_SYSTEM_PRINCIPLES.md` (ban khong dung Unity)
 
-Man 1 theo dung y tuong anh mau tham chieu:
-- Nguoi choi sap xep cac hop mau nho vao cac thung dung thang.
-- Khi tat ca thung da hoan thanh (moi thung chi 1 mau hoac rong), thi qua man.
+## 1) Muc tieu Man 1
 
-Muc tieu hoc nguoi choi moi:
-- Hieu luat chon thung nguon -> chon thung dich.
-- Hieu luat chi duoc do/chuyen dung mau hop tren cung.
+Man 1 la puzzle xep hop mau vao thung dung thang:
+- Nguoi choi chon 1 thung nguon, sau do chon 1 thung dich.
+- Cac hop mau tren cung se duoc chuyen theo luat hop le.
+- Khi tat ca thung da "hoan thanh" thi qua man.
 
-## 2) Pham vi mau va do kho
-
-Muc tieu toan game:
-- Su dung 7-8 mau co ban (tim, xanh la, xanh duong, do, vang, cam, cyan, trang/xam nhat).
-
-Rieng Man 1 (de, nhap mon):
-- Chi dung 4-5 mau.
+Yeu cau do kho Man 1:
+- Chi dung 4-5 mau (nhap mon).
 - So thung tong: 6-7 thung.
-- Trong do co 1-2 thung rong de nguoi choi co cho xoay so.
+- Co 1-2 thung rong de thao tac.
 
-## 3) Cau truc du lieu cho 1 thung
+Yeu cau he mau toan game:
+- Tong he mau su dung 7-8 mau co ban.
 
-Moi thung la 1 cot dung, suc chua co dinh `capacity = 4` o.
+## 2) Kien truc bat buoc (khong Unity)
 
-Moi thung gom:
-- `stack`: danh sach cac o mau tu duoi len tren.
-- `isLocked`: false (Man 1 chua khoa thung).
-- `isCompleted`: true khi:
-  - Thung rong, hoac
-  - Thung day 4 o va ca 4 o cung 1 mau.
+1. App chay 100% Android Native (Kotlin/XML).
+2. Khong dung Unity runtime, khong dung scene Unity, khong dung script C#.
+3. Gameplay render bang Android View:
+  - `ConstraintLayout`, `GridLayout`, `ImageView`, `TextView`.
+4. Logic game dat trong Kotlin (Domain), UI chi render state.
 
-## 4) Quy tac random khoi tao Man 1
+## 3) Trang thai va luong man hinh
 
-Random phai dam bao man giai duoc:
-- Chon ngau nhien 4 hoac 5 mau tu bo 7-8 mau tong.
-- Moi mau xuat hien dung 4 lan (tong so block theo mau).
-- Tron va phan bo vao cac thung khong rong.
-- Luon tao it nhat 1 cach giai (co the tao tu trang thai da giai roi xao tron bang cac nuoc hop le nguoc).
+Trang thai hop le:
+- `MainMenu`, `LevelSelect`, `Playing`, `Paused`, `GameOver`, `LevelComplete`.
 
-Luu y:
-- Khong random kieu gay dead-lock ngay tu dau.
+Luong Man 1:
+- `FirstFragment` (MainMenu) -> `SecondFragment` (LevelSelect).
+- Tu LevelSelect vao gameplay Man 1 (`Playing`).
+- Khi tat ca thung hoan thanh -> `LevelComplete` -> dieu huong sang man tiep theo hoac quay LevelSelect.
 
-## 5) Luat thao tac nguoi choi (core rule)
+## 4) Cau truc du lieu Man 1
 
-1. Chon thung nguon
-- Hop le khi thung nguon khong rong.
+### 4.1 Model
+- `enum class ColorId { PURPLE, GREEN, BLUE, RED, YELLOW, ORANGE, CYAN, WHITE }`
+- `data class TubeState(val blocks: MutableList<ColorId>, val capacity: Int = 4)`
+- `data class LevelState(val tubes: MutableList<TubeState>, val selectedTubeIndex: Int?)`
 
-2. Chon thung dich
-- Hop le khi:
-  - Thung dich chua day, va
-  - Thung dich rong, hoac mau o tren cung cua dich trung mau o tren cung cua nguon.
-
-3. So hop duoc chuyen
-- Chuyen theo cum lien tiep cung mau o dinh thung nguon.
-- So luong chuyen toi da = so o trong con lai cua thung dich.
-
-4. Hoat anh chuyen
-- Moi lan chuyen la animation ngan (0.12-0.2s/hop) de de nhin tren mobile.
-
-## 6) Dieu kien hoan thanh va qua man
-
-Qua man khi tat ca thung thoa 1 trong 2 dieu kien:
+### 4.2 Dinh nghia "thung hoan thanh"
+Mot thung duoc xem la hoan thanh khi:
 - Rong, hoac
-- Day va dong nhat 1 mau.
+- Day (`size == capacity`) va tat ca block cung 1 mau.
 
-Khi hoan thanh:
-- Goi `GameManager.LevelComplete(autoLoadNext: true)`.
-- Khong script nao khac tu y doi `Time.timeScale`.
+## 5) Quy tac random khoi tao
 
-## 7) Luong state bat buoc (theo he thong hien tai)
+Man 1 random co kiem soat:
+1. Chon ngau nhien 4 hoac 5 mau tu pool 7-8 mau.
+2. Moi mau lap lai dung 4 block.
+3. Phan bo vao cac thung co du lieu + de 1-2 thung rong.
+4. Bat buoc level giai duoc:
+  - Cach an toan: tao trang thai da giai truoc, sau do xao tron bang cac nuoc di hop le nguoc.
 
-- Vao gameplay: `MainMenu` -> `Playing`.
-- Dang choi Man 1: giu `Playing`.
-- Hoan thanh: `Playing` -> `Paused` tam thoi trong flow complete -> load man tiep.
+Khong chap nhan:
+- Seed random tao level vo nghiem.
 
-Cam:
-- Cam script gameplay goi truc tiep `SceneManager.LoadScene`.
-- Cam script gameplay dat truc tiep `Time.timeScale`.
+## 6) Luat thao tac nguoi choi
 
-## 8) Thanh phan can co trong Unity Scene (khong dung Canvas gameplay)
+1. Chon thung nguon hop le khi thung khong rong.
+2. Chon thung dich hop le khi:
+  - Chua day, va
+  - Rong hoac block tren cung trung mau block tren cung cua nguon.
+3. So block duoc chuyen:
+  - Lay cum lien tiep cung mau tren dinh nguon.
+  - Chi chuyen toi da bang so cho trong cua dich.
+4. Moi lan chuyen cap nhat state 1 lan, sau do UI render lai.
 
-Theo rang buoc project:
-- Gameplay dung `SpriteRenderer` + `BoxCollider2D`.
-- Khong dung Unity UI Canvas cho logic choi.
+## 7) Dieu kien qua man
 
-Cac object toi thieu:
-- `GameManager` (co san).
-- `LevelBoardController` (quan ly board/thung/kiem tra win).
-- `TubeSlot_*` (moi thung la mot object co collider de click/cham).
-- `ColorBlock_*` (hop mau nho la sprite 2D).
+Qua man khi tat ca thung deu hoan thanh theo dinh nghia muc 4.2.
 
-## 9) Cau hinh de xuat cho Man 1 (ban de)
+Khi qua man:
+- Set state `LevelComplete`.
+- Thuc hien dieu huong qua man tiep theo bang Navigation Component.
 
-De xuat 5 mau, 7 thung, capacity 4:
-- 5 thung co block mau (moi mau tong 4 block).
-- 2 thung rong.
+## 8) File muc tieu can lam (theo master)
 
-Muc tieu do kho:
-- So buoc du kien de giai: 12-20 nuoc.
+File Android can sua/them khi trien khai Man 1:
+1. `.xml`:
+  - `app/src/main/res/layout/fragment_second.xml` (nut vao man choi).
+  - `app/src/main/res/layout/fragment_level_one.xml` (layout gameplay Man 1).
+2. `.kt`:
+  - `app/src/main/java/com/example/a2dgame/SecondFragment.kt` (dieu huong vao Man 1).
+  - `app/src/main/java/com/example/a2dgame/LevelOneFragment.kt` (xu ly input + bind UI).
+  - `app/src/main/java/com/example/a2dgame/game/LevelOneEngine.kt` (luat game thuần Kotlin).
 
-## 10) Checklist trien khai nhanh
+## 9) Rang buoc lifecycle va clean code
 
-1. Tao scene `Level_01_SortBox` va them vao Build Settings.
-2. Tao prefab `TubeSlot` (Sprite + BoxCollider2D).
-3. Tao prefab `ColorBlock` (Sprite mau).
-4. Viet `LevelBoardController` de xu ly:
-   - Random level seed
-   - Chon nguon/dich
-   - Kiem tra nuoc di hop le
-   - Kiem tra win
-   - Goi `GameManager.LevelComplete()`
-5. Test tren chuot (PC) va touch (Android).
+1. Dung ViewBinding, khong dung `findViewById`.
+2. Neu co coroutine/timer/loop, huy trong `onDestroyView()`.
+3. Tach ro UI / Domain / Data, khong de logic puzzle nam trong XML.
 
-## 11) Tieu chi nghiem thu Man 1
+## 10) Checklist nghiem thu Man 1
 
-Dat khi:
-- Co 4-5 mau trong man.
-- Co 1-2 thung rong.
-- Random moi lan vao man cho bo tri khac nhau (co the theo seed).
-- Hoan tat tat ca thung dung quy tac thi tu dong qua man.
-- Khong vi pham quy tac state cua `GameManager`.
+1. Man 1 hien thi dung 6-7 thung, trong do co 1-2 thung rong.
+2. So mau dung trong man la 4 hoac 5.
+3. Moi lan choi co the random bo tri (co seed de debug).
+4. Luat chuyen hop dung 100% (khong cho phep nuoc di sai).
+5. Hoan tat tat ca thung thi qua man ngay.
+6. Khong co crash khi xoay man hinh hoac quay lui.
 
-## 12) Rui ro can canh bao
+## 11) Rui ro ky thuat can canh bao
 
-- `NullReferenceException`: board chua khoi tao ma da nhan input.
-- Sai mapping mau -> sprite khi random.
-- Random khong kiem soat co the tao man vo nghiem.
-- Lech dong bo Android-Unity neu chi so level o Android khong map dung scene Unity.
+- `NullPointerException` khi binding hoac state chua khoi tao.
+- Khong huy coroutine trong `onDestroyView()` gay memory leak.
+- Random sai thuat toan tao level vo nghiem.
+- Dieu huong sai action trong `nav_graph.xml` gay vo back stack.
 
-## ⚠️ Luu y Inspector
+## ⚠️ Luu y Build
 
-- `LevelBoardController.colorsPool`: khai bao du 7-8 mau tong.
-- `LevelBoardController.level1ColorCount`: dat 4 hoac 5.
-- `LevelBoardController.tubeCount`: dat 6 hoac 7 (khuyen nghi 7).
-- `LevelBoardController.emptyTubeCount`: dat 1 hoac 2 (khuyen nghi 2 cho nguoi moi).
-- Tat ca `TubeSlot_*` bat buoc co `BoxCollider2D` de nhan click/cham.
+- Dam bao `nav_graph.xml` co route vao `LevelOneFragment`.
+- Dam bao image tai nguyen mau da duoc them vao `res/drawable` truoc khi bind trong Kotlin.
+- Neu bo sung file Kotlin moi, can dung dung package `com.example.a2dgame` (hoac subpackage thong nhat).
