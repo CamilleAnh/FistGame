@@ -7,261 +7,151 @@
     android:background="#4527A0"
     tools:context=".SecondFragment">
 
-    <!-- Container chính màu vàng -->
+    <!-- Container chính màu vàng cho màn hình dọc -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/cl_level_container"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_margin="40dp"
+        android:layout_margin="20dp"
         android:background="@drawable/level_container_bg"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintDimensionRatio="H,16:9"
+        app:layout_constraintBottom_toTopOf="@+id/ll_nav"
+        app:layout_constraintDimensionRatio="H,3:4"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed">
 
         <!-- Tiêu đề LEVEL SELECT -->
-
-        <!-- Grid các level -->
-
         <TextView
             android:id="@+id/tv_level_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="-20dp"
             android:background="@drawable/level_title_bg"
-            android:paddingHorizontal="32dp"
+            android:paddingHorizontal="24dp"
             android:paddingVertical="8dp"
             android:text="● LEVEL SELECT ●"
             android:textColor="#FFFFFF"
-            android:textSize="24sp"
+            android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.472"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Grid các level (3 cột cho màn hình dọc) -->
         <GridLayout
             android:id="@+id/gl_levels"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:columnCount="5"
-            android:rowCount="3"
+            android:columnCount="3"
+            android:rowCount="4"
             android:useDefaultMargins="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_level_title">
 
-            <!-- Level 1-9 (Ví dụ tạo vài cái mẫu) -->
-            <!-- Level 1 -->
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="1"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <!-- Các ô Level 1-8 -->
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="1" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <!-- Level 2 -->
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="2"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="2" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <!-- Thêm các level khác tương tự... -->
-             <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="3"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="3" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="4"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="4" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="5"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="5" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <!-- Hàng 2 -->
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="6"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="6" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="7"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="7" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="8"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_unlocked">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:text="8" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold" />
             </FrameLayout>
 
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_unlocked">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="9"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
-
-            <!-- Level bị khóa -->
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="8dp"
-                android:background="@drawable/level_item_locked">
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/ic_lock_lock"
-                    app:tint="#FFFFFF" />
+            <FrameLayout android:layout_width="75dp" android:layout_height="75dp" android:layout_margin="10dp" android:background="@drawable/level_item_locked">
+                <ImageView android:layout_width="30dp" android:layout_height="30dp" android:layout_gravity="center" android:src="@android:drawable/ic_lock_lock" app:tint="#FFFFFF" />
             </FrameLayout>
 
         </GridLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Các nút điều hướng bên ngoài -->
-    <ImageButton
-        android:id="@+id/btn_prev"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:background="@drawable/level_item_unlocked"
-        android:src="@android:drawable/ic_media_previous"
-        app:layout_constraintBottom_toBottomOf="@+id/cl_level_container"
-        app:layout_constraintEnd_toStartOf="@+id/cl_level_container"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/cl_level_container"
-        app:tint="#FFFFFF" />
-
-    <ImageButton
-        android:id="@+id/btn_next"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:background="@drawable/level_item_unlocked"
-        android:src="@android:drawable/ic_media_next"
-        app:layout_constraintBottom_toBottomOf="@+id/cl_level_container"
+    <!-- Nút điều hướng Previous/Next -->
+    <LinearLayout
+        android:id="@+id/ll_nav"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/btn_back_home"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/cl_level_container"
-        app:layout_constraintTop_toTopOf="@+id/cl_level_container"
-        app:tint="#FFFFFF" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cl_level_container">
 
-    <!-- Nút Home và Play ở dưới -->
+        <ImageButton
+            android:id="@+id/btn_prev"
+            android:layout_width="65dp"
+            android:layout_height="65dp"
+            android:layout_marginEnd="30dp"
+            android:background="@drawable/level_item_unlocked"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="#FFFFFF" />
 
+        <ImageButton
+            android:id="@+id/btn_next"
+            android:layout_width="65dp"
+            android:layout_height="65dp"
+            android:background="@drawable/level_item_unlocked"
+            android:src="@android:drawable/ic_media_next"
+            app:tint="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Nút Home và Play ở dưới cùng -->
     <ImageButton
         android:id="@+id/btn_back_home"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:layout_marginEnd="84dp"
+        android:layout_width="85dp"
+        android:layout_height="85dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="32dp"
         android:background="@drawable/level_item_unlocked"
+        android:src="@drawable/ic_home"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/guideline_v"
-        app:layout_constraintTop_toBottomOf="@+id/cl_level_container"
-        app:layout_constraintVertical_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.8"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ll_nav"
         app:tint="#FFFFFF" />
 
     <ImageButton
         android:id="@+id/btn_start_game"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:layout_marginStart="40dp"
+        android:layout_width="85dp"
+        android:layout_height="85dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="32dp"
         android:background="@drawable/level_item_unlocked"
         android:src="@android:drawable/ic_media_play"
         app:backgroundTint="#4CAF50"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.2"
         app:layout_constraintStart_toStartOf="@+id/guideline_v"
-        app:layout_constraintTop_toBottomOf="@+id/cl_level_container"
-        app:layout_constraintVertical_bias="1.0"
+        app:layout_constraintTop_toBottomOf="@+id/ll_nav"
         app:tint="#FFFFFF" />
 
     <androidx.constraintlayout.widget.Guideline
