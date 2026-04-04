@@ -20,7 +20,7 @@ class SecondFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var currentPage = 0
-    private val levelsPerPage = 9 // 3x3 grid
+    private val levelsPerPage = 20 // 4x5 grid
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -61,25 +61,53 @@ class SecondFragment : Fragment() {
         binding.btnPrev.isEnabled = currentPage > 0
         binding.btnPrev.alpha = if (currentPage > 0) 1.0f else 0.5f
         
-        // Giả sử tối đa 10 trang (90 levels)
-        binding.btnNext.isEnabled = currentPage < 10 
-        binding.btnNext.alpha = if (currentPage < 10) 1.0f else 0.5f
+        // Giả sử tối đa 5 trang (100 levels)
+        binding.btnNext.isEnabled = currentPage < 4
+        binding.btnNext.alpha = if (currentPage < 4) 1.0f else 0.5f
 
         for (i in 0 until binding.glLevels.childCount) {
             val child = binding.glLevels.getChildAt(i)
             if (child is FrameLayout) {
                 // Tính toán levelId dựa trên trang hiện tại
                 val levelId = (currentPage * levelsPerPage) + i + 1
-                val textView = child.getChildAt(0) as? TextView
-                val lockIcon = if (child.childCount > 1) child.getChildAt(1) as? ImageView else null
+                
+                // Đảm bảo có TextView và ImageView bên trong FrameLayout
+                var textView = child.getChildAt(0) as? TextView
+                if (textView == null) {
+                    textView = TextView(context).apply {
+                        layoutParams = FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.WRAP_CONTENT,
+                            FrameLayout.LayoutParams.WRAP_CONTENT,
+                            android.view.Gravity.CENTER
+                        )
+                        setTextColor(android.graphics.Color.WHITE)
+                        textSize = 20f
+                        setTypeface(null, android.graphics.Typeface.BOLD)
+                    }
+                    child.addView(textView)
+                }
 
-                textView?.text = levelId.toString()
+                var lockIcon = if (child.childCount > 1) child.getChildAt(1) as? ImageView else null
+                if (lockIcon == null) {
+                    lockIcon = ImageView(context).apply {
+                        layoutParams = FrameLayout.LayoutParams(
+                            (30 * resources.displayMetrics.density).toInt(),
+                            (30 * resources.displayMetrics.density).toInt(),
+                            android.view.Gravity.CENTER
+                        )
+                        setImageResource(android.R.drawable.ic_lock_lock)
+                        setColorFilter(android.graphics.Color.WHITE)
+                    }
+                    child.addView(lockIcon)
+                }
+
+                textView.text = levelId.toString()
 
                 if (levelId <= highestLevel) {
                     // Màn hình đã mở khóa
                     child.setBackgroundResource(R.drawable.level_item_unlocked)
-                    textView?.visibility = View.VISIBLE
-                    lockIcon?.visibility = View.GONE
+                    textView.visibility = View.VISIBLE
+                    lockIcon.visibility = View.GONE
                     
                     child.setOnClickListener {
                         val bundle = Bundle().apply {
@@ -90,8 +118,8 @@ class SecondFragment : Fragment() {
                 } else {
                     // Màn hình đang bị khóa
                     child.setBackgroundResource(R.drawable.level_item_locked)
-                    textView?.visibility = View.GONE
-                    lockIcon?.visibility = View.VISIBLE
+                    textView.visibility = View.GONE
+                    lockIcon.visibility = View.VISIBLE
                     child.setOnClickListener(null)
                 }
             }
