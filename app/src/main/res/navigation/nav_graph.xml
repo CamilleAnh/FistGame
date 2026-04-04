@@ -32,5 +32,13 @@
         android:id="@+id/LevelOneFragment"
         android:name="com.example.a2dgame.LevelOneFragment"
         android:label="Level One"
-        tools:layout="@layout/fragment_level_one" />
+        tools:layout="@layout/fragment_level_one">
+        <argument
+            android:name="levelId"
+            android:defaultValue="1"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_LevelOneFragment_self"
+            app:destination="@id/LevelOneFragment" />
+    </fragment>
 </navigation>
