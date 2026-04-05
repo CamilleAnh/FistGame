@@ -21,7 +21,7 @@ import androidx.navigation.fragment.navArgs
 import com.example.a2dgame.databinding.FragmentLevelOneBinding
 
 /**
- * Fragment hiển thị gameplay với logic Thắng/Thua rõ ràng.
+ * Fragment hiển thị gameplay với giao diện tối ưu không tràn viền.
  */
 class LevelOneFragment : Fragment() {
 
@@ -94,11 +94,12 @@ class LevelOneFragment : Fragment() {
             } else binding.tvBoxB.isVisible = false
         }
         
+        // Cố định 4 cột
         binding.glGameBoard.columnCount = 4
         
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
-        val padding = (48 * displayMetrics.density).toInt() 
+        val padding = (40 * displayMetrics.density).toInt() 
         val tubeWidth = (screenWidth - padding) / 4
 
         activeTubes.forEach { tube ->
@@ -106,7 +107,7 @@ class LevelOneFragment : Fragment() {
             val tubeContainer = FrameLayout(requireContext()).apply {
                 val params = GridLayout.LayoutParams().apply {
                     width = tubeWidth
-                    height = (tubeWidth * 2.5).toInt() // GIẢM CHIỀU CAO ĐỂ TRÁNH TRÀN VIỀN
+                    height = (tubeWidth * 2.4).toInt() // GIẢM CHIỀU CAO ĐỂ KHÔNG TRÀN
                     setMargins(4, 6, 4, 6)
                 }
                 layoutParams = params
@@ -119,7 +120,7 @@ class LevelOneFragment : Fragment() {
                 val border = GradientDrawable().apply {
                     setColor(Color.parseColor("#444444"))
                     setStroke(4, if (engine.selectedTubeIndex == index) Color.YELLOW else Color.WHITE)
-                    cornerRadius = 12f
+                    cornerRadius = 14f
                 }
                 background = border
                 setPadding(6, 6, 6, 8)
@@ -141,7 +142,7 @@ class LevelOneFragment : Fragment() {
 
             tube.blocks.forEachIndexed { blockIdx, colorId ->
                 val blockFrame = FrameLayout(requireContext()).apply {
-                    val blockHeight = (tubeWidth * 0.55).toInt() // GIẢM CHIỀU CAO KHỐI
+                    val blockHeight = (tubeWidth * 0.52).toInt() // GIẢM CHIỀU CAO KHỐI
                     layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply { setMargins(0, 2, 0, 2) }
                 }
                 val isHidden = blockIdx < tube.hiddenLayers
@@ -173,7 +174,7 @@ class LevelOneFragment : Fragment() {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     background = GradientDrawable().apply {
                         setColor(Color.parseColor("#88ADF4FF"))
-                        cornerRadius = 12f
+                        cornerRadius = 14f
                         setStroke(4, Color.CYAN)
                     }
                 }
@@ -201,7 +202,7 @@ class LevelOneFragment : Fragment() {
             cornerRadius = 16f
         }
         textView.setTextColor(if (isColorDark(box.targetColor.colorHex)) Color.WHITE else Color.BLACK)
-        textView.setPadding(8, 12, 8, 12)
+        textView.setPadding(8, 10, 8, 10)
     }
 
     private fun isColorDark(hex: String): Boolean {

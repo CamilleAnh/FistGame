@@ -5,7 +5,7 @@ import java.util.Stack
 
 /**
  * Engine xử lý logic 1000 Level theo LEVEL_PRINCIPLES.md.
- * Cập nhật: Chỉ di chuyển khối màu đã mở khóa, không kéo theo khối đang ẩn.
+ * Cập nhật: Tăng số lượt lên 25, tối ưu số lượng ống cho level 30, đảm bảo fill đầy 4 khối.
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
@@ -46,7 +46,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         var targetColor: ColorId,
         var capacity: Int = 1,
         var filled: Int = 0,
-        var turnsLeft: Int = 15
+        var turnsLeft: Int = 25 // Tăng số lượt lên 25 hiệp
     ) {
         fun remaining() = capacity - filled
         fun getName() = "TÚI ${targetColor.displayName}"
@@ -69,27 +69,30 @@ class LevelOneEngine(val levelId: Int = 1) {
     }
 
     private fun setupLevel(level: Int) {
+        // 1. Phân bổ màu sắc hợp lý cho level 30 (Không quá nhiều màu)
         val numDistinctColors = when {
-            level < 5 -> 3
-            level < 15 -> 4
-            level < 30 -> 6
-            level < 60 -> 8
-            level < 100 -> 10
-            level < 200 -> 12
-            level < 400 -> 14
+            level < 10 -> 3
+            level < 30 -> 4
+            level < 60 -> 6  // Level 30-60: dùng 6 màu
+            level < 100 -> 8
+            level < 200 -> 10
+            level < 400 -> 12
             else -> 16
         }
 
+        // 2. Số lượng bình đầy màu (Cho phép trùng màu nhưng vừa phải ở level 30)
         val multiplier = when {
-            level < 50 -> 1.0
-            level < 150 -> 1.2
-            level < 300 -> 1.5
+            level < 20 -> 1.0
+            level < 50 -> 1.2 // Level 30: 6 màu * 1.2 = 7 ống đầy (Ví dụ)
+            level < 150 -> 1.5
             else -> 1.8
         }
-        totalFullTubesCount = (numDistinctColors * multiplier).toInt()
+        totalFullTubesCount = (numDistinctColors * multiplier).toInt().coerceAtLeast(numDistinctColors)
         
         isBagMechanismEnabled = level >= 20
-        val numEmptyTubes = 3
+        
+        // 3. Ống trung chuyển: Luôn duy trì đủ không gian
+        val numEmptyTubes = if (totalFullTubesCount > 10) 3 else 2
         val totalTubesCount = totalFullTubesCount + numEmptyTubes
         
         val allAvailableColors = ColorId.values().filter { it != ColorId.EMPTY }
@@ -100,16 +103,18 @@ class LevelOneEngine(val levelId: Int = 1) {
             tubes.add(Tube(id = i, capacity = 4))
         }
 
-        generateFilledLevel(numDistinctColors, totalFullTubesCount)
+        // 4. BẮT BUỘC FILL ĐẦY 4 KHỐI CHO MỌI ỐNG MÀU
+        generateReverseShuffledLevel(numDistinctColors, totalFullTubesCount)
 
+        // 5. CHƯỚNG NGẠI VẬT
         if (level >= 20) {
-            tubes.filter { !it.isEmpty() }.forEach { 
+            tubes.filter { it.blocks.size == 4 }.forEach { 
                 it.hiddenLayers = (it.blocks.size - 1).coerceAtMost(2).coerceAtLeast(0)
             }
         }
         if (level >= 80) {
-            val count = (totalFullTubesCount / 4).coerceAtLeast(1)
-            tubes.filter { !it.isEmpty() }.shuffled(random).take(count).forEach { it.hasCobweb = true }
+            val spiderCount = (totalFullTubesCount / 4).coerceAtLeast(1)
+            tubes.filter { !it.isEmpty() }.shuffled(random).take(spiderCount).forEach { it.hasCobweb = true }
         }
         if (level >= 120) {
             tubes.filter { !it.isEmpty() && !it.hasCobweb }.shuffled(random).take(1).forEach { it.isFrozen = true }
@@ -119,32 +124,37 @@ class LevelOneEngine(val levelId: Int = 1) {
         if (isBagMechanismEnabled) setupInitialBoxes()
     }
 
-    private fun generateFilledLevel(numDistinct: Int, totalFull: Int) {
-        val allBlocks = mutableListOf<ColorId>()
+    private fun generateReverseShuffledLevel(numDistinct: Int, totalFull: Int) {
+        // Đổ đầy 4 khối cho mỗi ống
         for (i in 0 until totalFull) {
             val color = colorsInLevel[i % numDistinct]
-            repeat(4) { allBlocks.add(color) }
+            repeat(4) { tubes[i].blocks.push(color) }
         }
-        allBlocks.shuffle(random)
 
-        for (i in 0 until totalFull) {
-            repeat(4) {
-                tubes[i].blocks.push(allBlocks.removeAt(0))
+        // Trộn ngược mạnh mẽ
+        val shuffleMoves = 250 + (levelId % 100)
+        var movesDone = 0
+        while (movesDone < shuffleMoves) {
+            val src = tubes.filter { !it.isEmpty() }.random(random)
+            val dst = tubes.filter { !it.isFull() }.random(random)
+            if (src.id != dst.id) {
+                dst.blocks.push(src.blocks.pop())
+                movesDone++
             }
         }
     }
 
     private fun setupInitialBoxes() {
         boxSlots.clear()
-        val colorsOnBoard = tubes.filter { !it.isArchived && !it.isEmpty() }.flatMap { it.blocks }.distinct()
-        if (colorsOnBoard.isNotEmpty()) {
-            val pool = colorsOnBoard.shuffled(random)
+        val availableColors = tubes.filter { !it.isEmpty() }.map { it.peekColor() }.distinct().filter { it != ColorId.EMPTY }
+        if (availableColors.isNotEmpty()) {
+            val pool = availableColors.shuffled(random)
             boxSlots.add(createBox(0, pool[0]))
             if (pool.size > 1) boxSlots.add(createBox(1, pool[1]))
         }
     }
 
-    private fun createBox(id: Int, color: ColorId) = BoxSlot(id = id, targetColor = color, turnsLeft = 15)
+    private fun createBox(id: Int, color: ColorId) = BoxSlot(id = id, targetColor = color, turnsLeft = 25)
 
     fun handleTubeClick(index: Int): Boolean {
         if (isGameOver) return false
@@ -185,13 +195,9 @@ class LevelOneEngine(val levelId: Int = 1) {
 
                 moveBlocks(sourceTube, destTube)
                 selectedTubeIndex = null
-                
                 processCompletedTubes()
                 checkWinCondition()
-                
-                if (!isGameOver) {
-                    checkLossCondition()
-                }
+                if (!isGameOver) checkLossCondition()
                 return true
             } else {
                 selectedTubeIndex = if (!destTube.isEmpty() && !destTube.isFrozen) index else null
@@ -223,22 +229,16 @@ class LevelOneEngine(val levelId: Int = 1) {
         return dest.isEmpty() || dest.peekColor() == source.peekColor()
     }
 
-    /**
-     * Cập nhật logic: Di chuyển hết các khối cùng màu nhưng dừng lại ở khối ẩn đầu tiên.
-     */
     private fun moveBlocks(source: Tube, dest: Tube) {
         val colorToMove = source.peekColor()
         if (colorToMove == ColorId.EMPTY) return
 
-        // Quy tắc: Chỉ di chuyển các khối ĐÃ LỘ DIỆN (có index >= hiddenLayers)
         while (!source.isEmpty() && 
                source.peekColor() == colorToMove && 
                (source.blocks.size - 1) >= source.hiddenLayers && 
                !dest.isFull()) {
             
             dest.blocks.push(source.blocks.pop())
-            
-            // Ngay khi lớp trên bị lấy đi, nếu lớp ẩn lộ diện -> Reveal nó
             if (source.hiddenLayers >= source.blocks.size && source.blocks.size > 0) {
                 source.hiddenLayers = source.blocks.size - 1
             }
@@ -272,14 +272,12 @@ class LevelOneEngine(val levelId: Int = 1) {
     private fun replaceBoxWithNextNeededColor(boxId: Int) {
         val idx = boxSlots.indexOfFirst { it.id == boxId }
         if (idx < 0) return
-        val colorsOnBoard = tubes.filter { !it.isArchived && !it.isEmpty() }.flatMap { it.blocks }.distinct()
+        val availableColors = tubes.filter { !it.isArchived && !it.isEmpty() }.map { it.peekColor() }.distinct()
         val otherBoxColor = if (boxSlots.size > 1) boxSlots[1 - idx].targetColor else null
-        val finalPool = colorsOnBoard.filter { it != otherBoxColor }
+        val finalPool = availableColors.filter { it != otherBoxColor && it != ColorId.EMPTY }
 
         if (finalPool.isNotEmpty()) {
             boxSlots[idx] = createBox(boxId, finalPool.shuffled(random).first())
-        } else if (colorsOnBoard.isNotEmpty()) {
-            boxSlots[idx] = createBox(boxId, colorsOnBoard.first())
         } else {
             boxSlots.removeAt(idx)
         }
