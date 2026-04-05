@@ -9,8 +9,10 @@
 
     <string name="level_name_format">LEVEL %1$d</string>
     <string name="game_complete_toast">MÀN CHƠI HOÀN THÀNH!</string>
+    <string name="game_over_toast">BẠN ĐÃ THUA! HẾT LƯỢT ĐI.</string>
+    <string name="game_over_title">BẠN ĐÃ THUA!</string>
     <string name="turns_remaining_format"> | Lượt: %1$d</string>
-    <string name="bag_info_format">TÚI %1$s\n%2$d/%3$d</string>
+    <string name="bag_info_format">TÚI %1$s\n%2$d/%3$d\n(Lượt: %4$d)</string>
     <string name="congratulations_format">CHÚC MỪNG! BẠN ĐÃ HOÀN THÀNH MÀN %1$d</string>
     <string name="instruction_ice">Phá băng bằng cách đổ cùng màu vào ống.</string>
     <string name="instruction_cobweb">Chạm vào mạng nhện 🕸️ để dọn dẹp.</string>

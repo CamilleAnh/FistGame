@@ -21,7 +21,7 @@ import androidx.navigation.fragment.navArgs
 import com.example.a2dgame.databinding.FragmentLevelOneBinding
 
 /**
- * Fragment hiển thị gameplay với đầy đủ hiệu ứng cơ chế đặc biệt.
+ * Fragment hiển thị gameplay với logic Thắng/Thua rõ ràng.
  */
 class LevelOneFragment : Fragment() {
 
@@ -41,11 +41,9 @@ class LevelOneFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
         val levelId = args.levelId
         engine = LevelOneEngine(levelId)
-        
-        binding.tvLevelName.text = "LEVEL $levelId"
+        binding.tvLevelName.text = getString(R.string.level_name_format, levelId)
         renderBoard()
 
         binding.btnReset.setOnClickListener {
@@ -81,18 +79,13 @@ class LevelOneFragment : Fragment() {
         val isBagEnabled = engine.isBagMechanismEnabled
         binding.llBoxes.isVisible = isBagEnabled
         binding.tvPackedProgress.isVisible = true 
-        
-        val timerText = if (engine.turnsLeft != -1) " | Lượt: ${engine.turnsLeft}" else ""
-        binding.tvPackedProgress.text = engine.getProgressText() + timerText
+        binding.tvPackedProgress.text = engine.getProgressText()
         
         if (isBagEnabled) {
             val boxSlots = engine.getBoxSlots()
             if (boxSlots.isNotEmpty()) {
                 binding.tvBoxA.isVisible = true
                 updateBoxUI(binding.tvBoxA, boxSlots[0])
-                val params = binding.tvBoxA.layoutParams as LinearLayout.LayoutParams
-                params.weight = if (boxSlots.size == 1) 2f else 1f
-                binding.tvBoxA.layoutParams = params
             } else binding.tvBoxA.isVisible = false
 
             if (boxSlots.size >= 2) {
@@ -101,15 +94,20 @@ class LevelOneFragment : Fragment() {
             } else binding.tvBoxB.isVisible = false
         }
         
-        binding.glGameBoard.columnCount = if (activeTubes.size <= 4) 2 else 3
+        binding.glGameBoard.columnCount = 4
+        
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val padding = (48 * displayMetrics.density).toInt() 
+        val tubeWidth = (screenWidth - padding) / 4
 
         activeTubes.forEach { tube ->
             val index = tube.id
             val tubeContainer = FrameLayout(requireContext()).apply {
                 val params = GridLayout.LayoutParams().apply {
-                    width = 140
-                    height = 450
-                    setMargins(15, 20, 15, 20)
+                    width = tubeWidth
+                    height = (tubeWidth * 2.5).toInt() // GIẢM CHIỀU CAO ĐỂ TRÁNH TRÀN VIỀN
+                    setMargins(4, 6, 4, 6)
                 }
                 layoutParams = params
             }
@@ -118,97 +116,92 @@ class LevelOneFragment : Fragment() {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.BOTTOM
                 layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-                
                 val border = GradientDrawable().apply {
                     setColor(Color.parseColor("#444444"))
-                    setStroke(6, if (engine.selectedTubeIndex == index) Color.YELLOW else Color.WHITE)
-                    cornerRadius = 20f
+                    setStroke(4, if (engine.selectedTubeIndex == index) Color.YELLOW else Color.WHITE)
+                    cornerRadius = 12f
                 }
                 background = border
-                setPadding(10, 10, 10, 15)
+                setPadding(6, 6, 6, 8)
                 
                 setOnClickListener {
                     if (engine.handleTubeClick(index)) {
                         renderBoard()
                         if (engine.isGameOver) {
-                            saveHighestLevel(args.levelId + 1)
-                            Toast.makeText(context, "MÀN CHƠI HOÀN THÀNH!", Toast.LENGTH_SHORT).show()
+                            if (engine.isWin) {
+                                saveHighestLevel(args.levelId + 1)
+                                Toast.makeText(context, getString(R.string.game_complete_toast), Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, getString(R.string.game_over_toast), Toast.LENGTH_LONG).show()
+                            }
                         }
                     }
                 }
             }
 
-            if (tube.capacity < 4) {
-                tubeContainer.layoutParams.height = 250 
-            }
-
             tube.blocks.forEachIndexed { blockIdx, colorId ->
                 val blockFrame = FrameLayout(requireContext()).apply {
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 90).apply { setMargins(0, 3, 0, 3) }
+                    val blockHeight = (tubeWidth * 0.55).toInt() // GIẢM CHIỀU CAO KHỐI
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply { setMargins(0, 2, 0, 2) }
                 }
-
+                val isHidden = blockIdx < tube.hiddenLayers
                 val blockView = View(context).apply {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-                    val isHidden = blockIdx < tube.hiddenLayers
                     val shape = GradientDrawable().apply {
                         setColor(if (isHidden) Color.DKGRAY else Color.parseColor(colorId.colorHex))
-                        cornerRadius = 12f
+                        cornerRadius = 8f
                     }
                     background = shape
                 }
                 blockFrame.addView(blockView)
-
-                if (blockIdx < tube.hiddenLayers) {
+                if (isHidden) {
                     val tvHint = TextView(context).apply {
                         text = "?"
                         setTextColor(Color.WHITE)
                         gravity = Gravity.CENTER
-                        textSize = 20f
+                        textSize = 16f
                         setTypeface(null, Typeface.BOLD)
                     }
                     blockFrame.addView(tvHint)
                 }
-                
                 tubeLayout.addView(blockFrame, 0)
             }
             tubeContainer.addView(tubeLayout)
 
             if (tube.isFrozen) {
-                val iceOverlay = View(context).apply {
+                val ice = View(context).apply {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     background = GradientDrawable().apply {
-                        setColor(Color.parseColor("#88ADF4FF")) 
-                        cornerRadius = 20f
+                        setColor(Color.parseColor("#88ADF4FF"))
+                        cornerRadius = 12f
                         setStroke(4, Color.CYAN)
                     }
                 }
-                tubeContainer.addView(iceOverlay)
+                tubeContainer.addView(ice)
             }
-
             if (tube.hasCobweb) {
-                val cobwebText = TextView(context).apply {
+                val spider = TextView(context).apply {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     text = "🕸️"
-                    textSize = 30f
+                    textSize = 24f
                     gravity = Gravity.CENTER
                 }
-                tubeContainer.addView(cobwebText)
+                tubeContainer.addView(spider)
             }
-
             binding.glGameBoard.addView(tubeContainer)
         }
         updateStatusUI()
     }
 
     private fun updateBoxUI(textView: TextView, box: LevelOneEngine.BoxSlot) {
-        textView.text = "TÚI ${box.targetColor.displayName}\n${box.filled}/${box.capacity}"
+        textView.text = "TÚI ${box.targetColor.displayName}\n${box.filled}/${box.capacity}\n(Lượt: ${box.turnsLeft})"
         textView.background = GradientDrawable().apply {
             setColor(Color.parseColor(box.targetColor.colorHex))
-            setStroke(6, Color.WHITE)
+            setStroke(6, if (box.turnsLeft <= 3) Color.RED else Color.WHITE)
             cornerRadius = 16f
         }
         textView.setTextColor(if (isColorDark(box.targetColor.colorHex)) Color.WHITE else Color.BLACK)
-        textView.setPadding(10, 20, 10, 20)
+        textView.setPadding(8, 12, 8, 12)
     }
 
     private fun isColorDark(hex: String): Boolean {
@@ -221,15 +214,21 @@ class LevelOneFragment : Fragment() {
 
     private fun updateStatusUI() {
         if (engine.isGameOver) {
-            binding.tvInstruction.text = "CHÚC MỪNG! BẠN ĐÃ HOÀN THÀNH MÀN ${engine.levelId}"
-            binding.tvInstruction.setTextColor(Color.GREEN)
-            binding.btnNextLevel.isVisible = true 
+            if (engine.isWin) {
+                binding.tvInstruction.text = getString(R.string.congratulations_format, engine.levelId)
+                binding.tvInstruction.setTextColor(Color.GREEN)
+                binding.btnNextLevel.isVisible = true 
+            } else {
+                binding.tvInstruction.text = getString(R.string.game_over_title)
+                binding.tvInstruction.setTextColor(Color.RED)
+                binding.btnNextLevel.isVisible = false
+            }
         } else {
             binding.tvInstruction.text = when {
-                engine.levelId >= 120 -> "Phá băng bằng cách đổ cùng màu vào ống."
-                engine.levelId >= 80 -> "Chạm vào mạng nhện 🕸️ để dọn dẹp."
-                engine.levelId >= 20 -> "Cẩn thận! Một số khối bị ẩn đáy (?)."
-                else -> "Xếp các màu giống nhau vào cùng 1 ống."
+                engine.levelId >= 120 -> getString(R.string.instruction_ice)
+                engine.levelId >= 80 -> getString(R.string.instruction_cobweb)
+                engine.levelId >= 20 -> getString(R.string.instruction_hidden)
+                else -> getString(R.string.instruction_default)
             }
             binding.tvInstruction.setTextColor(Color.parseColor("#AAAAAA"))
             binding.btnNextLevel.isVisible = false
