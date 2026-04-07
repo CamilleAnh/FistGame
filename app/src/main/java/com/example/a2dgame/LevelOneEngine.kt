@@ -5,18 +5,28 @@ import java.util.Stack
 
 /**
  * Engine xử lý logic 1000 Level theo LEVEL_PRINCIPLES.md.
- * Sửa lỗi: Chỉ coi là hoàn thành khi đã lộ diện hoàn toàn (hiddenLayers == 0).
+ * Sửa đổi: Thêm icon đại diện cho từng loại trái cây để thay thế khối màu đơn thuần.
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
-    enum class ColorId(val colorHex: String, val displayName: String) {
-        PURPLE("#9C27B0", "TÍM"), RED("#F44336", "ĐỎ"), BLUE("#2196F3", "XANH DƯƠNG"),
-        GREEN("#4CAF50", "XANH LÁ"), ORANGE("#FF9800", "CAM"), CYAN("#00BCD4", "CYAN"),
-        YELLOW("#FFEB3B", "VÀNG"), PINK("#E91E63", "HỒNG"), 
-        BROWN("#795548", "NÂU"), TEAL("#009688", "TEAL"), LIME("#CDDC39", "CHANH"),
-        INDIGO("#3F51B5", "CHÀM"), DEEP_ORANGE("#FF5722", "CAM ĐẬM"), AMBER("#FFC107", "HỔ PHÁCH"),
-        LIGHT_BLUE("#03A9F4", "XANH NHẠT"), LIGHT_GREEN("#8BC34A", "LÁ NHẠT"),
-        EMPTY("#333333", "TRỐNG")
+    enum class ColorId(val colorHex: String, val displayName: String, val fruitIcon: String) {
+        STRAWBERRY("#FF4B4B", "DÂU", "🍓"), 
+        ORANGE("#FFA726", "CAM", "🍊"), 
+        APPLE("#66BB6A", "TÁO", "🍏"),
+        BANANA("#FDD835", "CHUỐI", "🍌"), 
+        PEACH("#FFAB91", "ĐÀO", "🍑"), 
+        CITRUS("#FFB74D", "QUÝT", "🍊"),
+        GRAPE("#AB47BC", "NHO", "🍇"), 
+        WATERMELON("#EF5350", "DƯA HẤU", "🍉"), 
+        PINEAPPLE("#FFEE58", "DỨA", "🍍"),
+        BLUEBERRY("#5C6BC0", "VIỆT QUẤT", "🫐"), 
+        PEAR("#D4E157", "LÊ", "🍐"), 
+        POMEGRANATE("#D32F2F", "LỰU", "🍎"),
+        KIWI("#9CCC65", "KIWI", "🥝"), 
+        CHERRY("#F44336", "ANH ĐÀO", "🍒"), 
+        LEMON("#FFF176", "CHANH", "🍋"),
+        AVOCADO("#99CC33", "BƠ", "🥑"),
+        EMPTY("#333333", "TRỐNG", "")
     }
 
     data class Tube(
@@ -35,7 +45,6 @@ class LevelOneEngine(val levelId: Int = 1) {
         
         fun isComplete(): Boolean {
             if (isEmpty() || isFrozen || isLockedByChain || hasCobweb) return false
-            // QUAN TRỌNG: Không thể hoàn thành nếu còn lớp ẩn
             if (hiddenLayers > 0) return false
             if (blocks.size < 4) return false 
             val firstColor = blocks[0]
@@ -51,7 +60,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         var turnsLeft: Int = 25
     ) {
         fun remaining() = capacity - filled
-        fun getName() = "TÚI ${targetColor.displayName}"
+        fun getName() = "THÙNG ${targetColor.displayName}"
     }
 
     private val tubes = mutableListOf<Tube>()
@@ -159,12 +168,10 @@ class LevelOneEngine(val levelId: Int = 1) {
             return true
         }
 
-        // CHỈ KHÓA NẾU ĐÃ HOÀN THÀNH (ĐỦ 4 VÀ KHÔNG CÒN ẨN)
         if (clickedTube.isLockedByChain || clickedTube.isComplete()) return false
 
         val sourceIdx = selectedTubeIndex
         if (sourceIdx == null) {
-            // Không cho bốc nếu lớp trên cùng đang bị ẩn (an toàn hệ thống)
             if (!clickedTube.isEmpty() && !clickedTube.isFrozen && (clickedTube.blocks.size - 1) >= clickedTube.hiddenLayers) {
                 selectedTubeIndex = index
                 return true
@@ -294,5 +301,5 @@ class LevelOneEngine(val levelId: Int = 1) {
 
     fun getTubes() = tubes
     fun getBoxSlots() = boxSlots
-    fun getProgressText() = "Đã đóng gói: $completedTubesCount/$totalFullTubesCount ống"
+    fun getProgressText() = "Đã thu hoạch: $completedTubesCount/$totalFullTubesCount thùng"
 }
