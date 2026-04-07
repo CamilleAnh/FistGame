@@ -19,9 +19,12 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.example.a2dgame.databinding.FragmentLevelOneBinding
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
 
 /**
- * Fragment hiển thị gameplay với giao diện tối ưu không tràn viền.
+ * Fragment hiển thị gameplay tối ưu kích thước ống nghiệm và hiển thị Ads Banner.
  */
 class LevelOneFragment : Fragment() {
 
@@ -44,6 +47,8 @@ class LevelOneFragment : Fragment() {
         val levelId = args.levelId
         engine = LevelOneEngine(levelId)
         binding.tvLevelName.text = getString(R.string.level_name_format, levelId)
+        
+        loadBannerAd()
         renderBoard()
 
         binding.btnReset.setOnClickListener {
@@ -63,6 +68,16 @@ class LevelOneFragment : Fragment() {
             val navOptions = NavOptions.Builder().setPopUpTo(R.id.LevelOneFragment, true).build()
             findNavController().navigate(R.id.action_LevelOneFragment_self, bundle, navOptions)
         }
+    }
+
+    private fun loadBannerAd() {
+        val adView = AdView(requireContext())
+        adView.adUnitId = "ca-app-pub-3940256099942544/6300978111" // Test Banner ID
+        adView.setAdSize(AdSize.BANNER)
+        binding.adContainer.removeAllViews()
+        binding.adContainer.addView(adView)
+        val adRequest = AdRequest.Builder().build()
+        adView.loadAd(adRequest)
     }
 
     private fun saveHighestLevel(level: Int) {
@@ -94,12 +109,11 @@ class LevelOneFragment : Fragment() {
             } else binding.tvBoxB.isVisible = false
         }
         
-        // Cố định 4 cột
         binding.glGameBoard.columnCount = 4
         
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
-        val padding = (40 * displayMetrics.density).toInt() 
+        val padding = (48 * displayMetrics.density).toInt() 
         val tubeWidth = (screenWidth - padding) / 4
 
         activeTubes.forEach { tube ->
@@ -107,8 +121,8 @@ class LevelOneFragment : Fragment() {
             val tubeContainer = FrameLayout(requireContext()).apply {
                 val params = GridLayout.LayoutParams().apply {
                     width = tubeWidth
-                    height = (tubeWidth * 2.4).toInt() // GIẢM CHIỀU CAO ĐỂ KHÔNG TRÀN
-                    setMargins(4, 6, 4, 6)
+                    height = (tubeWidth * 1.8).toInt() 
+                    setMargins(4, 4, 4, 4)
                 }
                 layoutParams = params
             }
@@ -120,7 +134,7 @@ class LevelOneFragment : Fragment() {
                 val border = GradientDrawable().apply {
                     setColor(Color.parseColor("#444444"))
                     setStroke(4, if (engine.selectedTubeIndex == index) Color.YELLOW else Color.WHITE)
-                    cornerRadius = 14f
+                    cornerRadius = 10f
                 }
                 background = border
                 setPadding(6, 6, 6, 8)
@@ -142,15 +156,15 @@ class LevelOneFragment : Fragment() {
 
             tube.blocks.forEachIndexed { blockIdx, colorId ->
                 val blockFrame = FrameLayout(requireContext()).apply {
-                    val blockHeight = (tubeWidth * 0.52).toInt() // GIẢM CHIỀU CAO KHỐI
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply { setMargins(0, 2, 0, 2) }
+                    val blockHeight = (tubeWidth * 0.4).toInt() 
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply { setMargins(0, 1, 0, 1) }
                 }
                 val isHidden = blockIdx < tube.hiddenLayers
                 val blockView = View(context).apply {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     val shape = GradientDrawable().apply {
                         setColor(if (isHidden) Color.DKGRAY else Color.parseColor(colorId.colorHex))
-                        cornerRadius = 8f
+                        cornerRadius = 4f
                     }
                     background = shape
                 }
@@ -160,7 +174,7 @@ class LevelOneFragment : Fragment() {
                         text = "?"
                         setTextColor(Color.WHITE)
                         gravity = Gravity.CENTER
-                        textSize = 16f
+                        textSize = 12f
                         setTypeface(null, Typeface.BOLD)
                     }
                     blockFrame.addView(tvHint)
@@ -174,7 +188,7 @@ class LevelOneFragment : Fragment() {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     background = GradientDrawable().apply {
                         setColor(Color.parseColor("#88ADF4FF"))
-                        cornerRadius = 14f
+                        cornerRadius = 10f
                         setStroke(4, Color.CYAN)
                     }
                 }
@@ -184,7 +198,7 @@ class LevelOneFragment : Fragment() {
                 val spider = TextView(context).apply {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     text = "🕸️"
-                    textSize = 24f
+                    textSize = 20f
                     gravity = Gravity.CENTER
                 }
                 tubeContainer.addView(spider)
@@ -195,14 +209,14 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun updateBoxUI(textView: TextView, box: LevelOneEngine.BoxSlot) {
-        textView.text = "TÚI ${box.targetColor.displayName}\n${box.filled}/${box.capacity}\n(Lượt: ${box.turnsLeft})"
+        textView.text = getString(R.string.bag_info_format, box.targetColor.displayName, box.filled, box.capacity, box.turnsLeft)
         textView.background = GradientDrawable().apply {
             setColor(Color.parseColor(box.targetColor.colorHex))
             setStroke(6, if (box.turnsLeft <= 3) Color.RED else Color.WHITE)
             cornerRadius = 16f
         }
         textView.setTextColor(if (isColorDark(box.targetColor.colorHex)) Color.WHITE else Color.BLACK)
-        textView.setPadding(8, 10, 8, 10)
+        textView.setPadding(8, 8, 8, 8)
     }
 
     private fun isColorDark(hex: String): Boolean {

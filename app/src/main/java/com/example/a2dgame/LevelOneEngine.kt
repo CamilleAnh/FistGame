@@ -5,7 +5,7 @@ import java.util.Stack
 
 /**
  * Engine xử lý logic 1000 Level theo LEVEL_PRINCIPLES.md.
- * Cập nhật: Tăng số lượt lên 25, tối ưu số lượng ống cho level 30, đảm bảo fill đầy 4 khối.
+ * Sửa lỗi: Chỉ coi là hoàn thành khi đã lộ diện hoàn toàn (hiddenLayers == 0).
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
@@ -35,6 +35,8 @@ class LevelOneEngine(val levelId: Int = 1) {
         
         fun isComplete(): Boolean {
             if (isEmpty() || isFrozen || isLockedByChain || hasCobweb) return false
+            // QUAN TRỌNG: Không thể hoàn thành nếu còn lớp ẩn
+            if (hiddenLayers > 0) return false
             if (blocks.size < 4) return false 
             val firstColor = blocks[0]
             return blocks.all { it == firstColor }
@@ -46,7 +48,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         var targetColor: ColorId,
         var capacity: Int = 1,
         var filled: Int = 0,
-        var turnsLeft: Int = 25 // Tăng số lượt lên 25 hiệp
+        var turnsLeft: Int = 25
     ) {
         fun remaining() = capacity - filled
         fun getName() = "TÚI ${targetColor.displayName}"
@@ -69,30 +71,27 @@ class LevelOneEngine(val levelId: Int = 1) {
     }
 
     private fun setupLevel(level: Int) {
-        // 1. Phân bổ màu sắc hợp lý cho level 30 (Không quá nhiều màu)
         val numDistinctColors = when {
-            level < 10 -> 3
-            level < 30 -> 4
-            level < 60 -> 6  // Level 30-60: dùng 6 màu
-            level < 100 -> 8
-            level < 200 -> 10
-            level < 400 -> 12
+            level < 5 -> 3
+            level < 15 -> 4
+            level < 30 -> 6
+            level < 60 -> 8
+            level < 100 -> 10
+            level < 200 -> 12
+            level < 400 -> 14
             else -> 16
         }
 
-        // 2. Số lượng bình đầy màu (Cho phép trùng màu nhưng vừa phải ở level 30)
         val multiplier = when {
-            level < 20 -> 1.0
-            level < 50 -> 1.2 // Level 30: 6 màu * 1.2 = 7 ống đầy (Ví dụ)
-            level < 150 -> 1.5
+            level < 50 -> 1.0
+            level < 150 -> 1.2
+            level < 300 -> 1.5
             else -> 1.8
         }
-        totalFullTubesCount = (numDistinctColors * multiplier).toInt().coerceAtLeast(numDistinctColors)
+        totalFullTubesCount = (numDistinctColors * multiplier).toInt()
         
         isBagMechanismEnabled = level >= 20
-        
-        // 3. Ống trung chuyển: Luôn duy trì đủ không gian
-        val numEmptyTubes = if (totalFullTubesCount > 10) 3 else 2
+        val numEmptyTubes = 3
         val totalTubesCount = totalFullTubesCount + numEmptyTubes
         
         val allAvailableColors = ColorId.values().filter { it != ColorId.EMPTY }
@@ -103,18 +102,16 @@ class LevelOneEngine(val levelId: Int = 1) {
             tubes.add(Tube(id = i, capacity = 4))
         }
 
-        // 4. BẮT BUỘC FILL ĐẦY 4 KHỐI CHO MỌI ỐNG MÀU
-        generateReverseShuffledLevel(numDistinctColors, totalFullTubesCount)
+        generateFilledLevel(numDistinctColors, totalFullTubesCount)
 
-        // 5. CHƯỚNG NGẠI VẬT
         if (level >= 20) {
-            tubes.filter { it.blocks.size == 4 }.forEach { 
+            tubes.filter { !it.isEmpty() }.forEach { 
                 it.hiddenLayers = (it.blocks.size - 1).coerceAtMost(2).coerceAtLeast(0)
             }
         }
         if (level >= 80) {
-            val spiderCount = (totalFullTubesCount / 4).coerceAtLeast(1)
-            tubes.filter { !it.isEmpty() }.shuffled(random).take(spiderCount).forEach { it.hasCobweb = true }
+            val count = (totalFullTubesCount / 4).coerceAtLeast(1)
+            tubes.filter { !it.isEmpty() }.shuffled(random).take(count).forEach { it.hasCobweb = true }
         }
         if (level >= 120) {
             tubes.filter { !it.isEmpty() && !it.hasCobweb }.shuffled(random).take(1).forEach { it.isFrozen = true }
@@ -124,22 +121,17 @@ class LevelOneEngine(val levelId: Int = 1) {
         if (isBagMechanismEnabled) setupInitialBoxes()
     }
 
-    private fun generateReverseShuffledLevel(numDistinct: Int, totalFull: Int) {
-        // Đổ đầy 4 khối cho mỗi ống
+    private fun generateFilledLevel(numDistinct: Int, totalFull: Int) {
+        val allBlocks = mutableListOf<ColorId>()
         for (i in 0 until totalFull) {
             val color = colorsInLevel[i % numDistinct]
-            repeat(4) { tubes[i].blocks.push(color) }
+            repeat(4) { allBlocks.add(color) }
         }
+        allBlocks.shuffle(random)
 
-        // Trộn ngược mạnh mẽ
-        val shuffleMoves = 250 + (levelId % 100)
-        var movesDone = 0
-        while (movesDone < shuffleMoves) {
-            val src = tubes.filter { !it.isEmpty() }.random(random)
-            val dst = tubes.filter { !it.isFull() }.random(random)
-            if (src.id != dst.id) {
-                dst.blocks.push(src.blocks.pop())
-                movesDone++
+        for (i in 0 until totalFull) {
+            repeat(4) {
+                tubes[i].blocks.push(allBlocks.removeAt(0))
             }
         }
     }
@@ -167,11 +159,13 @@ class LevelOneEngine(val levelId: Int = 1) {
             return true
         }
 
+        // CHỈ KHÓA NẾU ĐÃ HOÀN THÀNH (ĐỦ 4 VÀ KHÔNG CÒN ẨN)
         if (clickedTube.isLockedByChain || clickedTube.isComplete()) return false
 
         val sourceIdx = selectedTubeIndex
         if (sourceIdx == null) {
-            if (!clickedTube.isEmpty() && !clickedTube.isFrozen) {
+            // Không cho bốc nếu lớp trên cùng đang bị ẩn (an toàn hệ thống)
+            if (!clickedTube.isEmpty() && !clickedTube.isFrozen && (clickedTube.blocks.size - 1) >= clickedTube.hiddenLayers) {
                 selectedTubeIndex = index
                 return true
             }
@@ -200,7 +194,11 @@ class LevelOneEngine(val levelId: Int = 1) {
                 if (!isGameOver) checkLossCondition()
                 return true
             } else {
-                selectedTubeIndex = if (!destTube.isEmpty() && !destTube.isFrozen) index else null
+                if (!destTube.isEmpty() && !destTube.isFrozen && (destTube.blocks.size - 1) >= destTube.hiddenLayers) {
+                    selectedTubeIndex = index
+                } else {
+                    selectedTubeIndex = null
+                }
                 return true
             }
         }
@@ -226,6 +224,7 @@ class LevelOneEngine(val levelId: Int = 1) {
     private fun canMove(source: Tube, dest: Tube): Boolean {
         if (source.isEmpty()) return false
         if (dest.isFull()) return false
+        if ((source.blocks.size - 1) < source.hiddenLayers) return false
         return dest.isEmpty() || dest.peekColor() == source.peekColor()
     }
 
@@ -233,12 +232,15 @@ class LevelOneEngine(val levelId: Int = 1) {
         val colorToMove = source.peekColor()
         if (colorToMove == ColorId.EMPTY) return
 
+        val originalHiddenLimit = source.hiddenLayers
+
         while (!source.isEmpty() && 
                source.peekColor() == colorToMove && 
-               (source.blocks.size - 1) >= source.hiddenLayers && 
+               (source.blocks.size - 1) >= originalHiddenLimit && 
                !dest.isFull()) {
             
             dest.blocks.push(source.blocks.pop())
+            
             if (source.hiddenLayers >= source.blocks.size && source.blocks.size > 0) {
                 source.hiddenLayers = source.blocks.size - 1
             }

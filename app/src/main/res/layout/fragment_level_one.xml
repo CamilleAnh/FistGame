@@ -9,7 +9,7 @@
         android:id="@+id/tv_level_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:text="LEVEL 1"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
@@ -22,7 +22,7 @@
         android:id="@+id/tv_instruction"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
         android:gravity="center"
@@ -38,7 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="16dp"
         android:gravity="center"
         android:orientation="horizontal"
@@ -78,7 +78,7 @@
         android:id="@+id/tv_packed_progress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:text="..."
         android:textColor="#FFC107"
         android:textSize="14sp"
@@ -87,16 +87,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ll_boxes" />
 
-    <!-- Dùng đúng GridLayout của android.widget -->
     <GridLayout
         android:id="@+id/gl_game_board"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:columnCount="4"
         android:alignmentMode="alignMargins"
+        app:layout_constraintBottom_toTopOf="@+id/btn_next_level"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tv_packed_progress" />
@@ -117,20 +117,20 @@
         android:id="@+id/ll_actions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="8dp"
         android:gravity="center"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/ad_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <Button
             android:id="@+id/btn_back_level_select"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_marginEnd="16dp"
             android:text="🏠"
-            android:textSize="24sp" />
+            android:textSize="20sp" />
 
         <Button
             android:id="@+id/btn_reset"
@@ -138,5 +138,15 @@
             android:layout_height="wrap_content"
             android:text="RESET LEVEL" />
     </LinearLayout>
+
+    <!-- Container cho Banner Ad -->
+    <FrameLayout
+        android:id="@+id/ad_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="50dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
