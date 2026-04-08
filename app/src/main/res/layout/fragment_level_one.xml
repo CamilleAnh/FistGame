@@ -1,78 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/back"
-   >
+    android:background="@drawable/back">
 
     <TextView
         android:id="@+id/tv_level_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="4dp"
         android:text="LEVEL 1"
         android:textColor="#FFFFFF"
-        android:textSize="22sp"
+        android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btn_reset"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="4dp"
+        android:text="RESET"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:textColor="#FFFFFF"/>
+
+    <Button
+        android:id="@+id/btn_back_level_select"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:text="BACK"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:textColor="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/tv_score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Score: 0"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_level_name" />
+
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Time: 00:00"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_score" />
 
     <TextView
         android:id="@+id/tv_instruction"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="4dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
         android:gravity="center"
-        android:text="..."
-        android:textColor="#AAAAAA"
+        android:text="Phân loại trái cây vào các thùng gỗ cùng loại."
+        android:textColor="#FFFFFF"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_level_name" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_time" />
 
     <LinearLayout
         android:id="@+id/ll_boxes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
         android:gravity="center"
         android:orientation="horizontal"
-        android:weightSum="2"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@+id/tv_instruction">
 
         <TextView
             android:id="@+id/tv_box_a"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:background="#3E2723"
-            android:gravity="center"
-            android:padding="8dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:layout_marginEnd="8dp" />
 
         <TextView
             android:id="@+id/tv_box_b"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_weight="1"
-            android:background="#1B5E20"
-            android:gravity="center"
-            android:padding="8dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:layout_marginStart="8dp" />
     </LinearLayout>
 
     <TextView
@@ -80,34 +111,48 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="..."
-        android:textColor="#FFC107"
+        android:textColor="#FFD54F"
         android:textSize="14sp"
         android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_instruction"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ll_boxes" />
 
-    <GridLayout
-        android:id="@+id/gl_game_board"
-        android:layout_width="match_parent"
+    <ScrollView
+        android:id="@+id/sv_game"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:columnCount="4"
-        android:alignmentMode="alignMargins"
-        app:layout_constraintBottom_toTopOf="@+id/btn_next_level"
+        android:layout_margin="16dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@+id/barrier_controls"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_packed_progress" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_packed_progress"
+        app:layout_constraintVertical_bias="0.0">
+
+        <GridLayout
+            android:id="@+id/gl_game_board"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|top"
+            android:alignmentMode="alignMargins"
+            android:paddingBottom="20dp" />
+    </ScrollView>
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/barrier_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="btn_next_level,ll_actions" />
 
     <Button
         android:id="@+id/btn_next_level"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="NEXT LEVEL"
+        android:layout_marginBottom="4dp"
+        android:text="TIẾP THEO"
         android:visibility="gone"
         android:backgroundTint="#4CAF50"
         app:layout_constraintBottom_toTopOf="@+id/ll_actions"
@@ -116,38 +161,27 @@
 
     <LinearLayout
         android:id="@+id/ll_actions"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical"
         android:gravity="center"
-        android:orientation="horizontal"
         app:layout_constraintBottom_toTopOf="@+id/ad_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <Button
-            android:id="@+id/btn_back_level_select"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginEnd="16dp"
-            android:text="🏠"
-            android:textSize="20sp" />
-
-        <Button
-            android:id="@+id/btn_reset"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="RESET LEVEL" />
+            android:orientation="horizontal">
+
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- Container cho Banner Ad -->
     <FrameLayout
         android:id="@+id/ad_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="50dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

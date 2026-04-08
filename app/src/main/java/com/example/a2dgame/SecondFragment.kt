@@ -1,26 +1,26 @@
 package com.example.a2dgame
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import com.example.a2dgame.databinding.FragmentSecondBinding
+import com.example.a2dgame.databinding.ItemLevelBinding
+import com.example.a2dgame.databinding.ItemLevelPageBinding
+import com.google.android.material.tabs.TabLayoutMediator
 
-/**
- * Fragment màn hình chọn Level.
- */
 class SecondFragment : Fragment() {
 
     private var _binding: FragmentSecondBinding? = null
     private val binding get() = _binding!!
 
-    private var currentPage = 0
-    private val levelsPerPage = 20 // 4x5 grid
+    private val levelsPerPage = 20
+    private val totalPages = 5 // 100 levels
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,94 +33,86 @@ class SecondFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Quay lại màn hình chính
+        val prefs = requireContext().getSharedPreferences("game_prefs", 0)
+        val highestLevel = prefs.getInt("highest_level", 1)
+
+        val adapter = LevelPagerAdapter(highestLevel) { levelId ->
+            val bundle = Bundle().apply { putInt("levelId", levelId) }
+            findNavController().navigate(R.id.action_SecondFragment_to_LevelOneFragment, bundle)
+        }
+        
+        binding.vpLevels.adapter = adapter
+
+        // Kết nối ViewPager2 với TabLayout (Chỉ báo dấu chấm)
+        TabLayoutMediator(binding.pageIndicator, binding.vpLevels) { _, _ -> }.attach()
+
         binding.btnBackHome.setOnClickListener {
             findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
         }
 
         binding.btnNext.setOnClickListener {
-            currentPage++
-            renderLevels()
-        }
-
-        binding.btnPrev.setOnClickListener {
-            if (currentPage > 0) {
-                currentPage--
-                renderLevels()
+            if (binding.vpLevels.currentItem < totalPages - 1) {
+                binding.vpLevels.currentItem += 1
             }
         }
 
-        renderLevels()
+        binding.btnPrev.setOnClickListener {
+            if (binding.vpLevels.currentItem > 0) {
+                binding.vpLevels.currentItem -= 1
+            }
+        }
+        
+        // Cập nhật trạng thái nút khi đổi trang
+        binding.vpLevels.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                binding.btnPrev.alpha = if (position > 0) 1.0f else 0.5f
+                binding.btnPrev.isEnabled = position > 0
+                binding.btnNext.alpha = if (position < totalPages - 1) 1.0f else 0.5f
+                binding.btnNext.isEnabled = position < totalPages - 1
+            }
+        })
     }
 
-    private fun renderLevels() {
-        val prefs = requireContext().getSharedPreferences("game_prefs", 0)
-        val highestLevel = prefs.getInt("highest_level", 1)
+    inner class LevelPagerAdapter(
+        private val highestLevel: Int,
+        private val onLevelClick: (Int) -> Unit
+    ) : RecyclerView.Adapter<LevelPagerAdapter.PageViewHolder>() {
 
-        // Cập nhật trạng thái nút Next/Prev
-        binding.btnPrev.isEnabled = currentPage > 0
-        binding.btnPrev.alpha = if (currentPage > 0) 1.0f else 0.5f
-        
-        // Giả sử tối đa 5 trang (100 levels)
-        binding.btnNext.isEnabled = currentPage < 4
-        binding.btnNext.alpha = if (currentPage < 4) 1.0f else 0.5f
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
+            val binding = ItemLevelPageBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return PageViewHolder(binding)
+        }
 
-        for (i in 0 until binding.glLevels.childCount) {
-            val child = binding.glLevels.getChildAt(i)
-            if (child is FrameLayout) {
-                // Tính toán levelId dựa trên trang hiện tại
-                val levelId = (currentPage * levelsPerPage) + i + 1
+        override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
+            holder.bind(position)
+        }
+
+        override fun getItemCount(): Int = totalPages
+
+        inner class PageViewHolder(val pageBinding: ItemLevelPageBinding) : RecyclerView.ViewHolder(pageBinding.root) {
+            fun bind(pageIndex: Int) {
+                pageBinding.glLevels.removeAllViews()
+                val startLevel = (pageIndex * levelsPerPage) + 1
                 
-                // Đảm bảo có TextView và ImageView bên trong FrameLayout
-                var textView = child.getChildAt(0) as? TextView
-                if (textView == null) {
-                    textView = TextView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(
-                            FrameLayout.LayoutParams.WRAP_CONTENT,
-                            FrameLayout.LayoutParams.WRAP_CONTENT,
-                            android.view.Gravity.CENTER
-                        )
-                        setTextColor(android.graphics.Color.WHITE)
-                        textSize = 20f
-                        setTypeface(null, android.graphics.Typeface.BOLD)
-                    }
-                    child.addView(textView)
-                }
-
-                var lockIcon = if (child.childCount > 1) child.getChildAt(1) as? ImageView else null
-                if (lockIcon == null) {
-                    lockIcon = ImageView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(
-                            (30 * resources.displayMetrics.density).toInt(),
-                            (30 * resources.displayMetrics.density).toInt(),
-                            android.view.Gravity.CENTER
-                        )
-                        setImageResource(android.R.drawable.ic_lock_lock)
-                        setColorFilter(android.graphics.Color.WHITE)
-                    }
-                    child.addView(lockIcon)
-                }
-
-                textView.text = levelId.toString()
-
-                if (levelId <= highestLevel) {
-                    // Màn hình đã mở khóa
-                    child.setBackgroundResource(R.drawable.level_item_unlocked)
-                    textView.visibility = View.VISIBLE
-                    lockIcon.visibility = View.GONE
+                for (i in 0 until levelsPerPage) {
+                    val levelId = startLevel + i
+                    val itemBinding = ItemLevelBinding.inflate(LayoutInflater.from(pageBinding.root.context), pageBinding.glLevels, false)
                     
-                    child.setOnClickListener {
-                        val bundle = Bundle().apply {
-                            putInt("levelId", levelId)
-                        }
-                        findNavController().navigate(R.id.action_SecondFragment_to_LevelOneFragment, bundle)
+                    itemBinding.tvLevelNumber.text = levelId.toString()
+                    
+                    if (levelId <= highestLevel) {
+                        itemBinding.flLevelItem.setBackgroundResource(R.drawable.level_item_unlocked)
+                        itemBinding.tvLevelNumber.visibility = View.VISIBLE
+                        itemBinding.ivLock.visibility = View.GONE
+                        itemBinding.flLevelItem.setOnClickListener { onLevelClick(levelId) }
+                    } else {
+                        itemBinding.flLevelItem.setBackgroundResource(R.drawable.level_item_locked)
+                        itemBinding.tvLevelNumber.visibility = View.GONE
+                        itemBinding.ivLock.visibility = View.VISIBLE
+                        itemBinding.flLevelItem.setOnClickListener(null)
                     }
-                } else {
-                    // Màn hình đang bị khóa
-                    child.setBackgroundResource(R.drawable.level_item_locked)
-                    textView.visibility = View.GONE
-                    lockIcon.visibility = View.VISIBLE
-                    child.setOnClickListener(null)
+                    
+                    pageBinding.glLevels.addView(itemBinding.root)
                 }
             }
         }

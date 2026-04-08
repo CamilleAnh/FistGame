@@ -5,23 +5,23 @@ import java.util.Stack
 
 /**
  * Engine xử lý logic 1000 Level theo LEVEL_PRINCIPLES.md.
- * Sửa đổi: Thêm icon đại diện cho từng loại trái cây để thay thế khối màu đơn thuần.
+ * Đã cập nhật danh sách trái cây để đảm bảo tính duy nhất và dễ phân biệt.
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
     enum class ColorId(val colorHex: String, val displayName: String, val fruitIcon: String) {
         STRAWBERRY("#FF4B4B", "DÂU", "🍓"), 
         ORANGE("#FFA726", "CAM", "🍊"), 
-        APPLE("#66BB6A", "TÁO", "🍏"),
+        APPLE_GREEN("#66BB6A", "TÁO XANH", "🍏"),
         BANANA("#FDD835", "CHUỐI", "🍌"), 
         PEACH("#FFAB91", "ĐÀO", "🍑"), 
-        CITRUS("#FFB74D", "QUÝT", "🍊"),
+        MANGO("#FF9800", "XOÀI", "🥭"), // Thay Quýt bằng Xoài
         GRAPE("#AB47BC", "NHO", "🍇"), 
         WATERMELON("#EF5350", "DƯA HẤU", "🍉"), 
         PINEAPPLE("#FFEE58", "DỨA", "🍍"),
         BLUEBERRY("#5C6BC0", "VIỆT QUẤT", "🫐"), 
         PEAR("#D4E157", "LÊ", "🍐"), 
-        POMEGRANATE("#D32F2F", "LỰU", "🍎"),
+        COCONUT("#795548", "DỪA", "🥥"), // Thay Lựu bằng Dừa
         KIWI("#9CCC65", "KIWI", "🥝"), 
         CHERRY("#F44336", "ANH ĐÀO", "🍒"), 
         LEMON("#FFF176", "CHANH", "🍋"),

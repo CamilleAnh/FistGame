@@ -23,10 +23,8 @@ import com.example.a2dgame.databinding.FragmentLevelOneBinding
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import kotlin.math.ceil
 
-/**
- * Fragment hiển thị gameplay với chủ đề Thùng Gỗ Trái Cây.
- */
 class LevelOneFragment : Fragment() {
 
     private var _binding: FragmentLevelOneBinding? = null
@@ -57,7 +55,6 @@ class LevelOneFragment : Fragment() {
             renderBoard()
         }
 
-        binding.btnBackLevelSelect.text = "🏠"
         binding.btnBackLevelSelect.setOnClickListener {
             findNavController().popBackStack(R.id.SecondFragment, false)
         }
@@ -73,7 +70,7 @@ class LevelOneFragment : Fragment() {
 
     private fun loadBannerAd() {
         val adView = AdView(requireContext())
-        adView.adUnitId = "ca-app-pub-3940256099942544/6300978111" // Test Banner ID
+        adView.adUnitId = "ca-app-pub-3940256099942544/6300978111"
         adView.setAdSize(AdSize.BANNER)
         binding.adContainer.removeAllViews()
         binding.adContainer.addView(adView)
@@ -91,41 +88,68 @@ class LevelOneFragment : Fragment() {
         binding.glGameBoard.removeAllViews()
         val tubes = engine.getTubes()
         val activeTubes = tubes.filter { !it.isArchived }
+        if (activeTubes.isEmpty()) return
+
+        val tubeCount = activeTubes.size
+        
+        // 1. Xác định số cột
+        val cols = when {
+            tubeCount <= 12 -> 4
+            tubeCount <= 20 -> 5
+            tubeCount <= 30 -> 6
+            else -> 7
+        }
+        binding.glGameBoard.columnCount = cols
+        
+        // 2. Xác định số hàng
+        val rows = ceil(tubeCount.toDouble() / cols).toInt()
+
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        
+        // 3. Tính chiều rộng ống
+        val horizontalMargin = (16 * displayMetrics.density).toInt()
+        val tubeWidth = (screenWidth - horizontalMargin - (cols * 6)) / cols
+        
+        // 4. Tối ưu chiều cao block dựa trên cả số cột và số hàng để tránh bị che
+        var blockHeightRatio = when {
+            cols <= 4 -> 0.52
+            cols == 5 -> 0.48
+            else -> 0.42
+        }
+        
+        // Nếu có nhiều hàng (như trong ảnh là 2 hàng), thu nhỏ thêm để vừa màn hình
+        if (rows >= 2) {
+            blockHeightRatio *= 0.85 
+        }
+
+        val blockHeight = (tubeWidth * blockHeightRatio).toInt()
+        val maxCapacity = activeTubes.maxOfOrNull { it.capacity } ?: 4
+        val tubeHeight = (blockHeight * maxCapacity) + (10 * displayMetrics.density).toInt()
 
         val isBagEnabled = engine.isBagMechanismEnabled
         binding.llBoxes.isVisible = isBagEnabled
-        binding.tvPackedProgress.isVisible = true 
         binding.tvPackedProgress.text = engine.getProgressText()
         
         if (isBagEnabled) {
             val boxSlots = engine.getBoxSlots()
-            if (boxSlots.isNotEmpty()) {
-                binding.tvBoxA.isVisible = true
-                updateBoxUI(binding.tvBoxA, boxSlots[0])
-            } else binding.tvBoxA.isVisible = false
-
-            if (boxSlots.size >= 2) {
-                binding.tvBoxB.isVisible = true
-                updateBoxUI(binding.tvBoxB, boxSlots[1])
-            } else binding.tvBoxB.isVisible = false
+            boxSlots.forEachIndexed { i, box ->
+                val tv = if (i == 0) binding.tvBoxA else binding.tvBoxB
+                tv.isVisible = true
+                updateBoxUI(tv, box)
+            }
+            if (boxSlots.size < 2) binding.tvBoxB.isVisible = false
+            if (boxSlots.isEmpty()) binding.tvBoxA.isVisible = false
         }
-        
-        binding.glGameBoard.columnCount = 4
-        
-        val displayMetrics = resources.displayMetrics
-        val screenWidth = displayMetrics.widthPixels
-        val padding = (48 * displayMetrics.density).toInt() 
-        val tubeWidth = (screenWidth - padding) / 4
 
         activeTubes.forEach { tube ->
             val index = tube.id
             val tubeContainer = FrameLayout(requireContext()).apply {
-                val params = GridLayout.LayoutParams().apply {
+                layoutParams = GridLayout.LayoutParams().apply {
                     width = tubeWidth
-                    height = (tubeWidth * 2.2).toInt() 
-                    setMargins(4, 8, 4, 8)
+                    height = tubeHeight
+                    setMargins(3, 4, 3, 4)
                 }
-                layoutParams = params
             }
 
             val tubeLayout = LinearLayout(context).apply {
@@ -133,14 +157,14 @@ class LevelOneFragment : Fragment() {
                 gravity = Gravity.BOTTOM
                 layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                 
-                // Viền cho ống (thùng gỗ xếp chồng)
                 val border = GradientDrawable().apply {
                     setColor(Color.TRANSPARENT)
-                    setStroke(6, if (engine.selectedTubeIndex == index) Color.YELLOW else Color.parseColor("#3E2723"))
-                    cornerRadius = 8f
+                    val strokeWidth = if (cols > 5 || rows >= 2) 3 else 5
+                    setStroke(strokeWidth, if (engine.selectedTubeIndex == index) Color.YELLOW else Color.parseColor("#3E2723"))
+                    cornerRadius = 6f
                 }
                 background = border
-                setPadding(4, 4, 4, 4)
+                setPadding(2, 2, 2, 2)
                 
                 setOnClickListener {
                     if (engine.handleTubeClick(index)) {
@@ -159,20 +183,18 @@ class LevelOneFragment : Fragment() {
 
             tube.blocks.forEachIndexed { blockIdx, fruitColor ->
                 val blockFrame = FrameLayout(requireContext()).apply {
-                    val blockHeight = (tubeWidth * 0.5).toInt() 
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply { setMargins(0, 2, 0, 2) }
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply { setMargins(0, 1, 0, 1) }
                     background = ContextCompat.getDrawable(context, R.drawable.crate_bg)
                 }
                 
                 val isHidden = blockIdx < tube.hiddenLayers
-                
                 if (isHidden) {
                     val tvHint = TextView(context).apply {
                         layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                         text = "?"
                         setTextColor(Color.WHITE)
                         gravity = Gravity.CENTER
-                        textSize = 20f
+                        textSize = if (cols > 5 || rows >= 2) 11f else 15f
                         setTypeface(null, Typeface.BOLD)
                         setBackgroundColor(Color.parseColor("#80000000"))
                     }
@@ -182,7 +204,7 @@ class LevelOneFragment : Fragment() {
                         layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                         text = fruitColor.fruitIcon
                         gravity = Gravity.CENTER
-                        textSize = 24f
+                        textSize = if (cols > 5 || rows >= 2) 15f else 21f
                     }
                     blockFrame.addView(tvFruit)
                 }
@@ -195,8 +217,8 @@ class LevelOneFragment : Fragment() {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     background = GradientDrawable().apply {
                         setColor(Color.parseColor("#88ADF4FF"))
-                        cornerRadius = 8f
-                        setStroke(4, Color.CYAN)
+                        cornerRadius = 6f
+                        setStroke(if (cols > 5) 2 else 3, Color.CYAN)
                     }
                 }
                 tubeContainer.addView(ice)
@@ -205,7 +227,7 @@ class LevelOneFragment : Fragment() {
                 val spider = TextView(context).apply {
                     layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                     text = "🕸️"
-                    textSize = 30f
+                    textSize = if (cols > 5 || rows >= 2) 16f else 26f
                     gravity = Gravity.CENTER
                 }
                 tubeContainer.addView(spider)
@@ -218,12 +240,12 @@ class LevelOneFragment : Fragment() {
     private fun updateBoxUI(textView: TextView, box: LevelOneEngine.BoxSlot) {
         textView.text = "${box.targetColor.fruitIcon} ${box.filled}/${box.capacity} [⏳${box.turnsLeft}]"
         textView.background = GradientDrawable().apply {
-            setColor(Color.parseColor("#8D6E63")) // Màu gỗ thùng
-            setStroke(6, if (box.turnsLeft <= 5) Color.RED else Color.parseColor("#FFD54F"))
-            cornerRadius = 16f
+            setColor(Color.parseColor("#8D6E63"))
+            setStroke(3, if (box.turnsLeft <= 5) Color.RED else Color.parseColor("#FFD54F"))
+            cornerRadius = 10f
         }
         textView.setTextColor(Color.WHITE)
-        textView.setPadding(8, 8, 8, 8)
+        textView.setPadding(5, 5, 5, 5)
     }
 
     private fun updateStatusUI() {
