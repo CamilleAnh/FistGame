@@ -1,51 +1,45 @@
-# 🚀 KẾ HOẠCH ĐƯA GAME LÊN GOOGLE PLAY STORE
+# 🚀 KẾ HOẠCH ĐƯA GAME LÊN GOOGLE PLAY STORE (CẬP NHẬT)
 
-Phiên bản: 1.0
+Phiên bản: 2.0
 Cập nhật lần cuối: 2026-04-05
-Mục tiêu: Phát hành ứng dụng lên Google Play theo quy trình chuẩn và tối ưu hóa chuyển đổi (ASO).
+Trạng thái: **Technical Refactor Complete** | **Ads Integrated**
 
 ## 1) Chuẩn bị về mặt Kỹ thuật (Technical Readiness)
-Trước khi tạo bản build chính thức, cần hoàn thiện các bước sau:
+Hệ thống đã được tối ưu hóa hiệu năng (Refactor 60 FPS) và tích hợp AdMob. Cần thực hiện thêm:
 
-- **Versioning**: Cập nhật `versionCode` và `versionName` trong `app/build.gradle.kts` cho mỗi lần release.
-- **Signing**: Tạo tệp `keystore` (jks) bí mật để ký ứng dụng. Tuyệt đối không làm mất tệp này.
-- **ProGuard/R8**: Cấu hình tệp `proguard-rules.pro` để thu nhỏ mã nguồn (shrink) và bảo mật mã (obfuscate), giúp giảm dung lượng tệp APK/AAB.
-- **App Bundle (AAB)**: Xuất tệp định dạng `.aab` thay vì `.apk` để Google Play tự động tối ưu hóa dung lượng cho từng loại thiết bị.
+- **Thay thế Ad IDs**: Chuyển từ Test IDs sang Production IDs (Banner, Interstitial, Rewarded) lấy từ dashboard AdMob.
+- **Firebase Integration**: 
+    - Tích hợp `Google Analytics` để theo dõi tỷ lệ người chơi kẹt ở level nào.
+    - Tích hợp `Crashlytics` để nhận báo cáo lỗi tự động từ thiết bị người dùng.
+- **SDK Update**: Nâng `compileSdk` và `targetSdk` từ 34 lên **35** để tuân thủ yêu cầu mới nhất của Google Play (áp dụng từ tháng 8/2024).
+- **ProGuard/R8**: Kích hoạt `isMinifyEnabled = true` trong `build.gradle` để bảo mật thuật toán `Reverse Shuffle`.
 
 ## 2) Tài liệu và Chính sách (Legal & Compliance)
-- **Privacy Policy**: Tạo trang web chính sách bảo mật (bắt buộc).
-- **Data Safety**: Khai báo các loại dữ liệu ứng dụng thu thập (với Ads AdMob, cần khai báo thu thập ID quảng cáo).
-- **Content Rating**: Hoàn thành bảng câu hỏi khảo sát độ tuổi (IARC) trong Google Play Console.
+- **Privacy Policy**: Nội dung phải nêu rõ ứng dụng sử dụng ID quảng cáo của Google.
+- **Data Safety Form**: Khai báo thu thập:
+    - *Device or other IDs* (cho Quảng cáo).
+    - *App interactions* (cho Analytics).
+    - *Crash logs* (cho Crashlytics).
 
 ## 3) Chuẩn bị Store Listing (Marketing Assets)
-Giao diện trên Store quyết định người dùng có tải game hay không.
-
-- **App Name & Description**: 
-    - Tên game (dưới 30 ký tự) chứa từ khóa chính (ví dụ: Color Sort Puzzle).
-    - Mô tả ngắn (80 ký tự) và mô tả dài hấp dẫn.
+- **App Name**: Gợi ý: "Fruit Sort Puzzle: 1000+ Levels" hoặc "Color Water Sort: Fruit Edition".
 - **Graphic Assets**:
-    - **Icon**: 512x512 px (định dạng 32-bit PNG).
-    - **Feature Graphic**: 1024x500 px (ảnh bìa làm nổi bật lối chơi).
-    - **Screenshots**: Ít nhất 4 ảnh chụp màn hình điện thoại (nên có text hướng dẫn trên ảnh).
-- **Video Trailer**: Video ngắn 15-30s giới thiệu gameplay mượt mà.
+    - **Icon**: Thiết kế dựa trên 16 loại trái cây mới (🍏, 🍓, 🍇...).
+    - **Screenshots**: Cần chụp ảnh ở Level 1 (Dễ), Level 80 (Mạng nhện) và Level 120 (Băng) để thể hiện sự đa dạng.
+- **Feature Graphic**: Ảnh 1024x500 làm nổi bật hiệu ứng 16 màu rực rỡ.
 
 ## 4) Các giai đoạn Thử nghiệm (Testing Phases)
-Google Play yêu cầu thử nghiệm trước khi cho phép release công khai:
+Google yêu cầu quy trình nghiêm ngặt cho tài khoản cá nhân:
+1. **Internal Test**: Gửi link cho bạn bè/người thân (tối đa 100 người).
+2. **Closed Test (Bắt buộc)**: Mời **20 người dùng** trải nghiệm liên tục trong **14 ngày**. Ứng dụng chỉ được duyệt lên Production sau khi hoàn thành bước này.
 
-1.  **Internal Testing**: Gửi cho tối đa 100 người trong đội ngũ phát triển.
-2.  **Closed Testing (Alpha)**: Yêu cầu tối thiểu 20 người dùng thử nghiệm liên tục trong 14 ngày (quy định mới của Google cho tài khoản cá nhân).
-3.  **Open Testing (Beta)**: Cho phép người dùng bất kỳ đăng ký tham gia dùng thử trên Store.
+## 5) Danh sách việc cần làm ngay (Action Items)
+- [x] Refactor UI Performance (View Reuse & Drawable Caching).
+- [x] Tích hợp AdMob SDK & Banner Ad.
+- [ ] Cấu hình Firebase Project và tải tệp `google-services.json`.
+- [ ] Nâng `targetSdk` lên 35 trong `app/build.gradle.kts`.
+- [ ] Thiết kế Graphic Assets (Icon, Feature Graphic).
+- [ ] Đăng ký tài khoản Google Play Console ($25 phí một lần).
 
-## 5) Chiến lược Phát hành (Rollout Strategy)
-- **Production Stage**: Sau khi vượt qua vòng kiểm duyệt và thử nghiệm.
-- **Staged Rollout**: Phát hành dần dần (ví dụ: 10% người dùng -> 50% -> 100%) để theo dõi lỗi phát sinh trên các dòng máy lạ.
-
-## 6) Theo dõi sau khi Phát hành (Post-Launch)
-- **Google Play Console**: Theo dõi tỷ lệ crash (ANR) và đánh giá của người dùng.
-- **Firebase Analytics**: Xem người dùng thường bị kẹt ở level nào để điều chỉnh lại `LevelOneEngine`.
-- **AdMob Dashboard**: Theo dõi doanh thu từ Banner và Interstitial Ads.
-
-## 🛠️ Danh sách việc cần làm ngay (Action Items)
-- [ ] Chỉnh `compileSdk` và `targetSdk` lên phiên bản mới nhất (hiện tại là 34 hoặc 35).
-- [ ] Thiết kế Icon và 4 ảnh chụp màn hình (Level 1, Level 20, Level 100).
-- [ ] Tạo tệp Keystore an toàn.
+---
+*Lưu ý: Thuật toán Reverse Shuffle hiện tại đảm bảo 100% win, giúp giảm tỷ lệ người dùng bỏ game (Churn rate) ở các màn khó.*
