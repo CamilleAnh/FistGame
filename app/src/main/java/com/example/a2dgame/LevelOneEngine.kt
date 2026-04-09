@@ -210,7 +210,6 @@ class LevelOneEngine(val levelId: Int = 1) {
             if (canMove(src, clicked)) {
                 executeMove(src, clicked)
                 selectedTubeIndex = null
-                checkWinLoss()
                 return true
             }
             selectedTubeIndex = if (!clicked.isEmpty() && !clicked.isFrozen) index else null
@@ -218,10 +217,10 @@ class LevelOneEngine(val levelId: Int = 1) {
         return false
     }
 
-    private fun canMove(s: Tube, d: Tube) = !s.isEmpty() && d.blocks.size < d.capacity && 
+    fun canMove(s: Tube, d: Tube) = !s.isEmpty() && d.blocks.size < d.capacity && 
             (d.isEmpty() || d.peekColor() == s.peekColor()) && (s.blocks.size - 1) >= s.hiddenLayers
 
-    private fun executeMove(s: Tube, d: Tube) {
+    fun executeMove(s: Tube, d: Tube) {
         val color = s.peekColor()
         val originalHiddenLimit = s.hiddenLayers 
 
@@ -248,23 +247,30 @@ class LevelOneEngine(val levelId: Int = 1) {
         return true
     }
 
-    private fun checkWinLoss() {
-        tubes.filter { it.isComplete() }.forEach { tube ->
-            val color = tube.blocks[0]
-            val bag = boxSlots.find { it.targetColor == color && it.remaining() > 0 }
-            if (bag != null) {
-                bag.filled++
-                tube.isArchived = true
-                tube.blocks.clear()
-                completedTubesCount++
-                tubes.forEach { it.isLockedByChain = false }
-                if (bag.remaining() <= 0) replaceBag(bag.id)
-            } else if (!isBagMechanismEnabled) {
-                tube.isArchived = true
-                tube.blocks.clear()
-                completedTubesCount++
-            }
+    fun findCompletedTubes(): List<Int> {
+        return tubes.filter { it.isComplete() && !it.isArchived }.map { it.id }
+    }
+
+    fun archiveTube(id: Int) {
+        val tube = tubes.find { it.id == id } ?: return
+        if (tube.isArchived) return
+        
+        val color = if (tube.blocks.isNotEmpty()) tube.blocks[0] else ColorId.EMPTY
+        
+        val bag = boxSlots.find { it.targetColor == color && it.remaining() > 0 }
+        if (bag != null) {
+            bag.filled++
+            tube.isArchived = true
+            tube.blocks.clear()
+            completedTubesCount++
+            tubes.forEach { it.isLockedByChain = false }
+            if (bag.remaining() <= 0) replaceBag(bag.id)
+        } else if (!isBagMechanismEnabled) {
+            tube.isArchived = true
+            tube.blocks.clear()
+            completedTubesCount++
         }
+
         if (completedTubesCount >= totalFullTubesCount) {
             isGameOver = true
             isWin = true
@@ -277,7 +283,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         val other = if (boxSlots.size > 1) boxSlots[1 - idx].targetColor else null
         val pool = onBoard.filter { it != other }
         if (pool.isNotEmpty()) boxSlots[idx] = createBox(id, pool.shuffled(random).first())
-        else boxSlots.removeAt(idx)
+        else if (idx != -1) boxSlots.removeAt(idx)
     }
 
     fun getTubes() = tubes

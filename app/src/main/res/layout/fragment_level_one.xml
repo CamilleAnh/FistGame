@@ -23,6 +23,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageButton
+        android:id="@+id/btn_settings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_manage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#FFFFFF" />
+
     <TextView
         android:id="@+id/tv_instruction"
         android:layout_width="0dp"
@@ -170,5 +182,11 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Settings Overlay -->
+    <include
+        android:id="@+id/layout_settings"
+        layout="@layout/dialog_settings"
+        android:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

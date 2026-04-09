@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Nền hộp giấy (Màu Carton) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#D2B48C" /> <!-- Tan -->
+            <corners android:radius="2dp" />
+            <stroke android:width="1dp" android:color="#A0522D" />
+        </shape>
+    </item>
+
+    <!-- Đường băng keo hoặc vân giấy -->
+    <item android:top="8dp" android:bottom="8dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#C19A6B" />
+            <alpha android:alpha="0.3" />
+        </shape>
+    </item>
+
+    <!-- Nhãn dán màu trắng -->
+    <item android:left="6dp" android:right="6dp" android:top="6dp" android:bottom="6dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="1dp" />
+            <stroke android:width="0.5dp" android:color="#DDDDDD" />
+        </shape>
+    </item>
+</layer-list>
