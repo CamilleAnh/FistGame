@@ -7,6 +7,7 @@
     android:layout_margin="4dp"
     android:clickable="true"
     android:focusable="true"
+    android:duplicateParentState="false"
     android:background="@drawable/level_item_unlocked">
 
     <TextView

@@ -28,6 +28,13 @@
         <action
             android:id="@+id/action_FirstFragment_to_SecondFragment"
             app:destination="@id/SecondFragment" />
+        <action
+            android:id="@+id/action_FirstFragment_to_ShopFragment"
+            app:destination="@id/ShopFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
     <fragment
         android:id="@+id/SecondFragment"
@@ -55,4 +62,11 @@
             android:id="@+id/action_LevelOneFragment_self"
             app:destination="@id/LevelOneFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/ShopFragment"
+        android:name="com.example.a2dgame.ShopFragment"
+        android:label="Shop"
+        tools:layout="@layout/fragment_shop" />
+
 </navigation>

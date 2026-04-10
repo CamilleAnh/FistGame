@@ -35,8 +35,18 @@ class FirstFragment : Fragment() {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
 
+        binding.btnShop.setOnClickListener {
+            findNavController().navigate(R.id.action_FirstFragment_to_ShopFragment)
+        }
+
         setupSettings()
         startBgMusic()
+        updateGoldDisplay()
+    }
+
+    private fun updateGoldDisplay() {
+        val gold = GoldManager.getGold(requireContext())
+        binding.tvHomeGold.text = getString(R.string.gold_display_format, gold)
     }
 
     private fun startBgMusic() {
@@ -145,6 +155,7 @@ class FirstFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         startBgMusic()
+        updateGoldDisplay()
     }
 
     override fun onPause() {

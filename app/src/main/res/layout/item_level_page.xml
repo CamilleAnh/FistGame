@@ -7,4 +7,5 @@
     android:columnCount="4"
     android:rowCount="5"
     android:useDefaultMargins="true"
+    android:addStatesFromChildren="false"
     android:padding="8dp" />

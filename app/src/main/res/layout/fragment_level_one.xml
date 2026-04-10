@@ -23,6 +23,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Gold display (top-left, nhỏ gọn) -->
+    <TextView
+        android:id="@+id/tv_game_gold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:text="🪙 0"
+        android:textColor="#FFD54F"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:background="#44000000"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <ImageButton
         android:id="@+id/btn_settings"
         android:layout_width="48dp"
@@ -258,6 +277,14 @@
     <include
         android:id="@+id/layout_settings"
         layout="@layout/dialog_settings"
+        android:visibility="gone" />
+
+    <!-- Win Dialog Overlay -->
+    <include
+        android:id="@+id/layout_win_dialog"
+        layout="@layout/dialog_win"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

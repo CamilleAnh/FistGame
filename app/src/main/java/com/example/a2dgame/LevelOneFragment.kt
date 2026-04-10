@@ -50,11 +50,14 @@ class LevelOneFragment : Fragment() {
     private lateinit var engine: LevelOneEngine
     private var soundManager: SoundManager? = null
 
-    // Power-up sử dụng (1 lượt / màn)
+    // Power-up: free 1-lượt/màn + inventory từ Shop
     private var powerupReroll    = 1
     private var powerupMagnify   = 1
     private var powerupReshuffle = 1
     private var isMagnifyMode    = false
+
+    // Win Dialog state
+    private var isWinDialogShowing = false
 
     private val wiggleAnimators = mutableMapOf<View, Animator>()
     private var isAnimating = false
@@ -109,6 +112,12 @@ class LevelOneFragment : Fragment() {
 
         setupSettings()
         setupPowerups()
+        updateGoldDisplay()
+    }
+
+    private fun updateGoldDisplay() {
+        val gold = GoldManager.getGold(requireContext())
+        binding.tvGameGold.text = getString(R.string.gold_display_format, gold)
     }
 
     private fun setupSettings() {
@@ -211,12 +220,20 @@ class LevelOneFragment : Fragment() {
     // ===== POWER-UPS =====
 
     private fun setupPowerups() {
+        // Lấy inventory từ GoldManager cộng vào free 1-lượt
+        val ctx = requireContext()
+        powerupReroll    = 1 + GoldManager.getRerollCount(ctx)
+        powerupMagnify   = 1 + GoldManager.getRevealCount(ctx)
+        powerupReshuffle = 1 + GoldManager.getShuffleCount(ctx)
+
         updatePowerupButtons()
 
         // 🎲 Roll túi ngẫu nhiên
         binding.btnRerollBags.setOnClickListener {
             if (powerupReroll <= 0 || isAnimating) return@setOnClickListener
             powerupReroll--
+            // Nếu còn dùng hết free thì trừ inventory
+            if (powerupReroll >= 1) GoldManager.useReroll(requireContext())
             engine.rerollBags()
             engine.archiveAllReady()
             soundManager?.play("pickup")
@@ -224,7 +241,7 @@ class LevelOneFragment : Fragment() {
             renderBoard()
         }
 
-        // 🔍 Kính lúp – bật/tắt chế độ chọn thùng để lộ ẩn
+        // 🔍 Kính lúp – bật/tắt chế độ chọn hộp để lộ ẩn
         binding.btnMagnify.setOnClickListener {
             if (powerupMagnify <= 0 || isAnimating) return@setOnClickListener
             isMagnifyMode = !isMagnifyMode
@@ -237,7 +254,8 @@ class LevelOneFragment : Fragment() {
         binding.btnReshuffle.setOnClickListener {
             if (powerupReshuffle <= 0 || isAnimating) return@setOnClickListener
             powerupReshuffle--
-            engine.shuffleAllTubes()
+            if (powerupReshuffle >= 1) GoldManager.useShuffle(requireContext())
+            engine.shuffleAllBoxes()
             soundManager?.play("move")
             updatePowerupButtons()
             renderBoard()
@@ -267,8 +285,8 @@ class LevelOneFragment : Fragment() {
         wiggleAnimators.clear()
         
         binding.glGameBoard.removeAllViews()
-        val tubes = engine.getTubes()
-        val activeTubes = tubes.filter { !it.isArchived }
+        val boxes = engine.getBoxes()
+        val activeBoxes = boxes.filter { !it.isArchived }
         
         val cols = 4 
         binding.glGameBoard.columnCount = cols
@@ -276,9 +294,9 @@ class LevelOneFragment : Fragment() {
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
         val horizontalPadding = (80 * displayMetrics.density).toInt()
-        val tubeWidth = (screenWidth - horizontalPadding) / cols
-        val blockHeight = (tubeWidth * 0.52).toInt()
-        val tubeHeight = (blockHeight * 4) + (16 * displayMetrics.density).toInt()
+        val boxWidth = (screenWidth - horizontalPadding) / cols
+        val blockHeight = (boxWidth * 0.52).toInt()
+        val boxHeight = (blockHeight * 4) + (16 * displayMetrics.density).toInt()
 
         // Reset cả 2 ô trước khi vẽ lại tránh hiện thị cũ
         binding.tvBoxA.visibility = View.GONE
@@ -286,29 +304,29 @@ class LevelOneFragment : Fragment() {
         binding.llBoxes.isVisible = engine.isBagMechanismEnabled
 
         if (engine.isBagMechanismEnabled) {
-            val boxes = engine.getBoxSlots()
-            boxes.getOrNull(0)?.let { box ->
+            val slots = engine.getBoxSlots()
+            slots.getOrNull(0)?.let { box ->
                 binding.tvBoxA.visibility = View.VISIBLE
                 updateBoxUI(binding.tvBoxA, box)
             }
-            boxes.getOrNull(1)?.let { box ->
+            slots.getOrNull(1)?.let { box ->
                 binding.tvBoxB.visibility = View.VISIBLE
                 updateBoxUI(binding.tvBoxB, box)
             }
         }
 
-        activeTubes.forEach { tube ->
-            val tubeContainer = FrameLayout(requireContext()).apply {
-                tag = tube.id
+        activeBoxes.forEach { box ->
+            val boxContainer = FrameLayout(requireContext()).apply {
+                tag = box.id
                 layoutParams = GridLayout.LayoutParams().apply {
-                    width = tubeWidth
-                    height = tubeHeight
+                    width = boxWidth
+                    height = boxHeight
                     setMargins(10, 6, 10, 6)
                 }
-                setOnClickListener { handleTubeTap(tube.id) }
+                setOnClickListener { handleBoxTap(box.id) }
             }
 
-            val tubeLayout = LinearLayout(context).apply {
+            val boxLayout = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.BOTTOM
                 clipChildren = false
@@ -317,8 +335,8 @@ class LevelOneFragment : Fragment() {
                 background = ContextCompat.getDrawable(context, R.drawable.carton_box_bg)
             }
 
-            tube.blocks.forEachIndexed { i, fruit ->
-                val isHidden = i < tube.hiddenLayers
+            box.blocks.forEachIndexed { i, fruit ->
+                val isHidden = i < box.hiddenLayers
                 val blockView = FrameLayout(requireContext()).apply {
                     layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply {
                         setMargins(3, -2, 3, 0)
@@ -341,88 +359,105 @@ class LevelOneFragment : Fragment() {
                         setTextColor(if (isHidden) Color.WHITE else Color.BLACK)
                     })
                 }
-                tubeLayout.addView(blockView, 0)
+                boxLayout.addView(blockView, 0)
             }
             
-            tubeContainer.addView(tubeLayout)
-            binding.glGameBoard.addView(tubeContainer)
+            boxContainer.addView(boxLayout)
+            binding.glGameBoard.addView(boxContainer)
             
-            if (engine.selectedTubeIndex == tube.id) {
-                animateSelection(tubeContainer, true)
+            if (engine.selectedBoxIndex == box.id) {
+                animateSelection(boxContainer, true)
             }
         }
         updateStatusUI()
     }
 
-    private fun handleTubeTap(index: Int) {
+    private fun handleBoxTap(index: Int) {
         if (isAnimating || engine.isGameOver) return
 
-        // 🔍 Kính lúp mode: tap vào thùng để lộ lớp ẩn
+        // 🔍 Kính lúp mode: tap vào hộp để lộ lớp ẩn
         if (isMagnifyMode) {
-            val tube = engine.getTubes().find { it.id == index }
-            if (tube != null && !tube.isArchived && tube.hiddenLayers > 0) {
+            val box = engine.getBoxes().find { it.id == index }
+            if (box != null && !box.isArchived && box.hiddenLayers > 0) {
                 powerupMagnify--
                 engine.revealHiddenLayers(index)
                 soundManager?.play("complete")
             }
-            // Thoát mode dù thùng có ẩn hay không
+            // Thoát mode dù hộp có ẩn hay không
             isMagnifyMode = false
             updatePowerupButtons()
             renderBoard()
             return
         }
 
-        val tubes = engine.getTubes()
-        val clickedTube = tubes.find { it.id == index } ?: return
-        val selectedIdx = engine.selectedTubeIndex
+        val boxes = engine.getBoxes()
+        val clickedBox = boxes.find { it.id == index } ?: return
+        val selectedIdx = engine.selectedBoxIndex
 
         if (selectedIdx == null) {
-            if (!clickedTube.isEmpty() && !clickedTube.isFrozen && !clickedTube.hasCobweb && !clickedTube.isComplete()) {
-                engine.selectedTubeIndex = index
+            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isComplete()) {
+                engine.selectedBoxIndex = index
                 soundManager?.play("pickup")
                 val view = binding.glGameBoard.findViewWithTag<View>(index)
                 animateSelection(view, true)
             }
         } else if (selectedIdx == index) {
-            engine.selectedTubeIndex = null
+            engine.selectedBoxIndex = null
             soundManager?.play("drop")
             val view = binding.glGameBoard.findViewWithTag<View>(index)
             animateSelection(view, false)
         } else {
-            val srcTube = tubes.find { it.id == selectedIdx }!!
-            if (engine.canMove(srcTube, clickedTube)) {
+            val srcBox = boxes.find { it.id == selectedIdx }!!
+            if (engine.canMove(srcBox, clickedBox)) {
                 animateMoveSequence(selectedIdx, index)
             } else {
                 val oldView = binding.glGameBoard.findViewWithTag<View>(selectedIdx)
                 animateSelection(oldView, false)
                 
-                if (!clickedTube.isEmpty() && !clickedTube.isFrozen && !clickedTube.hasCobweb && !clickedTube.isComplete()) {
-                    engine.selectedTubeIndex = index
+                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isComplete()) {
+                    engine.selectedBoxIndex = index
                     soundManager?.play("pickup")
                     val view = binding.glGameBoard.findViewWithTag<View>(index)
                     animateSelection(view, true)
                 } else {
-                    engine.selectedTubeIndex = null
+                    engine.selectedBoxIndex = null
                     soundManager?.play("drop")
                 }
             }
         }
     }
 
-    private fun animateSelection(tubeView: View?, isSelected: Boolean) {
-        val tubeLayout = (tubeView as? ViewGroup)?.getChildAt(0) as? ViewGroup ?: return
+    private fun animateSelection(boxView: View?, isSelected: Boolean) {
+        val boxLayout = (boxView as? ViewGroup)?.getChildAt(0) as? ViewGroup ?: return
         val density = resources.displayMetrics.density
-        val tubeId = tubeView.tag as Int
-        val tube = engine.getTubes().find { it.id == tubeId } ?: return
-        val color = tube.peekColor()
-        
-        for (i in 0 until tubeLayout.childCount) {
-            val block = tubeLayout.getChildAt(i)
-            val blockIndex = tubeLayout.childCount - 1 - i
+        val boxId = boxView.tag as Int
+        val box = engine.getBoxes().find { it.id == boxId } ?: return
+        val color = box.peekColor()
+
+        // Tính số block LIÊN TIẾP từ ĐỈNH stack có cùng màu (không tính block cùng màu nhưng không liên tiếp)
+        // blocks[blocks.size-1] = đỉnh, blocks[0] = đáy
+        var consecutiveCount = 0
+        for (idx in box.blocks.indices.reversed()) {
+            if (idx < box.hiddenLayers) break
+            if (box.blocks[idx] == color) consecutiveCount++
+            else break
+        }
+        // topStackRange: các blockIndex (trong blocks[]) thuộc top-stack liên tiếp
+        // blockIndex cao nhất = đỉnh = blocks.size-1
+        val topStackMinIndex = box.blocks.size - consecutiveCount
+
+        // boxLayout: getChildAt(0) = đỉnh stack (blocks[blocks.size-1])
+        //            getChildAt(childCount-1) = đáy stack (blocks[0])
+        // i trong loop → blockIndex trong blocks[] = blocks.size - 1 - i
+        for (i in 0 until boxLayout.childCount) {
+            val block = boxLayout.getChildAt(i)
+            // blockIndex là vị trí tương ứng trong blocks[]
+            val blockIndex = box.blocks.size - 1 - i
             
-            val isPartOfTopStack = blockIndex < tube.blocks.size && 
-                                   tube.blocks[blockIndex] == color &&
-                                   blockIndex >= tube.hiddenLayers
+            // Chỉ animate block nằm trong vùng liên tiếp từ đỉnh
+            val isPartOfTopStack = blockIndex >= 0 &&
+                                   blockIndex >= topStackMinIndex &&
+                                   blockIndex >= box.hiddenLayers
             
             if (isPartOfTopStack) {
                 if (isSelected) {
@@ -443,10 +478,20 @@ class LevelOneFragment : Fragment() {
                         .setDuration(200)
                         .start()
                 }
+            } else if (!isSelected) {
+                // Đảm bảo reset animation cho tất cả block (phòng trường hợp state cũ)
+                stopWiggle(block)
+                block.animate()
+                    .translationY(0f)
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(200)
+                    .start()
             }
         }
         
-        tubeView.animate()
+        // Scale boxLayout (inner) thay vì boxContainer để tránh overlap vùng touch
+        boxLayout.animate()
             .scaleX(if (isSelected) 1.05f else 1.0f)
             .scaleY(if (isSelected) 1.05f else 1.0f)
             .setDuration(200)
@@ -471,7 +516,7 @@ class LevelOneFragment : Fragment() {
 
     private fun animateMoveSequence(srcId: Int, dstId: Int) {
         isAnimating = true
-        engine.selectedTubeIndex = null
+        engine.selectedBoxIndex = null
         
         val srcView = binding.glGameBoard.findViewWithTag<ViewGroup>(srcId)
         val dstView = binding.glGameBoard.findViewWithTag<ViewGroup>(dstId)
@@ -484,16 +529,23 @@ class LevelOneFragment : Fragment() {
             return
         }
 
-        val srcTube = engine.getTubes().find { it.id == srcId }!!
-        val dstTube = engine.getTubes().find { it.id == dstId }!!
-        val color = srcTube.peekColor()
+        val srcBox = engine.getBoxes().find { it.id == srcId }!!
+        val dstBox = engine.getBoxes().find { it.id == dstId }!!
+        val color = srcBox.peekColor()
         
         val movingViews = mutableListOf<View>()
         for (i in 0 until srcLayout.childCount) {
             val block = srcLayout.getChildAt(i)
-            val idx = srcLayout.childCount - 1 - i
-            if (idx < srcTube.blocks.size && srcTube.blocks[idx] == color && idx >= srcTube.hiddenLayers && (dstTube.blocks.size + movingViews.size) < dstTube.capacity) {
+            // blockIndex trong blocks[]: getChildAt(0) = đỉnh = blocks[blocks.size-1]
+            val blockIndex = srcBox.blocks.size - 1 - i
+            if (blockIndex >= 0 &&
+                blockIndex >= srcBox.hiddenLayers &&
+                srcBox.blocks[blockIndex] == color &&
+                (dstBox.blocks.size + movingViews.size) < dstBox.capacity) {
                 movingViews.add(block)
+            } else if (blockIndex >= 0 && srcBox.blocks[blockIndex] != color) {
+                // Dừng ngay khi gặp block khác màu (chỉ lấy liên tiếp)
+                break
             }
         }
 
@@ -528,7 +580,7 @@ class LevelOneFragment : Fragment() {
             block.y = (blockLoc[1] - rootLoc[1]).toFloat()
             
             val targetX = (dstLoc[0] - rootLoc[0]).toFloat() + (dstView.width - originalWidth) / 2f
-            val targetSlotIndex = dstTube.blocks.size + (movingViews.size - 1 - index)
+            val targetSlotIndex = dstBox.blocks.size + (movingViews.size - 1 - index)
             val paddingBottom = 20 * density
             val overlapAdjustment = targetSlotIndex * 4 * density
             val targetY = (dstLoc[1] - rootLoc[1]).toFloat() + dstView.height - paddingBottom - (targetSlotIndex + 1) * originalHeight + overlapAdjustment
@@ -551,22 +603,22 @@ class LevelOneFragment : Fragment() {
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     movingViews.forEach { (binding.root as ViewGroup).removeView(it) }
-                    engine.executeMove(srcTube, dstTube)
+                    engine.executeMove(srcBox, dstBox)
                     
-                    if (dstTube.isComplete()) {
+                    if (dstBox.isComplete()) {
                         renderBoard()
                         val newDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
                         if (newDstView != null) {
                             playCompletionAnimation(newDstView, dstId)
                         } else {
-                            engine.archiveTube(dstId)
+                            engine.archiveBox(dstId)
                             engine.archiveAllReady() // cascade
                             renderBoard()
                             checkGameResults()
                             isAnimating = false
                         }
                     } else {
-                        engine.archiveAllReady() // archive các ống đầy khớp túi dù dst chưa đầy
+                        engine.archiveAllReady() // archive các hộp đầy khớp túi dù dst chưa đầy
                         soundManager?.play("drop")
                         renderBoard()
                         val updatedDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
@@ -578,10 +630,12 @@ class LevelOneFragment : Fragment() {
             })
             start()
         }
-        srcView.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+        // Reset scale trên boxLayout bên trong (không phải srcView container)
+        val srcBoxLayout = srcView.getChildAt(0)
+        srcBoxLayout?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.setDuration(200)?.start()
     }
 
-    private fun playCompletionAnimation(view: View, tubeId: Int) {
+    private fun playCompletionAnimation(view: View, boxId: Int) {
         view.post {
             val density = resources.displayMetrics.density
             val width = view.width
@@ -663,8 +717,8 @@ class LevelOneFragment : Fragment() {
                         view.foreground = null
                         (view as? ViewGroup)?.removeView(shineView)
                         (view as? ViewGroup)?.removeView(checkmark)
-                        engine.archiveTube(tubeId)
-                        engine.archiveAllReady() // cascade: archive các ống khác đã sẵn sàng
+                        engine.archiveBox(boxId)
+                        engine.archiveAllReady() // cascade: archive các hộp khác đã sẵn sàng
                         renderBoard()
                         checkGameResults()
                         isAnimating = false
@@ -736,11 +790,72 @@ class LevelOneFragment : Fragment() {
 
     private fun checkGameResults() {
         if (engine.isWin) {
-            Toast.makeText(context, "Level Complete!", Toast.LENGTH_LONG).show()
-            binding.btnNextLevel.isVisible = true
+            showWinDialog()
         } else if (engine.isGameOver) {
-            Toast.makeText(context, "No more moves!", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, getString(R.string.game_over_toast), Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun showWinDialog() {
+        if (isWinDialogShowing) return
+        isWinDialogShowing = true
+        val levelId = args.levelId
+
+        val dialog = binding.layoutWinDialog
+        val dialogRoot = dialog.root
+        val winCard = dialog.winCard
+
+        // Set subtitle
+        dialog.tvWinSubtitle.text = getString(R.string.win_dialog_subtitle, levelId)
+
+        // Animate in
+        dialogRoot.visibility = View.VISIBLE
+        dialogRoot.alpha = 0f
+        winCard.scaleX = 0.5f
+        winCard.scaleY = 0.5f
+        dialogRoot.animate().alpha(1f).setDuration(200).start()
+        winCard.animate()
+            .scaleX(1f).scaleY(1f)
+            .setDuration(400)
+            .setInterpolator(android.view.animation.OvershootInterpolator())
+            .start()
+
+        // Nút Nhận 50 Vàng
+        dialog.btnWinTake50.setOnClickListener {
+            GoldManager.addGold(requireContext(), GoldManager.REWARD_BASE)
+            updateGoldDisplay()
+            dismissWinDialogAndProceed()
+        }
+
+        // Nút Xem Video x3 (150 Vàng – mock delay 2s)
+        dialog.btnWinWatchX3.setOnClickListener {
+            dialog.btnWinWatchX3.isEnabled = false
+            dialog.btnWinTake50.isEnabled = false
+            dialog.pbWinLoading.visibility = View.VISIBLE
+            dialog.btnWinWatchX3.text = getString(R.string.win_dialog_watching)
+
+            // Mock xem ads: delay 2 giây
+            binding.root.postDelayed({
+                if (_binding == null) return@postDelayed
+                GoldManager.addGold(requireContext(), GoldManager.REWARD_X3)
+                updateGoldDisplay()
+                dialog.pbWinLoading.visibility = View.GONE
+                // Hiện số vàng nhận được
+                dialog.tvWinSubtitle.text = getString(R.string.gold_added_format, GoldManager.REWARD_X3)
+                binding.root.postDelayed({ dismissWinDialogAndProceed() }, 800)
+            }, 2000)
+        }
+
+        // Nút Chơi tiếp (không nhận thưởng)
+        dialog.btnWinContinue.setOnClickListener {
+            dismissWinDialogAndProceed()
+        }
+    }
+
+    private fun dismissWinDialogAndProceed() {
+        isWinDialogShowing = false
+        binding.layoutWinDialog.root.visibility = View.GONE
+        binding.btnNextLevel.isVisible = true
     }
 
     private fun updateStatusUI() {

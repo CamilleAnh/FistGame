@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Win Dialog Overlay – hiện khi người chơi thắng màn -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#CC000000"
+    android:clickable="true"
+    android:focusable="true">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/win_card"
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="24dp"
+        app:cardBackgroundColor="#1A1A2E"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="16dp">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="24dp"
+            android:paddingTop="28dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="24dp">
+
+            <!-- Stars decoration top -->
+            <TextView
+                android:id="@+id/tv_win_stars"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⭐ ⭐ ⭐"
+                android:textSize="28sp"
+                android:letterSpacing="0.15"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Title -->
+            <TextView
+                android:id="@+id/tv_win_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/win_dialog_title"
+                android:textColor="#FFD54F"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:shadowColor="#000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="3"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_win_stars" />
+
+            <!-- Subtitle (màn X hoàn thành) -->
+            <TextView
+                android:id="@+id/tv_win_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Màn ? hoàn thành!"
+                android:textColor="#AAFFFFFF"
+                android:textSize="15sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_win_title" />
+
+            <!-- Divider -->
+            <View
+                android:id="@+id/win_divider"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:background="#33FFFFFF"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_win_subtitle" />
+
+            <!-- Label thưởng -->
+            <TextView
+                android:id="@+id/tv_win_reward_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Chọn phần thưởng:"
+                android:textColor="#CCFFFFFF"
+                android:textSize="13sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/win_divider" />
+
+            <!-- Nút Nhận 50 Vàng (nhỏ, xám) -->
+            <Button
+                android:id="@+id/btn_win_take_50"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="6dp"
+                android:text="@string/win_dialog_take_50"
+                android:textAllCaps="false"
+                android:textColor="#BBFFFFFF"
+                android:textSize="13sp"
+                android:backgroundTint="#44FFFFFF"
+                android:stateListAnimator="@null"
+                android:elevation="4dp"
+                app:layout_constraintEnd_toStartOf="@+id/btn_win_watch_x3"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_win_reward_label" />
+
+            <!-- Nút Xem Video x3 (to, vàng rực) -->
+            <Button
+                android:id="@+id/btn_win_watch_x3"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="6dp"
+                android:text="▶ x3\n+150 🪙"
+                android:textAllCaps="false"
+                android:textColor="#1A1A2E"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:backgroundTint="#FFD54F"
+                android:stateListAnimator="@null"
+                android:elevation="6dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/btn_win_take_50"
+                app:layout_constraintTop_toBottomOf="@id/tv_win_reward_label" />
+
+            <!-- Loading indicator (ẩn lúc đầu, hiện khi đang xem ads) -->
+            <ProgressBar
+                android:id="@+id/pb_win_loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btn_win_watch_x3" />
+
+            <!-- Nút CHƠI TIẾP -->
+            <Button
+                android:id="@+id/btn_win_continue"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="12dp"
+                android:text="@string/win_dialog_continue"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:backgroundTint="#2E7D32"
+                android:stateListAnimator="@null"
+                android:elevation="6dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/pb_win_loading" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+</FrameLayout>

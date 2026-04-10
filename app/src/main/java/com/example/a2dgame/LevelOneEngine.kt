@@ -4,8 +4,8 @@ import java.util.Stack
 import kotlin.random.Random
 
 /**
- * Engine xử lý logic 1000 Level.
- * Đảm bảo: 100% thắng, fill đầy 4 khối cho mỗi ống, quản lý ống trống chuẩn xác.
+ * Engine xử lý logic Xếp Hộp Trái Cây (1000 Level).
+ * Đảm bảo: 100% thắng, fill đầy 4 trái cho mỗi hộp, quản lý thùng đóng gói chuẩn xác.
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
@@ -15,7 +15,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         PEACH("#FFAB91", "ĐÀO", "🍑"), MANGO("#FF9800", "XOÀI", "🥭"),
         GRAPE("#AB47BC", "NHO", "🍇"), WATERMELON("#EF5350", "DƯA", "🍉"), 
         PINEAPPLE("#FFEE58", "DỨA", "🍍"), BLUEBERRY("#5C6BC0", "VIỆT", "🫐"), 
-        PEAR("#D4E157", "LÊ", "🍐"), COCONUT("#795548", "DỪA", "🥥"),
+        PEAR("#D4E157", "LÊ", "🍐"), COCONUT("#795548", "DƯA", "🥥"),
         KIWI("#9CCC65", "KIWI", "🥝"), CHERRY("#F44336", "ANH ĐÀO", "🍒"), 
         LEMON("#FFF176", "CHANH", "🍋"), AVOCADO("#99CC33", "BƠ", "🥑"),
         EMPTY("#333333", "TRỐNG", "");
@@ -25,7 +25,10 @@ class LevelOneEngine(val levelId: Int = 1) {
         }
     }
 
-    data class Tube(
+    /**
+     * Đại diện cho một hộp trái cây trên bàn chơi (trước đây gọi là Tube).
+     */
+    data class Box(
         val id: Int,
         var capacity: Int = 4,
         val blocks: Stack<ColorId> = Stack(),
@@ -48,6 +51,9 @@ class LevelOneEngine(val levelId: Int = 1) {
         }
     }
 
+    /**
+     * Thùng đóng gói mục tiêu (Bags/BoxSlots).
+     */
     data class BoxSlot(
         val id: Int,
         var targetColor: ColorId,
@@ -59,15 +65,15 @@ class LevelOneEngine(val levelId: Int = 1) {
         fun getName() = "THÙNG ${targetColor.displayName}"
     }
 
-    private val tubes = mutableListOf<Tube>()
+    private val boxes = mutableListOf<Box>()
     private val boxSlots = mutableListOf<BoxSlot>()
     private val random = Random(levelId.toLong())
     
-    private var completedTubesCount = 0
-    private var totalFullTubesCount = 0
+    private var completedBoxesCount = 0
+    private var totalFullBoxesCount = 0
     private var colorsUsed = listOf<ColorId>()
     
-    var selectedTubeIndex: Int? = null
+    var selectedBoxIndex: Int? = null
     var isGameOver = false
     var isWin = false
     var isBagMechanismEnabled = false
@@ -84,89 +90,74 @@ class LevelOneEngine(val levelId: Int = 1) {
             else -> 16
         }
         
-        // Cơ chế trùng màu: level cao có thể có nhiều ống cùng màu (multiplier)
+        // Cơ chế trùng màu: level cao có thể có nhiều hộp cùng màu (multiplier)
         val multiplier = if (levelId < 100) 1.0 else 1.3
-        totalFullTubesCount = (numDistinctColors * multiplier).toInt()
+        totalFullBoxesCount = (numDistinctColors * multiplier).toInt()
         isBagMechanismEnabled = levelId >= 20
         
-        // Số ống trống: Duy trì ít nhất 3 ống để đảm bảo cửa thắng
-        val numEmptyTubes = if (levelId >= 500) 2 else 3
-        val totalTubesCount = totalFullTubesCount + numEmptyTubes
+        // Số hộp trống: Duy trì ít nhất 3 hộp để đảm bảo cửa thắng
+        val numEmptyBoxes = if (levelId >= 500) 2 else 3
+        val totalBoxesCount = totalFullBoxesCount + numEmptyBoxes
         
         val allAvailable = ColorId.allFruits.shuffled(random)
         colorsUsed = allAvailable.take(numDistinctColors)
 
-        tubes.clear()
-        repeat(totalTubesCount) { tubes.add(Tube(it)) }
+        boxes.clear()
+        repeat(totalBoxesCount) { boxes.add(Box(it)) }
 
-        // 2. Thuật toán tạo màn chơi ĐẢM BẢO FILL ĐẦY 4/4
-        generateFilledAndShuffledLevel(numDistinctColors, totalFullTubesCount)
+        // 2. Thuật toán Pool-Shuffle đúng chuẩn
+        generateFilledAndShuffledLevel(numDistinctColors, totalFullBoxesCount)
 
-        // 3. Cơ chế nâng cao cho level cực khó (Ống trung chuyển có sẵn khối lẻ)
+        // 3. Cơ chế nâng cao cho level cực khó
         if (levelId > 150) {
-            injectComplexityIntoEmptyTubes()
+            injectComplexityIntoEmptyBoxes()
         }
 
         // 4. Áp dụng chướng ngại vật
         if (levelId >= 20) {
-            tubes.filter { it.blocks.size >= 2 }.forEach { it.hiddenLayers = (it.blocks.size - 1).coerceAtMost(2) }
+            boxes.filter { it.blocks.size >= 2 }.forEach { it.hiddenLayers = (it.blocks.size - 1).coerceAtMost(2) }
         }
         if (levelId >= 80) {
-            val spiderCount = (totalFullTubesCount / 4).coerceAtLeast(1)
-            tubes.filter { it.blocks.isNotEmpty() }.shuffled(random).take(spiderCount).forEach { it.hasCobweb = true }
+            val spiderCount = (totalFullBoxesCount / 4).coerceAtLeast(1)
+            boxes.filter { it.blocks.isNotEmpty() }.shuffled(random).take(spiderCount).forEach { it.hasCobweb = true }
         }
         if (levelId >= 120) {
-            tubes.filter { it.blocks.isNotEmpty() && !it.hasCobweb }.shuffled(random).take(1).forEach { it.isFrozen = true }
+            boxes.filter { it.blocks.isNotEmpty() && !it.hasCobweb }.shuffled(random).take(1).forEach { it.isFrozen = true }
         }
         if (levelId >= 160) {
-            tubes.filter { it.blocks.isNotEmpty() && !it.hasCobweb && !it.isFrozen }.shuffled(random).take(1).forEach { it.isLockedByChain = true }
+            boxes.filter { it.blocks.isNotEmpty() && !it.hasCobweb && !it.isFrozen }.shuffled(random).take(1).forEach { it.isLockedByChain = true }
         }
 
-        completedTubesCount = 0
+        completedBoxesCount = 0
         if (isBagMechanismEnabled) setupInitialBags()
     }
 
-    /**
-     * Thuật toán Pool-Shuffle đúng chuẩn:
-     * - Tạo pool phẳng gồm TOÀN BỘ khối (mỗi màu x4 khối) rồi shuffle ngẫu nhiên
-     * - Phân phối đều lại vào từng ống (4 khối/ống)
-     * - Đảm bảo mọi vị trí – kể cả lớp ẩn – đều thực sự ngẫu nhiên
-     * - 100% solvable vì tổng số khối mỗi màu không đổi
-     */
     private fun generateFilledAndShuffledLevel(numColors: Int, totalFull: Int) {
-        // Bước 1: Tạo pool đầy đủ (mỗi màu 4 khối × số ống cần cho màu đó)
         val pool = mutableListOf<ColorId>()
         for (i in 0 until totalFull) {
             val color = colorsUsed[i % numColors]
             repeat(4) { pool.add(color) }
         }
 
-        // Bước 2: Shuffle toàn bộ pool (Fisher–Yates via Kotlin shuffle)
-        // Đảm bảo mọi vị trí kể cả đáy ống (hidden) đều thực sự ngẫu nhiên
         val shuffled = pool.shuffled(random).toMutableList()
 
-        // Bước 3: Phân phối pool đã shuffle vào các ống đầy (không đụng ống trống)
         var idx = 0
         for (i in 0 until totalFull) {
-            tubes[i].blocks.clear()
+            boxes[i].blocks.clear()
             repeat(4) {
-                tubes[i].blocks.push(shuffled[idx++])
+                boxes[i].blocks.push(shuffled[idx++])
             }
         }
     }
 
-    /**
-     * Tạo thêm độ khó bằng cách dời 1-2 khối từ ống đầy sang ống trống ban đầu.
-     */
-    private fun injectComplexityIntoEmptyTubes() {
-        val emptyTubes = tubes.filter { it.isEmpty() }
-        val fullTubes = tubes.filter { it.blocks.size == 4 }
+    private fun injectComplexityIntoEmptyBoxes() {
+        val emptyBoxes = boxes.filter { it.isEmpty() }
+        val fullBoxes = boxes.filter { it.blocks.size == 4 }
         
-        if (emptyTubes.isNotEmpty() && fullTubes.size >= 2) {
-            // Dời 2 khối ngẫu nhiên từ các ống đầy vào 1 ống trống
-            val targetEmpty = emptyTubes.random(random)
+        if (emptyBoxes.isNotEmpty() && fullBoxes.size >= 2) {
+            val targetEmpty = emptyBoxes.random(random)
             repeat(2) {
-                val src = tubes.filter { it.blocks.size > 2 }.random(random)
+                val src = boxes.filter { it.blocks.size > 2 }.random(random)
                 targetEmpty.blocks.push(src.blocks.pop())
             }
         }
@@ -174,7 +165,7 @@ class LevelOneEngine(val levelId: Int = 1) {
 
     private fun setupInitialBags() {
         boxSlots.clear()
-        val available = tubes.filter { !it.isEmpty() }.map { it.peekColor() }.distinct().filter { it != ColorId.EMPTY }
+        val available = boxes.filter { !it.isEmpty() }.map { it.peekColor() }.distinct().filter { it != ColorId.EMPTY }
         if (available.isNotEmpty()) {
             val p = available.shuffled(random)
             boxSlots.add(createBox(0, p[0]))
@@ -184,9 +175,9 @@ class LevelOneEngine(val levelId: Int = 1) {
 
     private fun createBox(id: Int, color: ColorId) = BoxSlot(id = id, targetColor = color, turnsLeft = 25)
 
-    fun handleTubeClick(index: Int): Boolean {
+    fun handleBoxClick(index: Int): Boolean {
         if (isGameOver) return false
-        val clicked = tubes.getOrNull(index) ?: return false
+        val clicked = boxes.getOrNull(index) ?: return false
         if (clicked.isArchived) return false
 
         if (clicked.hasCobweb) {
@@ -196,32 +187,32 @@ class LevelOneEngine(val levelId: Int = 1) {
 
         if (clicked.isLockedByChain || clicked.isComplete()) return false
 
-        val srcIdx = selectedTubeIndex
+        val srcIdx = selectedBoxIndex
         if (srcIdx == null) {
             if (!clicked.isEmpty() && !clicked.isFrozen && (clicked.blocks.size - 1) >= clicked.hiddenLayers) {
-                selectedTubeIndex = index
+                selectedBoxIndex = index
                 return true
             }
         } else {
             if (srcIdx == index) {
-                selectedTubeIndex = null
+                selectedBoxIndex = null
                 return true
             }
-            val src = tubes[srcIdx]
+            val src = boxes[srcIdx]
             if (canMove(src, clicked)) {
                 executeMove(src, clicked)
-                selectedTubeIndex = null
+                selectedBoxIndex = null
                 return true
             }
-            selectedTubeIndex = if (!clicked.isEmpty() && !clicked.isFrozen) index else null
+            selectedBoxIndex = if (!clicked.isEmpty() && !clicked.isFrozen) index else null
         }
         return false
     }
 
-    fun canMove(s: Tube, d: Tube) = !s.isEmpty() && d.blocks.size < d.capacity && 
+    fun canMove(s: Box, d: Box) = !s.isEmpty() && d.blocks.size < d.capacity && 
             (d.isEmpty() || d.peekColor() == s.peekColor()) && (s.blocks.size - 1) >= s.hiddenLayers
 
-    fun executeMove(s: Tube, d: Tube) {
+    fun executeMove(s: Box, d: Box) {
         val color = s.peekColor()
         val originalHiddenLimit = s.hiddenLayers 
 
@@ -248,31 +239,27 @@ class LevelOneEngine(val levelId: Int = 1) {
         return true
     }
 
-    fun findCompletedTubes(): List<Int> {
-        return tubes.filter { it.isComplete() && !it.isArchived }.map { it.id }
-    }
-
-    fun archiveTube(id: Int) {
-        val tube = tubes.find { it.id == id } ?: return
-        if (tube.isArchived) return
+    fun archiveBox(id: Int) {
+        val box = boxes.find { it.id == id } ?: return
+        if (box.isArchived) return
         
-        val color = if (tube.blocks.isNotEmpty()) tube.blocks[0] else ColorId.EMPTY
+        val color = if (box.blocks.isNotEmpty()) box.blocks[0] else ColorId.EMPTY
         
         val bag = boxSlots.find { it.targetColor == color && it.remaining() > 0 }
         if (bag != null) {
             bag.filled++
-            tube.isArchived = true
-            tube.blocks.clear()
-            completedTubesCount++
-            tubes.forEach { it.isLockedByChain = false }
+            box.isArchived = true
+            box.blocks.clear()
+            completedBoxesCount++
+            boxes.forEach { it.isLockedByChain = false }
             if (bag.remaining() <= 0) replaceBag(bag.id)
         } else if (!isBagMechanismEnabled) {
-            tube.isArchived = true
-            tube.blocks.clear()
-            completedTubesCount++
+            box.isArchived = true
+            box.blocks.clear()
+            completedBoxesCount++
         }
 
-        if (completedTubesCount >= totalFullTubesCount) {
+        if (completedBoxesCount >= totalFullBoxesCount) {
             isGameOver = true
             isWin = true
         }
@@ -283,8 +270,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         if (idx == -1) return
         val other = if (boxSlots.size > 1) boxSlots[1 - idx].targetColor else null
 
-        // Ư u tiên chọn màu của ống đã hoàn chỉnh nhưng chưa có túi khớp → giải phóng người chơi ngay
-        val completedWaiting = tubes
+        val completedWaiting = boxes
             .filter { !it.isArchived && it.isComplete() }
             .map { it.blocks[0] }
             .filter { it != other && boxSlots.none { b -> b.targetColor == it } }
@@ -293,30 +279,27 @@ class LevelOneEngine(val levelId: Int = 1) {
             return
         }
 
-        // Fallback: màu ngẫu nhiên từ board
-        val onBoard = tubes.filter { !it.isArchived && !it.isEmpty() }.flatMap { it.blocks }.distinct()
+        val onBoard = boxes.filter { !it.isArchived && !it.isEmpty() }.flatMap { it.blocks }.distinct()
         val pool = onBoard.filter { it != other }
         if (pool.isNotEmpty()) boxSlots[idx] = createBox(id, pool.shuffled(random).first())
         else boxSlots.removeAt(idx)
     }
 
     /**
-     * Quét tất cả ống hoàn chỉnh có túi khớp → archive dắy chuyền liên tục.
-     * Gọi sau mỗi nước đi để đảm bảo không có ống nào được xếp xong mà bị bỏ sót.
-     * Trả về danh sách ID đã được archive trong lần gọi này.
+     * Quét tất cả hộp hoàn chỉnh có túi khớp → archive liên tục.
      */
     fun archiveAllReady(): List<Int> {
         val archived = mutableListOf<Int>()
         var changed = true
         while (changed && !isGameOver) {
             changed = false
-            tubes.filter { !it.isArchived && it.isComplete() }.forEach { tube ->
-                val color = tube.blocks[0]
+            boxes.filter { !it.isArchived && it.isComplete() }.forEach { box ->
+                val color = box.blocks[0]
                 val canArchive = !isBagMechanismEnabled ||
                         boxSlots.any { it.targetColor == color && it.remaining() > 0 }
                 if (canArchive) {
-                    archiveTube(tube.id)
-                    archived.add(tube.id)
+                    archiveBox(box.id)
+                    archived.add(box.id)
                     changed = true
                 }
             }
@@ -324,40 +307,29 @@ class LevelOneEngine(val levelId: Int = 1) {
         return archived
     }
 
-    fun getTubes() = tubes
+    fun getBoxes() = boxes
     fun getBoxSlots() = boxSlots
-    fun getProgressText() = "Thu hoạch: $completedTubesCount/$totalFullTubesCount thùng"
+    fun getProgressText() = "Thu hoạch: $completedBoxesCount/$totalFullBoxesCount thùng"
 
     // ===== POWER-UPS =====
 
-    /**
-     * 🎲 Roll ngẫu nhiên túi.
-     * Ư u tiên theo xác suất hoàn thành từ cao → thấp:
-     *   1. Ống đã xếp xong hoàn toàn (isComplete) → archive ngay
-     *   2. Màu xuất hiữn nhiều nhất trên bàn (dễ hoàn chỉnh nhất)
-     *   3. Fallback: màu ngẫu nhiên còn lại
-     */
     fun rerollBags() {
         if (boxSlots.isEmpty()) return
 
-        // Priority 1: Ống đã hoàn chỉnh - archive ngay lập tức nếu roll được
-        val completedColors = tubes
+        val completedColors = boxes
             .filter { !it.isArchived && it.isComplete() }
             .map { it.blocks[0] }
             .distinct()
 
-        // Priority 2: Đếm tần suất màu trên toàn bàn (cả ẩn lẫn hiện)
-        // Màu có nhiều block nhất = dễ xếp xong nhất
-        val frequentColors = tubes
+        val frequentColors = boxes
             .filter { !it.isArchived }
             .flatMap { it.blocks.toList() }
             .filter { it != ColorId.EMPTY }
             .groupBy { it }
             .entries
-            .sortedByDescending { it.value.size } // Nhiều nhất trước
+            .sortedByDescending { it.value.size }
             .map { it.key }
 
-        // Gộp theo độ ưu tiên: complete âm → tần suất cao → còn lại
         val pool = (completedColors + frequentColors).distinct()
         if (pool.isEmpty()) return
 
@@ -370,38 +342,28 @@ class LevelOneEngine(val levelId: Int = 1) {
         }
     }
 
-    /**
-     * 🔍 Kính lúp: lộ toàn bộ lớp ẩn của 1 thùng được chọn.
-     */
-    fun revealHiddenLayers(tubeId: Int) {
-        val tube = tubes.find { it.id == tubeId } ?: return
-        if (!tube.isArchived) tube.hiddenLayers = 0
+    fun revealHiddenLayers(boxId: Int) {
+        val box = boxes.find { it.id == boxId } ?: return
+        if (!box.isArchived) box.hiddenLayers = 0
     }
 
-    /**
-     * 🔀 Xáo trộn lại: gom tất cả khối từ các ống chưa archive,
-     * shuffle Fisher-Yates rồi phân phối lại đều. GIỮ NGUYÊN số lớp ẩn gốc.
-     */
-    fun shuffleAllTubes() {
-        val activeTubes = tubes.filter { !it.isArchived }
-        val tubeSizes        = activeTubes.map { it.blocks.size }
-        // Lưu lại số lớp ẩn gốc trước khi clear
-        val tubeHiddenLayers = activeTubes.map { it.hiddenLayers }
+    fun shuffleAllBoxes() {
+        val activeBoxes = boxes.filter { !it.isArchived }
+        val boxSizes        = activeBoxes.map { it.blocks.size }
+        val boxHiddenLayers = activeBoxes.map { it.hiddenLayers }
 
-        val allBlocks = activeTubes
+        val allBlocks = activeBoxes
             .flatMap { it.blocks.toList() }
             .toMutableList()
             .also { it.shuffle(random) }
 
         var idx = 0
-        activeTubes.forEachIndexed { i, tube ->
-            tube.blocks.clear()
-            repeat(tubeSizes[i]) {
-                if (idx < allBlocks.size) tube.blocks.push(allBlocks[idx++])
+        activeBoxes.forEachIndexed { i, box ->
+            box.blocks.clear()
+            repeat(boxSizes[i]) {
+                if (idx < allBlocks.size) box.blocks.push(allBlocks[idx++])
             }
-            // Phục hồi đúcng số lớp ẩn gốc, đảm bảo không vượt quá số block hiện có
-            tube.hiddenLayers = minOf(tubeHiddenLayers[i], (tube.blocks.size - 1).coerceAtLeast(0))
+            box.hiddenLayers = minOf(boxHiddenLayers[i], (box.blocks.size - 1).coerceAtLeast(0))
         }
     }
 }
-

@@ -21,4 +21,32 @@
     <string name="instruction_bag">Màn %1$d: Đóng gói các ống màu vào túi để thắng.</string>
     <string name="progress_packed">Đã đóng gói: %1$d/%2$d ống</string>
     <string name="progress_completed">Hoàn thành: %1$d/%2$d màu</string>
+
+    <!-- Economy / Gold -->
+    <string name="gold_display_format">🪙 %1$d</string>
+    <string name="not_enough_gold">Không đủ vàng!</string>
+    <string name="gold_added_format">+%1$d 🪙 Vàng!</string>
+
+    <!-- Win Dialog -->
+    <string name="win_dialog_title">🎉 CHIẾN THẮNG! 🎉</string>
+    <string name="win_dialog_subtitle">Màn %1$d hoàn thành!</string>
+    <string name="win_dialog_take_50">Nhận 50 🪙</string>
+    <string name="win_dialog_watch_x3">▶ Xem Video\n+150 🪙 (x3)</string>
+    <string name="win_dialog_continue">CHƠI TIẾP →</string>
+    <string name="win_dialog_watching">Đang xem quảng cáo…</string>
+
+    <!-- Shop -->
+    <string name="shop_title">🛒 CỬA HÀNG</string>
+    <string name="shop_btn_buy">MUA</string>
+    <string name="shop_insufficient_gold">Không đủ vàng để mua!</string>
+    <string name="shop_purchase_success">Mua thành công!</string>
+    <string name="shop_item_reroll_name">🎲 Đổi Túi (Reroll)</string>
+    <string name="shop_item_reroll_desc">Đổi ngẫu nhiên màu mục tiêu của túi</string>
+    <string name="shop_item_reveal_name">🔍 Kính Lúp (Reveal)</string>
+    <string name="shop_item_reveal_desc">Lộ toàn bộ lớp ẩn (?) của 1 ống</string>
+    <string name="shop_item_shuffle_name">🔀 Xáo Trộn (Shuffle)</string>
+    <string name="shop_item_shuffle_desc">Xáo trộn ngẫu nhiên tất cả các ống</string>
+    <string name="shop_owned_format">Đang có: %1$d</string>
+    <string name="shop_price_format">%1$d 🪙</string>
+    <string name="powerup_empty_toast">Hết! Mua thêm ở Shop 🛒</string>
 </resources>
