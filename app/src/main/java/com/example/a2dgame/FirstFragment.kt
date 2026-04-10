@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.content.Context
-import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -20,7 +19,6 @@ class FirstFragment : Fragment() {
 
     private var _binding: FragmentFirstBinding? = null
     private val binding get() = _binding!!
-    private var bgMusic: MediaPlayer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -42,22 +40,11 @@ class FirstFragment : Fragment() {
     }
 
     private fun startBgMusic() {
-        val prefs = requireContext().getSharedPreferences("game_settings", Context.MODE_PRIVATE)
-        val isMusicOn = prefs.getBoolean("music_on", true)
-        
-        if (isMusicOn) {
-            if (bgMusic == null) {
-                bgMusic = MediaPlayer.create(requireContext(), R.raw.nhacnen)
-                bgMusic?.isLooping = true
-            }
-            if (bgMusic?.isPlaying == false) {
-                bgMusic?.start()
-            }
-        }
+        GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen)
     }
 
     private fun stopBgMusic() {
-        bgMusic?.pause()
+        GlobalMusicPlayer.pause()
     }
 
     private fun setupSettings() {
@@ -162,15 +149,12 @@ class FirstFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        // We might want to keep music playing if navigating to another fragment, 
-        // but for safety in this fragment:
-        // bgMusic?.pause() 
+        GlobalMusicPlayer.pause()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        bgMusic?.release()
-        bgMusic = null
+        // Không release ở đây – GlobalMusicPlayer quản lý lifecycle nhạc
         _binding = null
     }
 }

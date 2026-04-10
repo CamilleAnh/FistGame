@@ -10,7 +10,6 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.drawable.GradientDrawable
-import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -49,9 +48,13 @@ class LevelOneFragment : Fragment() {
     
     private val args: LevelOneFragmentArgs by navArgs()
     private lateinit var engine: LevelOneEngine
-    private var mediaPlayer: MediaPlayer? = null
     private var soundManager: SoundManager? = null
-    private var currentLevelId: Int = 1
+
+    // Power-up sử dụng (1 lượt / màn)
+    private var powerupReroll    = 1
+    private var powerupMagnify   = 1
+    private var powerupReshuffle = 1
+    private var isMagnifyMode    = false
 
     private val wiggleAnimators = mutableMapOf<View, Animator>()
     private var isAnimating = false
@@ -67,7 +70,6 @@ class LevelOneFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val levelId = args.levelId
-        currentLevelId = levelId
         engine = LevelOneEngine(levelId)
         soundManager = SoundManager(requireContext())
         
@@ -84,6 +86,12 @@ class LevelOneFragment : Fragment() {
         binding.btnReset.setOnClickListener {
             if (isAnimating) return@setOnClickListener
             engine = LevelOneEngine(levelId)
+            // Reset power-up counts
+            powerupReroll    = 1
+            powerupMagnify   = 1
+            powerupReshuffle = 1
+            isMagnifyMode    = false
+            updatePowerupButtons()
             renderBoard()
         }
 
@@ -100,6 +108,7 @@ class LevelOneFragment : Fragment() {
         }
 
         setupSettings()
+        setupPowerups()
     }
 
     private fun setupSettings() {
@@ -121,7 +130,7 @@ class LevelOneFragment : Fragment() {
 
         settingsBinding.switchMusic.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit { putBoolean("music_on", isChecked) }
-            if (isChecked) playBackgroundMusic() else mediaPlayer?.pause()
+            GlobalMusicPlayer.setEnabled(requireContext(), isChecked)
         }
         
         settingsBinding.switchSound.setOnCheckedChangeListener { _, isChecked ->
@@ -199,6 +208,60 @@ class LevelOneFragment : Fragment() {
         }
     }
 
+    // ===== POWER-UPS =====
+
+    private fun setupPowerups() {
+        updatePowerupButtons()
+
+        // 🎲 Roll túi ngẫu nhiên
+        binding.btnRerollBags.setOnClickListener {
+            if (powerupReroll <= 0 || isAnimating) return@setOnClickListener
+            powerupReroll--
+            engine.rerollBags()
+            engine.archiveAllReady()
+            soundManager?.play("pickup")
+            updatePowerupButtons()
+            renderBoard()
+        }
+
+        // 🔍 Kính lúp – bật/tắt chế độ chọn thùng để lộ ẩn
+        binding.btnMagnify.setOnClickListener {
+            if (powerupMagnify <= 0 || isAnimating) return@setOnClickListener
+            isMagnifyMode = !isMagnifyMode
+            // Viền sáng lên khi đang ở chế độ chọn
+            binding.btnMagnify.alpha = if (isMagnifyMode) 1.0f else 0.7f
+            binding.btnMagnify.text  = if (isMagnifyMode) "🔍 ✓" else "🔍 ×$powerupMagnify"
+        }
+
+        // 🔀 Xáo trộn lại tất cả
+        binding.btnReshuffle.setOnClickListener {
+            if (powerupReshuffle <= 0 || isAnimating) return@setOnClickListener
+            powerupReshuffle--
+            engine.shuffleAllTubes()
+            soundManager?.play("move")
+            updatePowerupButtons()
+            renderBoard()
+        }
+    }
+
+    private fun updatePowerupButtons() {
+        binding.btnRerollBags.apply {
+            text    = "🎲 ×$powerupReroll"
+            isEnabled = powerupReroll > 0
+            alpha   = if (powerupReroll > 0) 0.9f else 0.35f
+        }
+        binding.btnMagnify.apply {
+            text    = if (isMagnifyMode) "🔍 ✓" else "🔍 ×$powerupMagnify"
+            isEnabled = powerupMagnify > 0
+            alpha   = if (powerupMagnify > 0) 0.9f else 0.35f
+        }
+        binding.btnReshuffle.apply {
+            text    = "🔀 ×$powerupReshuffle"
+            isEnabled = powerupReshuffle > 0
+            alpha   = if (powerupReshuffle > 0) 0.9f else 0.35f
+        }
+    }
+
     private fun renderBoard() {
         wiggleAnimators.values.forEach { it.cancel() }
         wiggleAnimators.clear()
@@ -214,17 +277,23 @@ class LevelOneFragment : Fragment() {
         val screenWidth = displayMetrics.widthPixels
         val horizontalPadding = (80 * displayMetrics.density).toInt()
         val tubeWidth = (screenWidth - horizontalPadding) / cols
-        val blockHeight = (tubeWidth * 0.75).toInt() 
-        val tubeHeight = (blockHeight * 4) + (32 * displayMetrics.density).toInt()
+        val blockHeight = (tubeWidth * 0.52).toInt()
+        val tubeHeight = (blockHeight * 4) + (16 * displayMetrics.density).toInt()
 
+        // Reset cả 2 ô trước khi vẽ lại tránh hiện thị cũ
+        binding.tvBoxA.visibility = View.GONE
+        binding.tvBoxB.visibility = View.GONE
         binding.llBoxes.isVisible = engine.isBagMechanismEnabled
-        binding.tvPackedProgress.text = engine.getProgressText()
-        
+
         if (engine.isBagMechanismEnabled) {
-            engine.getBoxSlots().forEachIndexed { i, box ->
-                val tv = if (i == 0) binding.tvBoxA else binding.tvBoxB
-                tv.isVisible = true
-                updateBoxUI(tv, box)
+            val boxes = engine.getBoxSlots()
+            boxes.getOrNull(0)?.let { box ->
+                binding.tvBoxA.visibility = View.VISIBLE
+                updateBoxUI(binding.tvBoxA, box)
+            }
+            boxes.getOrNull(1)?.let { box ->
+                binding.tvBoxB.visibility = View.VISIBLE
+                updateBoxUI(binding.tvBoxB, box)
             }
         }
 
@@ -234,7 +303,7 @@ class LevelOneFragment : Fragment() {
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = tubeWidth
                     height = tubeHeight
-                    setMargins(10, 16, 10, 16)
+                    setMargins(10, 6, 10, 6)
                 }
                 setOnClickListener { handleTubeTap(tube.id) }
             }
@@ -243,7 +312,7 @@ class LevelOneFragment : Fragment() {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.BOTTOM
                 clipChildren = false
-                setPadding(12, 12, 12, 20) 
+                setPadding(8, 6, 8, 12)
                 layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
                 background = ContextCompat.getDrawable(context, R.drawable.carton_box_bg)
             }
@@ -252,7 +321,7 @@ class LevelOneFragment : Fragment() {
                 val isHidden = i < tube.hiddenLayers
                 val blockView = FrameLayout(requireContext()).apply {
                     layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply {
-                        setMargins(4, -4, 4, 0)
+                        setMargins(3, -2, 3, 0)
                     }
                     
                     background = if (isHidden) {
@@ -287,7 +356,22 @@ class LevelOneFragment : Fragment() {
 
     private fun handleTubeTap(index: Int) {
         if (isAnimating || engine.isGameOver) return
-        
+
+        // 🔍 Kính lúp mode: tap vào thùng để lộ lớp ẩn
+        if (isMagnifyMode) {
+            val tube = engine.getTubes().find { it.id == index }
+            if (tube != null && !tube.isArchived && tube.hiddenLayers > 0) {
+                powerupMagnify--
+                engine.revealHiddenLayers(index)
+                soundManager?.play("complete")
+            }
+            // Thoát mode dù thùng có ẩn hay không
+            isMagnifyMode = false
+            updatePowerupButtons()
+            renderBoard()
+            return
+        }
+
         val tubes = engine.getTubes()
         val clickedTube = tubes.find { it.id == index } ?: return
         val selectedIdx = engine.selectedTubeIndex
@@ -476,11 +560,13 @@ class LevelOneFragment : Fragment() {
                             playCompletionAnimation(newDstView, dstId)
                         } else {
                             engine.archiveTube(dstId)
+                            engine.archiveAllReady() // cascade
                             renderBoard()
                             checkGameResults()
                             isAnimating = false
                         }
                     } else {
+                        engine.archiveAllReady() // archive các ống đầy khớp túi dù dst chưa đầy
                         soundManager?.play("drop")
                         renderBoard()
                         val updatedDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
@@ -578,6 +664,7 @@ class LevelOneFragment : Fragment() {
                         (view as? ViewGroup)?.removeView(shineView)
                         (view as? ViewGroup)?.removeView(checkmark)
                         engine.archiveTube(tubeId)
+                        engine.archiveAllReady() // cascade: archive các ống khác đã sẵn sàng
                         renderBoard()
                         checkGameResults()
                         isAnimating = false
@@ -644,20 +731,7 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun playBackgroundMusic() {
-        val prefs = requireContext().getSharedPreferences("game_settings", Context.MODE_PRIVATE)
-        val isMusicOn = prefs.getBoolean("music_on", true)
-        
-        if (isMusicOn) {
-            if (mediaPlayer == null) {
-                mediaPlayer = MediaPlayer.create(requireContext(), R.raw.nhacnen)
-                mediaPlayer?.isLooping = true
-            }
-            if (mediaPlayer?.isPlaying == false) {
-                mediaPlayer?.start()
-            }
-        } else {
-            mediaPlayer?.pause()
-        }
+        GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen)
     }
 
     private fun checkGameResults() {
@@ -674,9 +748,30 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun updateBoxUI(tv: TextView, box: LevelOneEngine.BoxSlot) {
-        val isFilled = box.filled > 0
-        tv.text = if (isFilled) box.targetColor.fruitIcon else "📦"
-        tv.alpha = if (isFilled) 1.0f else 0.5f
+        val density = resources.displayMetrics.density
+        val isUrgent = box.turnsLeft <= 8
+        val borderColor = if (isUrgent) android.graphics.Color.RED
+                          else android.graphics.Color.parseColor("#FFD54F")
+
+        // Nền + viền màu động
+        tv.background = GradientDrawable().apply {
+            setColor(android.graphics.Color.parseColor("#CC1A1A2E"))
+            setStroke((2 * density).toInt(), borderColor)
+            cornerRadius = 10 * density
+        }
+        tv.setPadding(
+            (8 * density).toInt(), (6 * density).toInt(),
+            (8 * density).toInt(), (6 * density).toInt()
+        )
+        tv.gravity = android.view.Gravity.CENTER
+        tv.textSize = 11f
+        tv.setTextColor(android.graphics.Color.WHITE)
+
+        // Nội dung: icon + tên + tiến trình + lượt còn lại
+        val icon = box.targetColor.fruitIcon
+        val name = box.targetColor.displayName
+        val turnsColor = if (isUrgent) "🔴" else "🟡"  // đỏ đỏ hoặc vàng
+        tv.text = "$icon $name\n${box.filled}/${box.capacity} ưu | $turnsColor ${box.turnsLeft} lượt"
     }
 
     private fun saveHighestLevel(level: Int) {
@@ -708,18 +803,18 @@ class LevelOneFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        playBackgroundMusic()
+        GlobalMusicPlayer.resumeIfEnabled(requireContext())
     }
 
     override fun onPause() {
         super.onPause()
-        mediaPlayer?.pause()
+        GlobalMusicPlayer.pause()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        mediaPlayer?.release()
         soundManager?.release()
+        // Không release mediaPlayer – GlobalMusicPlayer quản lý
         _binding = null
     }
 }

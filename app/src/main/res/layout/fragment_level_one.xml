@@ -114,11 +114,74 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ll_boxes" />
 
+    <!-- Power-up bar -->
+    <LinearLayout
+        android:id="@+id/ll_powerups"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_packed_progress">
+
+        <!-- 🎲 Roll túi -->
+        <Button
+            android:id="@+id/btn_reroll_bags"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:layout_marginEnd="6dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="🎲 ×1"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:backgroundTint="#E65100"
+            android:elevation="6dp"
+            android:stateListAnimator="@null" />
+
+        <!-- 🔍 Kính lúp -->
+        <Button
+            android:id="@+id/btn_magnify"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:layout_marginEnd="6dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="🔍 ×1"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:backgroundTint="#0D47A1"
+            android:elevation="6dp"
+            android:stateListAnimator="@null" />
+
+        <!-- 🔀 Shuffle -->
+        <Button
+            android:id="@+id/btn_reshuffle"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="🔀 ×1"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:backgroundTint="#6A1B9A"
+            android:elevation="6dp"
+            android:stateListAnimator="@null" />
+    </LinearLayout>
+
     <GridLayout
         android:id="@+id/gl_game_board"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:columnCount="4"
@@ -126,7 +189,7 @@
         app:layout_constraintBottom_toTopOf="@+id/btn_next_level"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_packed_progress" />
+        app:layout_constraintTop_toBottomOf="@+id/ll_powerups" />
 
     <Button
         android:id="@+id/btn_next_level"
@@ -153,25 +216,33 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
+        <!-- Nút Home -->
         <Button
             android:id="@+id/btn_back_level_select"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginEnd="16dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginEnd="12dp"
             android:text="🏠"
-            android:textSize="20sp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            app:strokeColor="#FFFFFF"
-            android:textColor="#FFFFFF" />
+            android:textSize="22sp"
+            android:backgroundTint="#CC2E7D32"
+            android:elevation="6dp"
+            android:stateListAnimator="@null" />
 
+        <!-- Nút Reset -->
         <Button
             android:id="@+id/btn_reset"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
             android:text="RESET LEVEL"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            app:strokeColor="#FFFFFF"
-            android:textColor="#FFFFFF" />
+            android:textAllCaps="true"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:backgroundTint="#C62828"
+            android:elevation="6dp"
+            android:stateListAnimator="@null" />
     </LinearLayout>
 
     <FrameLayout

@@ -1,5 +1,6 @@
 package com.example.a2dgame
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -32,6 +33,7 @@ class SecondFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        startBgMusic()
 
         val prefs = requireContext().getSharedPreferences("game_prefs", 0)
         val highestLevel = prefs.getInt("highest_level", 1)
@@ -118,8 +120,23 @@ class SecondFragment : Fragment() {
         }
     }
 
+    private fun startBgMusic() {
+        GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startBgMusic()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        GlobalMusicPlayer.pause()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        // Không release ở đây – GlobalMusicPlayer quản lý
         _binding = null
     }
 }
