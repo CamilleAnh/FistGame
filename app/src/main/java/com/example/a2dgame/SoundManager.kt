@@ -2,6 +2,7 @@ package com.example.a2dgame
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.media.SoundPool
 import android.util.Log
 
@@ -9,6 +10,7 @@ class SoundManager(context: Context) {
     private val soundPool: SoundPool
     private val sounds = mutableMapOf<String, Int>()
     private var isEnabled = true
+    private val appContext = context.applicationContext
 
     init {
         val attrs = AudioAttributes.Builder()
@@ -50,6 +52,40 @@ class SoundManager(context: Context) {
 
     fun setEnabled(enabled: Boolean) {
         isEnabled = enabled
+    }
+
+    /**
+     * Win sound: plays sfx_win.mp3 via MediaPlayer
+     */
+    fun playWin() {
+        if (!isEnabled) return
+        playOneShot("sfx_win")
+    }
+
+    /**
+     * Lose sound: plays sfx_gameover.mp3 via MediaPlayer
+     */
+    fun playLose() {
+        if (!isEnabled) return
+        playOneShot("sfx_gameover")
+    }
+
+    /**
+     * Play a raw resource file once and auto-release when done.
+     */
+    private fun playOneShot(resName: String) {
+        val resId = appContext.resources.getIdentifier(resName, "raw", appContext.packageName)
+        if (resId == 0) {
+            Log.w("SoundManager", "Resource not found: $resName")
+            return
+        }
+        try {
+            val mp = MediaPlayer.create(appContext, resId) ?: return
+            mp.setOnCompletionListener { it.release() }
+            mp.start()
+        } catch (e: Exception) {
+            Log.e("SoundManager", "Error playing $resName: ${e.message}")
+        }
     }
 
     fun release() {

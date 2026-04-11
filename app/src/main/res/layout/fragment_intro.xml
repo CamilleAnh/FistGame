@@ -4,55 +4,78 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1B5E20"
+    android:background="@drawable/hinh_nen"
     tools:context=".IntroFragment">
 
+    <!-- Game Title with Shadow/Outline effect -->
     <LinearLayout
+        android:id="@+id/ll_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
         android:gravity="center"
         android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
-            android:id="@+id/iv_studio_logo"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:layout_marginBottom="16dp"
-            android:src="@android:drawable/btn_star_big_on"
-            app:tint="#FFEB3B" />
-
         <TextView
-            android:id="@+id/tv_studio_name"
+            android:id="@+id/tv_title_main"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="FRESH FRUIT STUDIO"
+            android:fontFamily="sans-serif-black"
+            android:shadowColor="#FF000000"
+            android:shadowDx="4"
+            android:shadowDy="4"
+            android:shadowRadius="8"
+            android:text="FRUIT SORT:"
             android:textColor="#FFFFFF"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.2" />
+            android:textSize="48sp"
+            android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tv_title_sub"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Presents"
-            android:textColor="#A5D6A7"
-            android:textSize="16sp"
-            android:textStyle="italic" />
-
+            android:fontFamily="sans-serif-condensed-light"
+            android:shadowColor="#FF000000"
+            android:shadowDx="3"
+            android:shadowDy="3"
+            android:shadowRadius="6"
+            android:text="FARM PUZZLE"
+            android:textColor="#FFEB3B"
+            android:textSize="32sp"
+            android:textStyle="bold|italic" />
     </LinearLayout>
 
-    <ProgressBar
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginBottom="48dp"
-        android:indeterminateTint="#FFEB3B"
+
+    <!-- Loading Button & ProgressBar at bottom -->
+    <FrameLayout
+        android:id="@+id/fl_loading_container"
+        android:layout_width="280dp"
+        android:layout_height="55dp"
+        android:layout_marginBottom="60dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ProgressBar
+            android:id="@+id/pb_loading"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/loading_button_progress" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="LOADING..."
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

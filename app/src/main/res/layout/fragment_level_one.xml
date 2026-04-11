@@ -4,58 +4,74 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/back">
+    android:background="@drawable/backgroup_fragment_second"
+    tools:context=".LevelOneFragment">
+
+    <ImageView
+        android:id="@+id/iv_back"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:contentDescription="Back"
+        android:padding="8dp"
+        android:src="@drawable/ic_prev"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#FFFFFF" />
 
     <TextView
         android:id="@+id/tv_level_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="LEVEL 1"
-        android:textColor="#FFD54F"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:shadowColor="#000000"
-        android:shadowDx="2"
-        android:shadowDy="2"
-        android:shadowRadius="2"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/level_title_bg"
+        android:fontFamily="sans-serif-black"
+        android:paddingStart="24dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="8dp"
+        android:text="Level 1"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Gold display (top-left, nhỏ gọn) -->
     <TextView
         android:id="@+id/tv_game_gold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:text="🪙 0"
-        android:textColor="#FFD54F"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:background="#44000000"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/level_container_bg"
+        android:fontFamily="sans-serif-medium"
+        android:paddingStart="16dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp"
+        android:text="Score: 0"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/tv_level_name" />
 
     <ImageButton
         android:id="@+id/btn_settings"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_manage"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="14dp"
+        android:background="@drawable/bg_menu_btn"
+        android:src="@drawable/ic_menu"
+        android:padding="8dp"
+        android:contentDescription="Menu"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="#FFFFFF" />
 
     <TextView
-        android:id="@+id/tv_instruction"
+        android:id="@+id/tv_packed_progress"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
@@ -65,226 +81,119 @@
         android:text="..."
         android:textColor="#FFFFFF"
         android:textSize="14sp"
-        android:shadowColor="#000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_level_name" />
+        app:layout_constraintTop_toBottomOf="@id/tv_game_gold" />
 
     <LinearLayout
         android:id="@+id/ll_boxes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
         android:gravity="center"
         android:orientation="horizontal"
-        android:weightSum="2"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_instruction">
+        app:layout_constraintTop_toBottomOf="@id/tv_packed_progress">
 
         <TextView
             android:id="@+id/tv_box_a"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:gravity="center"
-            android:padding="8dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:shadowColor="#000000"
-            android:shadowRadius="1" />
+            android:layout_margin="4dp" />
 
         <TextView
             android:id="@+id/tv_box_b"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:gravity="center"
-            android:padding="8dp"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:shadowColor="#000000"
-            android:shadowRadius="1" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tv_packed_progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="..."
-        android:textColor="#FFEB3B"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:shadowColor="#000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="2"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ll_boxes" />
-
-    <!-- Power-up bar -->
-    <LinearLayout
-        android:id="@+id/ll_powerups"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_packed_progress">
-
-        <!-- 🎲 Roll túi -->
-        <Button
-            android:id="@+id/btn_reroll_bags"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:layout_marginEnd="6dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="🎲 ×1"
-            android:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:backgroundTint="#E65100"
-            android:elevation="6dp"
-            android:stateListAnimator="@null" />
-
-        <!-- 🔍 Kính lúp -->
-        <Button
-            android:id="@+id/btn_magnify"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:layout_marginEnd="6dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="🔍 ×1"
-            android:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:backgroundTint="#0D47A1"
-            android:elevation="6dp"
-            android:stateListAnimator="@null" />
-
-        <!-- 🔀 Shuffle -->
-        <Button
-            android:id="@+id/btn_reshuffle"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="🔀 ×1"
-            android:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:backgroundTint="#6A1B9A"
-            android:elevation="6dp"
-            android:stateListAnimator="@null" />
+            android:layout_margin="4dp" />
     </LinearLayout>
 
     <GridLayout
         android:id="@+id/gl_game_board"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:columnCount="4"
-        android:alignmentMode="alignMargins"
-        app:layout_constraintBottom_toTopOf="@+id/btn_next_level"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ll_powerups" />
-
-    <Button
-        android:id="@+id/btn_next_level"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="NEXT LEVEL"
-        android:visibility="gone"
-        android:backgroundTint="#4CAF50"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/ll_actions"
+        android:layout_marginTop="8dp"
+        android:columnCount="4"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_boxes" />
 
     <LinearLayout
-        android:id="@+id/ll_actions"
-        android:layout_width="wrap_content"
+        android:id="@+id/ll_powerups"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:gravity="center"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@+id/ad_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintBottom_toTopOf="@id/ad_container">
 
-        <!-- Nút Home -->
         <Button
-            android:id="@+id/btn_back_level_select"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:layout_marginEnd="12dp"
-            android:text="🏠"
-            android:textSize="22sp"
-            android:backgroundTint="#CC2E7D32"
-            android:elevation="6dp"
-            android:stateListAnimator="@null" />
+            android:id="@+id/btn_reroll_bags"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="4dp"
+            android:text="🎲" />
 
-        <!-- Nút Reset -->
+        <Button
+            android:id="@+id/btn_magnify"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="4dp"
+            android:text="🔍" />
+
+        <Button
+            android:id="@+id/btn_reshuffle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="4dp"
+            android:text="🔀" />
+
         <Button
             android:id="@+id/btn_reset"
             android:layout_width="wrap_content"
-            android:layout_height="52dp"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:text="RESET LEVEL"
-            android:textAllCaps="true"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:backgroundTint="#C62828"
-            android:elevation="6dp"
-            android:stateListAnimator="@null" />
+            android:layout_height="wrap_content"
+            android:layout_margin="4dp"
+            android:text="Reset" />
     </LinearLayout>
 
     <FrameLayout
         android:id="@+id/ad_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="50dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- Settings Overlay -->
     <include
         android:id="@+id/layout_settings"
         layout="@layout/dialog_settings"
         android:visibility="gone" />
 
-    <!-- Win Dialog Overlay -->
     <include
         android:id="@+id/layout_win_dialog"
         layout="@layout/dialog_win"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
         android:visibility="gone" />
+
+    <include
+        android:id="@+id/layout_lose_dialog"
+        layout="@layout/dialog_lose"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/btn_back_level_select"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btn_next_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Next"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

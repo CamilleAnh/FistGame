@@ -26,12 +26,18 @@ class IntroFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Chuyển sang FirstFragment sau 2.5 giây
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (isAdded) {
-                findNavController().navigate(R.id.action_IntroFragment_to_FirstFragment)
+        // Animate the progress bar from 0 to 100 over 2.5 seconds
+        val animator = android.animation.ObjectAnimator.ofInt(binding.pbLoading, "progress", 0, 100)
+        animator.duration = 2500
+        animator.interpolator = android.view.animation.LinearInterpolator()
+        animator.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                if (isAdded) {
+                    findNavController().navigate(R.id.action_IntroFragment_to_FirstFragment)
+                }
             }
-        }, 2500)
+        })
+        animator.start()
     }
 
     override fun onDestroyView() {

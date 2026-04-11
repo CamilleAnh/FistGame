@@ -35,6 +35,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.appcompat.widget.PopupMenu
 import com.example.a2dgame.databinding.FragmentLevelOneBinding
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -59,8 +60,15 @@ class LevelOneFragment : Fragment() {
     // Win Dialog state
     private var isWinDialogShowing = false
 
+    // Lose Dialog state
+    private var isLoseDialogShowing = false
+
     private val wiggleAnimators = mutableMapOf<View, Animator>()
-    private var isAnimating = false
+    
+    // Concurrency control for fluid multi-transfer tapping
+    private var activeAnimationsCount = 0
+    private val animatingBoxes = mutableSetOf<Int>()
+    private val pendingIncomingMap = mutableMapOf<Int, Int>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -87,7 +95,7 @@ class LevelOneFragment : Fragment() {
         renderBoard()
 
         binding.btnReset.setOnClickListener {
-            if (isAnimating) return@setOnClickListener
+            if (activeAnimationsCount > 0) return@setOnClickListener
             engine = LevelOneEngine(levelId)
             // Reset power-up counts
             powerupReroll    = 1
@@ -128,8 +136,40 @@ class LevelOneFragment : Fragment() {
         val prefs = requireContext().getSharedPreferences("game_settings", Context.MODE_PRIVATE)
         val settingsBinding = binding.layoutSettings
 
-        binding.btnSettings.setOnClickListener {
-            showSettings(true)
+        binding.btnSettings.setOnClickListener { anchor ->
+            val popup = PopupMenu(requireContext(), anchor)
+            popup.menuInflater.inflate(R.menu.game_menu, popup.menu)
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.menu_home -> {
+                        findNavController().popBackStack(R.id.SecondFragment, false)
+                        true
+                    }
+                    R.id.menu_reset -> {
+                        if (activeAnimationsCount > 0) return@setOnMenuItemClickListener true
+                        val levelId = args.levelId
+                        engine = LevelOneEngine(levelId)
+                        powerupReroll    = 1
+                        powerupMagnify   = 1
+                        powerupReshuffle = 1
+                        isMagnifyMode    = false
+                        animatingBoxes.clear()
+                        pendingIncomingMap.clear()
+                        activeAnimationsCount = 0
+                        isLoseDialogShowing = false
+                        binding.layoutLoseDialog.root.visibility = View.GONE
+                        updatePowerupButtons()
+                        renderBoard()
+                        true
+                    }
+                    R.id.menu_settings -> {
+                        showSettings(true)
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
         }
 
         settingsBinding.btnCloseSettings.setOnClickListener {
@@ -234,7 +274,7 @@ class LevelOneFragment : Fragment() {
 
         // 🎲 Roll túi ngẫu nhiên
         binding.btnRerollBags.setOnClickListener {
-            if (powerupReroll <= 0 || isAnimating) return@setOnClickListener
+            if (powerupReroll <= 0 || activeAnimationsCount > 0) return@setOnClickListener
             powerupReroll--
             // Nếu còn dùng hết free thì trừ inventory
             if (powerupReroll >= 1) GoldManager.useReroll(requireContext())
@@ -247,7 +287,7 @@ class LevelOneFragment : Fragment() {
 
         // 🔍 Kính lúp – bật/tắt chế độ chọn hộp để lộ ẩn
         binding.btnMagnify.setOnClickListener {
-            if (powerupMagnify <= 0 || isAnimating) return@setOnClickListener
+            if (powerupMagnify <= 0 || activeAnimationsCount > 0) return@setOnClickListener
             isMagnifyMode = !isMagnifyMode
             // Viền sáng lên khi đang ở chế độ chọn
             binding.btnMagnify.alpha = if (isMagnifyMode) 1.0f else 0.7f
@@ -256,7 +296,7 @@ class LevelOneFragment : Fragment() {
 
         // 🔀 Xáo trộn lại tất cả
         binding.btnReshuffle.setOnClickListener {
-            if (powerupReshuffle <= 0 || isAnimating) return@setOnClickListener
+            if (powerupReshuffle <= 0 || activeAnimationsCount > 0) return@setOnClickListener
             powerupReshuffle--
             if (powerupReshuffle >= 1) GoldManager.useShuffle(requireContext())
             engine.shuffleAllBoxes()
@@ -339,7 +379,11 @@ class LevelOneFragment : Fragment() {
                 background = ContextCompat.getDrawable(context, R.drawable.carton_box_bg)
             }
 
-            box.blocks.forEachIndexed { i, fruit ->
+            val pendingCount = pendingIncomingMap[box.id] ?: 0
+            val visibleCount = box.blocks.size - pendingCount
+            
+            for (i in 0 until visibleCount) {
+                val fruit = box.blocks[i]
                 val isHidden = i < box.hiddenLayers
                 val blockView = FrameLayout(requireContext()).apply {
                     layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, blockHeight).apply {
@@ -377,7 +421,8 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun handleBoxTap(index: Int) {
-        if (isAnimating || engine.isGameOver) return
+        if (engine.isGameOver) return
+        if (animatingBoxes.contains(index)) return
 
         // 🔍 Kính lúp mode: tap vào hộp để lộ lớp ẩn
         if (isMagnifyMode) {
@@ -519,7 +564,9 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun animateMoveSequence(srcId: Int, dstId: Int) {
-        isAnimating = true
+        activeAnimationsCount++
+        animatingBoxes.add(srcId)
+        animatingBoxes.add(dstId)
         engine.selectedBoxIndex = null
         
         val srcView = binding.glGameBoard.findViewWithTag<ViewGroup>(srcId)
@@ -528,7 +575,9 @@ class LevelOneFragment : Fragment() {
         val dstLayout = dstView?.getChildAt(0) as? ViewGroup
         
         if (srcLayout == null || dstLayout == null || srcView == null || dstView == null) {
-            isAnimating = false
+            animatingBoxes.remove(srcId)
+            animatingBoxes.remove(dstId)
+            activeAnimationsCount--
             renderBoard()
             return
         }
@@ -539,19 +588,30 @@ class LevelOneFragment : Fragment() {
         
         val movingViews = mutableListOf<View>()
         for (i in 0 until srcLayout.childCount) {
-            val block = srcLayout.getChildAt(i)
-            // blockIndex trong blocks[]: getChildAt(0) = đỉnh = blocks[blocks.size-1]
+            // blockIndex trong box logic *hiện tại* trước khi modify (dù sao ta mới lấy childCount)
             val blockIndex = srcBox.blocks.size - 1 - i
             if (blockIndex >= 0 &&
                 blockIndex >= srcBox.hiddenLayers &&
                 srcBox.blocks[blockIndex] == color &&
                 (dstBox.blocks.size + movingViews.size) < dstBox.capacity) {
-                movingViews.add(block)
+                movingViews.add(srcLayout.getChildAt(i))
             } else if (blockIndex >= 0 && srcBox.blocks[blockIndex] != color) {
-                // Dừng ngay khi gặp block khác màu (chỉ lấy liên tiếp)
+                // Dừng ngay khi gặp block khác màu
                 break
             }
         }
+        
+        val count = movingViews.size
+        if (count == 0) {
+            animatingBoxes.remove(srcId)
+            animatingBoxes.remove(dstId)
+            activeAnimationsCount--
+            return
+        }
+
+        // IMMEDIATE LOGIC UPDATE & PENDING COUNT
+        pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) + count
+        engine.executeMove(srcBox, dstBox)
 
         val rootLoc = IntArray(2)
         binding.root.getLocationOnScreen(rootLoc)
@@ -565,6 +625,24 @@ class LevelOneFragment : Fragment() {
         val density = resources.displayMetrics.density
         
         soundManager?.play("move")
+
+        // === RESET TRANSFORMS NGAY LẬP TỨC để tránh ghost/bóng mờ ===
+        // 1. Reset scale của boxLayout nguồn về 1.0 ngay (không animate)
+        srcLayout.animate().cancel()
+        srcLayout.scaleX = 1.0f
+        srcLayout.scaleY = 1.0f
+        // 2. Reset transform của các block CÒN LẠI trong srcLayout (không bay)
+        for (i in 0 until srcLayout.childCount) {
+            val remaining = srcLayout.getChildAt(i)
+            if (!movingViews.contains(remaining)) {
+                remaining.animate().cancel()
+                remaining.translationY = 0f
+                remaining.scaleX = 1.0f
+                remaining.scaleY = 1.0f
+                remaining.rotation = 0f
+                remaining.alpha = 1.0f
+            }
+        }
 
         movingViews.forEachIndexed { index, block ->
             val blockLoc = IntArray(2)
@@ -580,11 +658,18 @@ class LevelOneFragment : Fragment() {
             val lp = ViewGroup.LayoutParams(originalWidth, originalHeight)
             (binding.root as ViewGroup).addView(block, lp)
             
+            // Reset transform trên block đang bay trước khi đặt vị trí tuyệt đối
+            block.scaleX = 1.0f
+            block.scaleY = 1.0f
+            block.rotation = 0f
+            block.translationX = 0f
+            block.translationY = 0f
+            block.alpha = 1.0f
             block.x = (blockLoc[0] - rootLoc[0]).toFloat()
             block.y = (blockLoc[1] - rootLoc[1]).toFloat()
             
             val targetX = (dstLoc[0] - rootLoc[0]).toFloat() + (dstView.width - originalWidth) / 2f
-            val targetSlotIndex = dstBox.blocks.size + (movingViews.size - 1 - index)
+            val targetSlotIndex = dstBox.blocks.size - count + (count - 1 - index)
             val paddingBottom = 20 * density
             val overlapAdjustment = targetSlotIndex * 4 * density
             val targetY = (dstLoc[1] - rootLoc[1]).toFloat() + dstView.height - paddingBottom - (targetSlotIndex + 1) * originalHeight + overlapAdjustment
@@ -596,7 +681,7 @@ class LevelOneFragment : Fragment() {
             }
             
             val animator = ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply {
-                duration = 400 + index * 100L
+                duration = 300 + index * 80L
                 interpolator = AccelerateDecelerateInterpolator()
             }
             moveAnimators.add(animator)
@@ -607,39 +692,48 @@ class LevelOneFragment : Fragment() {
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     movingViews.forEach { (binding.root as ViewGroup).removeView(it) }
-                    engine.executeMove(srcBox, dstBox)
                     
-                    if (dstBox.isComplete()) {
+                    val currentPending = pendingIncomingMap[dstId] ?: 0
+                    if (currentPending >= count) {
+                        pendingIncomingMap[dstId] = currentPending - count
+                    } else {
+                        pendingIncomingMap[dstId] = 0
+                    }
+                    
+                    val finalDstBox = engine.getBoxes().find { it.id == dstId }!!
+                    
+                    if (finalDstBox.isComplete() && (pendingIncomingMap[dstId] ?: 0) == 0) {
                         renderBoard()
                         val newDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
                         if (newDstView != null) {
-                            playCompletionAnimation(newDstView, dstId)
+                            playCompletionAnimation(newDstView, dstId, srcId)
                         } else {
                             engine.archiveBox(dstId)
-                            engine.archiveAllReady() // cascade
+                            engine.archiveAllReady()
+                            animatingBoxes.remove(srcId)
+                            animatingBoxes.remove(dstId)
+                            activeAnimationsCount--
                             renderBoard()
                             checkGameResults()
-                            isAnimating = false
                         }
                     } else {
-                        engine.archiveAllReady() // archive các hộp đầy khớp túi dù dst chưa đầy
+                        engine.archiveAllReady()
                         soundManager?.play("drop")
+                        animatingBoxes.remove(srcId)
+                        animatingBoxes.remove(dstId)
+                        activeAnimationsCount--
                         renderBoard()
                         val updatedDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
                         if (updatedDstView != null) animateContainerBounce(updatedDstView)
                         checkGameResults()
-                        isAnimating = false
                     }
                 }
             })
             start()
         }
-        // Reset scale trên boxLayout bên trong (không phải srcView container)
-        val srcBoxLayout = srcView.getChildAt(0)
-        srcBoxLayout?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.setDuration(200)?.start()
     }
 
-    private fun playCompletionAnimation(view: View, boxId: Int) {
+    private fun playCompletionAnimation(view: View, boxId: Int, srcBoxId: Int = -1) {
         view.post {
             val density = resources.displayMetrics.density
             val width = view.width
@@ -723,9 +817,11 @@ class LevelOneFragment : Fragment() {
                         (view as? ViewGroup)?.removeView(checkmark)
                         engine.archiveBox(boxId)
                         engine.archiveAllReady() // cascade: archive các hộp khác đã sẵn sàng
+                        if (srcBoxId != -1) animatingBoxes.remove(srcBoxId)
+                        animatingBoxes.remove(boxId)
+                        activeAnimationsCount--
                         renderBoard()
                         checkGameResults()
-                        isAnimating = false
                     }
                 })
                 start()
@@ -794,9 +890,18 @@ class LevelOneFragment : Fragment() {
 
     private fun checkGameResults() {
         if (engine.isWin) {
+            soundManager?.playWin()
             showWinDialog()
-        } else if (engine.isGameOver) {
-            Toast.makeText(context, getString(R.string.game_over_toast), Toast.LENGTH_LONG).show()
+        } else if (engine.isGameOver && !engine.isWin) {
+            engine.isGameOver = true
+            soundManager?.playLose()
+            triggerVibration(200)
+            showLoseDialog()
+        } else if (engine.isDeadlocked()) {
+            engine.isGameOver = true
+            soundManager?.playLose()
+            triggerVibration(200)
+            showLoseDialog()
         }
     }
 
@@ -812,49 +917,75 @@ class LevelOneFragment : Fragment() {
         // Set subtitle
         dialog.tvWinSubtitle.text = getString(R.string.win_dialog_subtitle, levelId)
 
-        // Animate in
+        // Animate in: overlay fade + card scale bounce
         dialogRoot.visibility = View.VISIBLE
         dialogRoot.alpha = 0f
-        winCard.scaleX = 0.5f
-        winCard.scaleY = 0.5f
-        dialogRoot.animate().alpha(1f).setDuration(200).start()
+        winCard.scaleX = 0.75f
+        winCard.scaleY = 0.75f
+        dialogRoot.animate().alpha(1f).setDuration(220).start()
         winCard.animate()
             .scaleX(1f).scaleY(1f)
-            .setDuration(400)
-            .setInterpolator(android.view.animation.OvershootInterpolator())
+            .setDuration(420)
+            .setInterpolator(OvershootInterpolator(1.4f))
             .start()
 
-        // Nút Nhận 50 Vàng
-        dialog.btnWinTake50.setOnClickListener {
-            GoldManager.addGold(requireContext(), GoldManager.REWARD_BASE)
-            updateGoldDisplay()
-            dismissWinDialogAndProceed()
+        // Buttons spring up with slight stagger
+        val btnContinue = dialog.btnWinContinue
+        val btnX3 = dialog.btnWinWatchX3
+        for ((i, btn) in listOf(btnContinue, btnX3).withIndex()) {
+            btn.translationY = 50f
+            btn.alpha = 0f
+            btn.animate()
+                .translationY(0f)
+                .alpha(1f)
+                .setStartDelay(180L + i * 70L)
+                .setDuration(350)
+                .setInterpolator(OvershootInterpolator())
+                .start()
         }
 
-        // Nút Xem Video x3 (150 Vàng – mock delay 2s)
+        // ── Continue: nhận thưởng cơ bản và chơi tiếp ──
+        dialog.btnWinContinue.setOnClickListener {
+            dialog.btnWinContinue.isEnabled = false
+            dialog.btnWinWatchX3.isEnabled = false
+            // Coin pop animation on button
+            animateCoinReward(dialog.btnWinContinue)
+            soundManager?.play("complete")
+            GoldManager.addGold(requireContext(), GoldManager.REWARD_BASE)
+            updateGoldDisplay()
+            binding.root.postDelayed({ dismissWinDialogAndProceed() }, 450)
+        }
+
+        // ── x3 Reward: mock ad 2s → nhận thưởng x3 → chơi tiếp ──
         dialog.btnWinWatchX3.setOnClickListener {
             dialog.btnWinWatchX3.isEnabled = false
-            dialog.btnWinTake50.isEnabled = false
+            dialog.btnWinContinue.isEnabled = false
             dialog.pbWinLoading.visibility = View.VISIBLE
-            dialog.btnWinWatchX3.text = getString(R.string.win_dialog_watching)
+            dialog.tvWinWatching.visibility = View.VISIBLE
+            dialog.btnWinWatchX3.text = "⏳  Watching…"
 
-            // Mock xem ads: delay 2 giây
             binding.root.postDelayed({
                 if (_binding == null) return@postDelayed
+                dialog.pbWinLoading.visibility = View.GONE
+                dialog.tvWinWatching.visibility = View.GONE
+                animateCoinReward(dialog.btnWinWatchX3)
+                soundManager?.play("complete")
                 GoldManager.addGold(requireContext(), GoldManager.REWARD_X3)
                 updateGoldDisplay()
-                dialog.pbWinLoading.visibility = View.GONE
-                // Hiện số vàng nhận được
-                dialog.tvWinSubtitle.text = getString(R.string.gold_added_format, GoldManager.REWARD_X3)
-                binding.root.postDelayed({ dismissWinDialogAndProceed() }, 800)
+                dialog.tvX3Reward.text = "🎉 +${GoldManager.REWARD_X3} coins!"
+                binding.root.postDelayed({ dismissWinDialogAndProceed() }, 600)
             }, 2000)
         }
+    }
 
-        // Nút Chơi tiếp (cũng nhận thưởng cơ bản nếu chưa nhận)
-        dialog.btnWinContinue.setOnClickListener {
-            GoldManager.addGold(requireContext(), GoldManager.REWARD_BASE)
-            updateGoldDisplay()
-            dismissWinDialogAndProceed()
+    /** Small coin pulse animation on a button to celebrate reward */
+    private fun animateCoinReward(anchor: View) {
+        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.25f, 1f)
+        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.25f, 1f)
+        ObjectAnimator.ofPropertyValuesHolder(anchor, scaleX, scaleY).apply {
+            duration = 300
+            interpolator = OvershootInterpolator()
+            start()
         }
     }
 
@@ -862,6 +993,89 @@ class LevelOneFragment : Fragment() {
         isWinDialogShowing = false
         binding.layoutWinDialog.root.visibility = View.GONE
         navigateToNextLevel()
+    }
+
+    private fun showLoseDialog() {
+        if (isLoseDialogShowing) return
+        isLoseDialogShowing = true
+
+        val dialog = binding.layoutLoseDialog
+        val dialogRoot = dialog.root
+        val loseCard = dialog.loseCard
+
+        // 1. Shake game board trước khi hiện popup
+        val shakeAnim = ObjectAnimator.ofFloat(
+            binding.glGameBoard, View.TRANSLATION_X,
+            0f, 18f, -18f, 14f, -14f, 8f, -8f, 0f
+        ).apply {
+            duration = 450
+            interpolator = LinearInterpolator()
+        }
+
+        // 2. Sau shake, hiện dialog với scale-in bounce
+        shakeAnim.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                if (_binding == null) return
+                dialogRoot.visibility = View.VISIBLE
+                dialogRoot.alpha = 0f
+                loseCard.scaleX = 0.75f
+                loseCard.scaleY = 0.75f
+
+                // Fade in overlay
+                dialogRoot.animate()
+                    .alpha(1f)
+                    .setDuration(220)
+                    .start()
+
+                // Scale-in bounce card
+                loseCard.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(420)
+                    .setInterpolator(OvershootInterpolator(1.5f))
+                    .start()
+
+                // Buttons spring up with slight delay
+                val btnRetry = dialog.btnLoseRetry
+                val btnBack  = dialog.btnLoseBack
+                for ((i, btn) in listOf(btnRetry, btnBack).withIndex()) {
+                    btn.translationY = 60f
+                    btn.alpha = 0f
+                    btn.animate()
+                        .translationY(0f)
+                        .alpha(1f)
+                        .setStartDelay(200L + i * 80L)
+                        .setDuration(350)
+                        .setInterpolator(OvershootInterpolator())
+                        .start()
+                }
+            }
+        })
+        shakeAnim.start()
+
+        // Wire up Retry
+        dialog.btnLoseRetry.setOnClickListener {
+            isLoseDialogShowing = false
+            dialogRoot.visibility = View.GONE
+            val levelId = args.levelId
+            engine = LevelOneEngine(levelId)
+            powerupReroll    = 1
+            powerupMagnify   = 1
+            powerupReshuffle = 1
+            isMagnifyMode    = false
+            animatingBoxes.clear()
+            pendingIncomingMap.clear()
+            activeAnimationsCount = 0
+            updatePowerupButtons()
+            renderBoard()
+        }
+
+        // Wire up Back to Levels
+        dialog.btnLoseBack.setOnClickListener {
+            isLoseDialogShowing = false
+            dialogRoot.visibility = View.GONE
+            findNavController().popBackStack(R.id.SecondFragment, false)
+        }
     }
 
     private fun updateStatusUI() {

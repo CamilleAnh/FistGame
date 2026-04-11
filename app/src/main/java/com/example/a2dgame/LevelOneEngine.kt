@@ -311,6 +311,28 @@ class LevelOneEngine(val levelId: Int = 1) {
     fun getBoxSlots() = boxSlots
     fun getProgressText() = "Thu hoạch: $completedBoxesCount/$totalFullBoxesCount thùng"
 
+    /**
+     * Kiểm tra bế tắc: không còn bước đi hợp lệ nào trên bàn chơi.
+     * Một bước hợp lệ = có thể canMove(src, dst) với src ≠ dst.
+     * Cũng tính trường hợp box bị cobweb (cần tap để xóa cobweb trước).
+     */
+    fun isDeadlocked(): Boolean {
+        if (isGameOver) return false
+        val active = boxes.filter { !it.isArchived }
+        // Nếu còn hộp có cobweb → vẫn có action (tap để xóa), chưa bế tắc
+        if (active.any { it.hasCobweb }) return false
+        // Kiểm tra xem có cặp (src, dst) hợp lệ nào không
+        for (src in active) {
+            if (src.isEmpty() || src.isFrozen || src.isLockedByChain) continue
+            if ((src.blocks.size - 1) < src.hiddenLayers) continue
+            for (dst in active) {
+                if (src.id == dst.id) continue
+                if (canMove(src, dst)) return false
+            }
+        }
+        return true
+    }
+
     // ===== POWER-UPS =====
 
     fun rerollBags() {
