@@ -103,16 +103,20 @@ class LevelOneFragment : Fragment() {
         }
 
         binding.btnNextLevel.setOnClickListener {
-            val nextLevelId = levelId + 1
-            saveHighestLevel(nextLevelId)
-            val bundle = Bundle().apply { putInt("levelId", nextLevelId) }
-            val navOptions = NavOptions.Builder().setPopUpTo(R.id.LevelOneFragment, true).build()
-            findNavController().navigate(R.id.action_LevelOneFragment_self, bundle, navOptions)
+            navigateToNextLevel()
         }
 
         setupSettings()
         setupPowerups()
         updateGoldDisplay()
+    }
+
+    private fun navigateToNextLevel() {
+        val nextLevelId = args.levelId + 1
+        saveHighestLevel(nextLevelId)
+        val bundle = Bundle().apply { putInt("levelId", nextLevelId) }
+        val navOptions = NavOptions.Builder().setPopUpTo(R.id.LevelOneFragment, true).build()
+        findNavController().navigate(R.id.action_LevelOneFragment_self, bundle, navOptions)
     }
 
     private fun updateGoldDisplay() {
@@ -846,8 +850,10 @@ class LevelOneFragment : Fragment() {
             }, 2000)
         }
 
-        // Nút Chơi tiếp (không nhận thưởng)
+        // Nút Chơi tiếp (cũng nhận thưởng cơ bản nếu chưa nhận)
         dialog.btnWinContinue.setOnClickListener {
+            GoldManager.addGold(requireContext(), GoldManager.REWARD_BASE)
+            updateGoldDisplay()
             dismissWinDialogAndProceed()
         }
     }
@@ -855,7 +861,7 @@ class LevelOneFragment : Fragment() {
     private fun dismissWinDialogAndProceed() {
         isWinDialogShowing = false
         binding.layoutWinDialog.root.visibility = View.GONE
-        binding.btnNextLevel.isVisible = true
+        navigateToNextLevel()
     }
 
     private fun updateStatusUI() {

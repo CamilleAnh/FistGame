@@ -74,11 +74,118 @@
             android:paddingEnd="16dp"
             android:paddingBottom="24dp">
 
-            <!-- Section: Power-ups -->
+            <!-- Section: Free Gold -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="🎁 VÀNG MIỄN PHÍ"
+                android:textColor="#AAFFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <!-- Daily Reward Card -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_daily_claim"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="#2E7D32"
+                    app:cardCornerRadius="16dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:gravity="center">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="HÀNG NGÀY"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:id="@+id/tv_daily_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="+100 🪙"
+                            android:textColor="#FFD54F"
+                            android:textSize="16sp"
+                            android:textStyle="bold"/>
+                        <Button
+                            android:id="@+id/btn_claim_daily"
+                            android:layout_width="match_parent"
+                            android:layout_height="36dp"
+                            android:layout_marginTop="8dp"
+                            android:text="NHẬN"
+                            android:textSize="12sp"
+                            android:backgroundTint="#FFD54F"
+                            android:textColor="#1B5E20"
+                            android:padding="0dp"
+                            android:stateListAnimator="@null"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Watch Ad Card -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/card_watch_ad"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="#1565C0"
+                    app:cardCornerRadius="16dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:gravity="center">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="XEM QUẢNG CÁO"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:id="@+id/tv_ad_limit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="10/10 lượt"
+                            android:textColor="#FFD54F"
+                            android:textSize="14sp"/>
+                        <Button
+                            android:id="@+id/btn_watch_ad_gold"
+                            android:layout_width="match_parent"
+                            android:layout_height="36dp"
+                            android:layout_marginTop="8dp"
+                            android:text="+100 🪙"
+                            android:textSize="12sp"
+                            android:backgroundTint="#FFD54F"
+                            android:textColor="#0D47A1"
+                            android:padding="0dp"
+                            android:stateListAnimator="@null"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <!-- Section: Power-ups -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
                 android:layout_marginBottom="8dp"
                 android:text="⚡ ĐỒ HỖ TRỢ (POWER-UPS)"
                 android:textColor="#AAFFFFFF"

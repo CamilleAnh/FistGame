@@ -49,4 +49,15 @@
     <string name="shop_owned_format">Đang có: %1$d</string>
     <string name="shop_price_format">%1$d 🪙</string>
     <string name="powerup_empty_toast">Hết! Mua thêm ở Shop 🛒</string>
+
+    <string name="shop_section_free">🎁 VÀNG MIỄN PHÍ</string>
+    <string name="shop_daily_title">HÀNG NGÀY</string>
+    <string name="shop_daily_reward">+100 🪙</string>
+    <string name="shop_btn_claim">NHẬN</string>
+    <string name="shop_btn_claimed">ĐÃ NHẬN</string>
+    <string name="shop_watch_ad_title">XEM QUẢNG CÁO</string>
+    <string name="shop_ad_limit_format">%1$d/%2$d lượt</string>
+    <string name="shop_ad_reward">+%1$d 🪙</string>
+    <string name="shop_daily_claimed_toast">Hôm nay bạn đã nhận thưởng rồi!</string>
+    <string name="shop_ad_limit_reached">Bạn đã xem hết lượt quảng cáo hôm nay!</string>
 </resources>

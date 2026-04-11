@@ -2,6 +2,7 @@ package com.example.a2dgame
 
 import android.content.Context
 import android.util.Base64
+import java.util.Calendar
 
 /**
  * GoldManager – Singleton quản lý vàng và inventory power-ups.
@@ -19,6 +20,11 @@ object GoldManager {
     private const val KEY_PU_REVEAL = "pu_reveal"
     private const val KEY_PU_SHUFFLE = "pu_shuffle"
 
+    // Daily & Ads
+    private const val KEY_LAST_DAILY_CLAIM = "last_daily_claim"
+    private const val KEY_ADS_WATCHED_TODAY = "ads_watched_today"
+    private const val KEY_LAST_ADS_DATE = "last_ads_date"
+
     // Giá power-ups (Vàng)
     const val PRICE_REROLL = 100
     const val PRICE_REVEAL = 150
@@ -28,6 +34,7 @@ object GoldManager {
     const val REWARD_BASE = 50
     const val REWARD_X3 = 150
     const val REWARD_DAILY_AD = 100
+    const val MAX_DAILY_ADS = 10
 
     private fun encode(value: Int): String {
         val raw = "$SALT:$value"
@@ -67,6 +74,59 @@ object GoldManager {
         val newVal = current - amount
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putString(KEY_GOLD, encode(newVal)).apply()
+        return true
+    }
+
+    // ───── Daily Login & Video Ads ─────
+
+    fun canClaimDaily(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val lastClaim = prefs.getLong(KEY_LAST_DAILY_CLAIM, 0)
+        val today = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        return lastClaim < today
+    }
+
+    fun claimDaily(context: Context): Int {
+        if (!canClaimDaily(context)) return 0
+        val reward = 100 // Có thể làm logic tăng dần theo ngày sau
+        addGold(context, reward)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putLong(KEY_LAST_DAILY_CLAIM, System.currentTimeMillis()).apply()
+        return reward
+    }
+
+    fun getAdsWatchedToday(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val lastDate = prefs.getLong(KEY_LAST_ADS_DATE, 0)
+        val today = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        if (lastDate < today) {
+            prefs.edit().putInt(KEY_ADS_WATCHED_TODAY, 0).apply()
+            return 0
+        }
+        return prefs.getInt(KEY_ADS_WATCHED_TODAY, 0)
+    }
+
+    fun watchAdForGold(context: Context): Boolean {
+        val current = getAdsWatchedToday(context)
+        if (current >= MAX_DAILY_ADS) return false
+        
+        addGold(context, REWARD_DAILY_AD)
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putInt(KEY_ADS_WATCHED_TODAY, current + 1)
+            .putLong(KEY_LAST_ADS_DATE, System.currentTimeMillis())
+            .apply()
         return true
     }
 
