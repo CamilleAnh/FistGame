@@ -1,0 +1,86 @@
+<resources>
+    <string name="app_name">Fruit Sort Puzzle</string>
+    <string name="action_settings">Cài đặt</string>
+    <string name="first_fragment_label">Màn hình chính</string>
+    <string name="second_fragment_label">Chọn màn chơi</string>
+    <string name="next">Tiếp theo</string>
+    <string name="previous">Quay lại</string>
+
+    <string name="level_name_format">MÀN %1$d</string>
+    <string name="game_complete_toast">MÀN CHƠI HOÀN THÀNH!</string>
+    <string name="game_over_toast">BẠN ĐÃ THUA! HẾT LƯỢT ĐI.</string>
+    <string name="game_over_title">BẠN ĐÃ THUA!</string>
+    <string name="turns_remaining_format"> | Lượt: %1$d</string>
+    <string name="bag_info_format">THÙNG %1$s\n%2$d/%3$d\n(%4$d lượt)</string>
+    <string name="congratulations_format">CHÚC MỪNG! BẠN ĐÃ HOÀN THÀNH MÀN %1$d</string>
+    <string name="instruction_ice">Phá băng bằng cách đổ cùng màu vào ống.</string>
+    <string name="instruction_cobweb">Chạm vào mạng nhện 🕸️ để dọn dẹp.</string>
+    <string name="instruction_hidden">Cẩn thận! Một số khối bị ẩn đáy (?).</string>
+    <string name="instruction_default">Xếp các màu giống nhau vào cùng 1 ống.</string>
+    <string name="instruction_bag">Màn %1$d: Thu hoạch %2$d thùng quả để thắng.</string>
+    <string name="progress_packed">Thu hoạch: %1$d/%2$d thùng</string>
+    <string name="progress_completed">Hoàn thành: %1$d/%2$d màu</string>
+
+    <!-- Economy / Gold -->
+    <string name="gold_display_format">🪙 %1$d</string>
+    <string name="not_enough_gold">Không đủ vàng!</string>
+    <string name="gold_added_format">+%1$d 🪙 Vàng!</string>
+
+    <!-- Win Dialog -->
+    <string name="win_dialog_title">🎉 CHIẾN THẮNG! 🎉</string>
+    <string name="win_dialog_subtitle">Màn %1$d hoàn thành!</string>
+    <string name="win_dialog_take_50">Nhận 50 🪙</string>
+    <string name="win_dialog_watch_x3">▶ Xem Video\n+150 🪙 (x3)</string>
+    <string name="win_dialog_continue">CHƠI TIẾP →</string>
+    <string name="win_dialog_watching">Đang xem quảng cáo…</string>
+
+    <!-- Shop -->
+    <string name="shop_title">🛒 CỬA HÀNG</string>
+    <string name="shop_btn_buy">MUA</string>
+    <string name="shop_insufficient_gold">Không đủ vàng để mua!</string>
+    <string name="shop_purchase_success">Mua thành công!</string>
+    <string name="shop_item_reroll_name">🎲 Đổi Túi (Reroll)</string>
+    <string name="shop_item_reroll_desc">Đổi ngẫu nhiên màu mục tiêu của túi</string>
+    <string name="shop_item_reveal_name">🔍 Kính Lúp (Reveal)</string>
+    <string name="shop_item_reveal_desc">Lộ toàn bộ lớp ẩn (?) của 1 ống</string>
+    <string name="shop_item_shuffle_name">🔀 Xáo Trộn (Shuffle)</string>
+    <string name="shop_item_shuffle_desc">Xáo trộn ngẫu nhiên tất cả các ống</string>
+    <string name="shop_owned_format">Đang có: %1$d</string>
+    <string name="shop_price_format">%1$d 🪙</string>
+    <string name="powerup_empty_toast">Hết! Mua thêm ở Shop 🛒</string>
+
+    <string name="shop_section_free">🎁 VÀNG MIỄN PHÍ</string>
+    <string name="shop_daily_title">HÀNG NGÀY</string>
+    <string name="shop_daily_reward">+100 🪙</string>
+    <string name="shop_btn_claim">NHẬN</string>
+    <string name="shop_btn_claimed">ĐÃ NHẬN</string>
+    <string name="shop_watch_ad_title">XEM QUẢNG CÁO</string>
+    <string name="shop_ad_limit_format">%1$d/%2$d lượt</string>
+    <string name="shop_ad_reward">+%1$d 🪙</string>
+    <string name="shop_daily_claimed_toast">Hôm nay bạn đã nhận thưởng rồi!</string>
+    <string name="shop_ad_limit_reached">Bạn đã xem hết lượt quảng cáo hôm nay!</string>
+
+    <!-- Remove Ads IAP -->
+    <string name="shop_section_premium">👑 GÓI PREMIUM</string>
+    <string name="shop_remove_ads_title">🚫 Xoá Quảng Cáo</string>
+    <string name="shop_remove_ads_desc">Xoá vĩnh viễn Banner, Interstitial và skip luôn Rewarded Ad khi nhận thưởng</string>
+    <string name="shop_remove_ads_active">✅ ĐÃ KÍCH HOẠT – Không còn quảng cáo!</string>
+    <string name="shop_remove_ads_loading">Đang tải giá...</string>
+    <string name="shop_remove_ads_restore">Khôi phục mua hàng</string>
+    <string name="shop_restore_success">✅ Đã khôi phục! Quảng cáo đã được xoá.</string>
+    <string name="shop_restore_nothing">Không tìm thấy giao dịch nào để khôi phục.</string>
+    <string name="shop_billing_unavailable">Google Play Billing không khả dụng.</string>
+
+    <!-- Language Settings -->
+    <string name="settings_language_title">Ngôn ngữ</string>
+    <string name="lang_en">English</string>
+    <string name="lang_vi">Tiếng Việt</string>
+    <string name="privacy_policy_title">Chính sách bảo mật</string>
+    <string name="reset_level">Chơi lại</string>
+    <string name="home_menu">Trang chủ</string>
+    <string name="settings_menu">Cài đặt</string>
+    <string name="music_label">Nhạc nền</string>
+    <string name="sound_label">Âm thanh</string>
+    <string name="vibration_label">Rung</string>
+    <string name="reset_settings_label">Xóa toàn bộ cài đặt</string>
+</resources>

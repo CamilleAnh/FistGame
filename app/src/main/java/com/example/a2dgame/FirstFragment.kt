@@ -1,9 +1,7 @@
-package com.example.a2dgame
+package com.yourname.fruitsort
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
-import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
 import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -13,7 +11,7 @@ import android.view.ViewGroup
 import android.view.animation.AnticipateOvershootInterpolator
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
-import com.example.a2dgame.databinding.FragmentFirstBinding
+import com.yourname.fruitsort.databinding.FragmentFirstBinding
 
 class FirstFragment : Fragment() {
 
@@ -39,9 +37,21 @@ class FirstFragment : Fragment() {
             findNavController().navigate(R.id.action_FirstFragment_to_ShopFragment)
         }
 
+        binding.tvPrivacyPolicy.setOnClickListener {
+            findNavController().navigate(R.id.action_FirstFragment_to_PrivacyPolicyFragment)
+        }
+
         setupSettings()
         startBgMusic()
         updateGoldDisplay()
+        
+        // Cập nhật text từ strings.xml để đảm bảo hiển thị đúng ngôn ngữ vừa đổi
+        refreshUIText()
+    }
+
+    private fun refreshUIText() {
+        binding.btnSettings.text = getString(R.string.action_settings)
+        binding.tvPrivacyPolicy.text = getString(R.string.privacy_policy_title).ifEmpty { "Privacy Policy" }
     }
 
     private fun updateGoldDisplay() {
@@ -86,26 +96,33 @@ class FirstFragment : Fragment() {
             prefs.edit { putBoolean("vibration_on", isChecked) }
         }
 
+        // Xử lý đổi ngôn ngữ
         settingsBinding.btnLangEn.setOnClickListener {
-            prefs.edit { putString("language", "en") }
-            updateLanguageButtons("en")
+            changeLanguage("en")
         }
 
         settingsBinding.btnLangVi.setOnClickListener {
-            prefs.edit { putString("language", "vi") }
-            updateLanguageButtons("vi")
+            changeLanguage("vi")
         }
 
-        updateLanguageButtons(prefs.getString("language", "en") ?: "en")
+        updateLanguageButtons(LanguageManager.getSavedLanguage(requireContext()))
 
         settingsBinding.btnResetAll.setOnClickListener {
             prefs.edit { clear() }
             settingsBinding.switchMusic.isChecked = true
             settingsBinding.switchSound.isChecked = true
             settingsBinding.switchVibration.isChecked = true
-            updateLanguageButtons("en")
-            startBgMusic()
+            changeLanguage("en")
         }
+    }
+
+    private fun changeLanguage(langCode: String) {
+        if (langCode == LanguageManager.getSavedLanguage(requireContext())) return
+        
+        LanguageManager.setLocale(requireContext(), langCode)
+        
+        // Khởi động lại Activity để áp dụng ngôn ngữ mới cho toàn bộ app
+        activity?.recreate()
     }
 
     private fun showSettings(show: Boolean) {
@@ -145,10 +162,14 @@ class FirstFragment : Fragment() {
         val settingsBinding = binding.layoutSettings
         if (lang == "en") {
             settingsBinding.btnLangEn.alpha = 1.0f
+            settingsBinding.btnLangEn.isEnabled = false
             settingsBinding.btnLangVi.alpha = 0.5f
+            settingsBinding.btnLangVi.isEnabled = true
         } else {
             settingsBinding.btnLangEn.alpha = 0.5f
+            settingsBinding.btnLangEn.isEnabled = true
             settingsBinding.btnLangVi.alpha = 1.0f
+            settingsBinding.btnLangVi.isEnabled = false
         }
     }
 
@@ -165,7 +186,6 @@ class FirstFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Không release ở đây – GlobalMusicPlayer quản lý lifecycle nhạc
         _binding = null
     }
 }

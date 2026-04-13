@@ -1,4 +1,4 @@
-package com.example.a2dgame
+package com.yourname.fruitsort
 
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
@@ -10,7 +10,7 @@ import android.view.animation.OvershootInterpolator
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.example.a2dgame.databinding.FragmentShopBinding
+import com.yourname.fruitsort.databinding.FragmentShopBinding
 
 class ShopFragment : Fragment() {
 
@@ -40,6 +40,8 @@ class ShopFragment : Fragment() {
             findNavController().popBackStack()
         }
 
+        setupRemoveAds()
+
         // --- FREE GOLD SECTION ---
 
         // Nút Nhận Thưởng Hàng Ngày
@@ -58,17 +60,24 @@ class ShopFragment : Fragment() {
         binding.btnWatchAdGold.setOnClickListener {
             val watched = GoldManager.getAdsWatchedToday(requireContext())
             if (watched < GoldManager.MAX_DAILY_ADS) {
-                // Giả lập xem ads 2s
                 binding.btnWatchAdGold.isEnabled = false
-                binding.btnWatchAdGold.text = "..."
-                
-                view?.postDelayed({
-                    if (_binding == null) return@postDelayed
-                    GoldManager.watchAdForGold(requireContext())
-                    Toast.makeText(context, getString(R.string.gold_added_format, GoldManager.REWARD_DAILY_AD), Toast.LENGTH_SHORT).show()
-                    bounceView(binding.tvShopGold)
-                    refreshUI()
-                }, 2000)
+                binding.btnWatchAdGold.text = "⏳ Đang tải..."
+
+                AdManager.showRewardedAd(
+                    activity = requireActivity(),
+                    onRewarded = {
+                        if (_binding == null) return@showRewardedAd
+                        GoldManager.watchAdForGold(requireContext())
+                        Toast.makeText(context, getString(R.string.gold_added_format, GoldManager.REWARD_DAILY_AD), Toast.LENGTH_SHORT).show()
+                        bounceView(binding.tvShopGold)
+                        refreshUI()
+                    },
+                    onFailed = {
+                        if (_binding == null) return@showRewardedAd
+                        Toast.makeText(context, "Video chưa sẵn sàng, thử lại sau!", Toast.LENGTH_SHORT).show()
+                        refreshUI()  // re-enable button
+                    }
+                )
             } else {
                 Toast.makeText(context, getString(R.string.shop_ad_limit_reached), Toast.LENGTH_SHORT).show()
             }
@@ -98,6 +107,60 @@ class ShopFragment : Fragment() {
         }
 
         refreshUI()
+    }
+
+    private fun setupRemoveAds() {
+        refreshRemoveAdsUI()
+
+        // Nút mua Remove Ads
+        binding.btnBuyRemoveAds.setOnClickListener {
+            if (GoldManager.isVip(requireContext())) return@setOnClickListener
+
+            binding.btnBuyRemoveAds.isEnabled = false
+            binding.btnBuyRemoveAds.text = "⏳ Đang xử lý..."
+
+            BillingManager.launchPurchaseFlow(requireActivity()) { success, message ->
+                if (_binding == null) return@launchPurchaseFlow
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                refreshRemoveAdsUI()
+            }
+        }
+
+        // Nút khôi phục
+        binding.tvRestorePurchases.setOnClickListener {
+            binding.tvRestorePurchases.alpha = 0.5f
+            BillingManager.restorePurchases(requireContext()) { restored, message ->
+                if (_binding == null) return@restorePurchases
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                binding.tvRestorePurchases.alpha = 1.0f
+                refreshRemoveAdsUI()
+            }
+        }
+    }
+
+    private fun refreshRemoveAdsUI() {
+        if (_binding == null) return
+        val isVip = GoldManager.isVip(requireContext())
+
+        if (isVip) {
+            // Đã mua
+            binding.tvRemoveAdsActiveBadge.visibility = View.VISIBLE
+            binding.btnBuyRemoveAds.isEnabled = false
+            binding.btnBuyRemoveAds.text = getString(R.string.shop_remove_ads_active)
+            binding.btnBuyRemoveAds.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#388E3C"))
+            binding.tvRestorePurchases.visibility = View.GONE
+        } else {
+            // Chưa mua – hiện giá thật từ Play Store
+            binding.tvRemoveAdsActiveBadge.visibility = View.GONE
+            binding.btnBuyRemoveAds.isEnabled = true
+            val price = BillingManager.priceText
+            binding.btnBuyRemoveAds.text = if (price == "...") getString(R.string.shop_remove_ads_loading)
+                                           else "🚫 Xoá Quảng Cáo – $price"
+            binding.btnBuyRemoveAds.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FFD54F"))
+            binding.tvRestorePurchases.visibility = View.VISIBLE
+        }
     }
 
     private fun handlePurchase(price: Int, buyAction: () -> Boolean) {

@@ -7,6 +7,7 @@
     android:background="@drawable/backgroup_fragment_second"
     tools:context=".LevelOneFragment">
 
+    <!-- Back Button -->
     <ImageView
         android:id="@+id/iv_back"
         android:layout_width="40dp"
@@ -20,6 +21,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="#FFFFFF" />
 
+    <!-- Level Title with Frame -->
     <TextView
         android:id="@+id/tv_level_name"
         android:layout_width="wrap_content"
@@ -34,28 +36,35 @@
         android:text="Level 1"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
+        android:shadowColor="#000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Gold Display with Frame -->
     <TextView
         android:id="@+id/tv_game_gold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:background="@drawable/level_container_bg"
+        android:background="@drawable/text_bg_rounded"
         android:fontFamily="sans-serif-medium"
         android:paddingStart="16dp"
         android:paddingTop="4dp"
         android:paddingEnd="16dp"
         android:paddingBottom="4dp"
-        android:text="Score: 0"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
+        android:text="🪙 0"
+        android:textColor="#FFD54F"
+        android:textSize="18sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_level_name" />
 
+    <!-- Menu Button -->
     <ImageButton
         android:id="@+id/btn_settings"
         android:layout_width="40dp"
@@ -70,28 +79,33 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="#FFFFFF" />
 
+    <!-- Progress Text with Frame -->
     <TextView
         android:id="@+id/tv_packed_progress"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/text_bg_rounded"
         android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         android:text="..."
         android:textColor="#FFFFFF"
-        android:textSize="14sp"
+        android:textSize="16sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_game_gold" />
 
+    <!-- Bags Display Area -->
     <LinearLayout
         android:id="@+id/ll_boxes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:gravity="center"
         android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
         app:layout_constraintTop_toBottomOf="@id/tv_packed_progress">
 
         <TextView
@@ -99,31 +113,41 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_margin="4dp" />
+            android:layout_margin="4dp"
+            android:background="@drawable/text_bg_rounded"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:gravity="center" />
 
         <TextView
             android:id="@+id/tv_box_b"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_margin="4dp" />
+            android:layout_margin="4dp"
+            android:background="@drawable/text_bg_rounded"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:gravity="center" />
     </LinearLayout>
 
+    <!-- Game Board -->
     <GridLayout
         android:id="@+id/gl_game_board"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         android:columnCount="4"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/ll_boxes" />
 
+    <!-- Powerups -->
     <LinearLayout
         android:id="@+id/ll_powerups"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="16dp"
         android:gravity="center"
         android:orientation="horizontal"
         app:layout_constraintBottom_toTopOf="@id/ad_container">
@@ -132,37 +156,51 @@
             android:id="@+id/btn_reroll_bags"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="4dp"
-            android:text="🎲" />
+            android:layout_margin="6dp"
+            android:background="@drawable/button_background"
+            android:text="🎲"
+            android:textSize="20sp"
+            app:backgroundTint="@null" />
 
         <Button
             android:id="@+id/btn_magnify"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="4dp"
-            android:text="🔍" />
+            android:layout_margin="6dp"
+            android:background="@drawable/button_background"
+            android:text="🔍"
+            android:textSize="20sp"
+            app:backgroundTint="@null" />
 
         <Button
             android:id="@+id/btn_reshuffle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="4dp"
-            android:text="🔀" />
+            android:layout_margin="6dp"
+            android:background="@drawable/button_background"
+            android:text="🔀"
+            android:textSize="20sp"
+            app:backgroundTint="@null" />
 
         <Button
             android:id="@+id/btn_reset"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="4dp"
-            android:text="Reset" />
+            android:layout_margin="6dp"
+            android:background="@drawable/button_background"
+            android:text="@string/reset_level"
+            android:textAllCaps="false"
+            app:backgroundTint="@null" />
     </LinearLayout>
 
+    <!-- Banner Ads -->
     <FrameLayout
         android:id="@+id/ad_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent" />
 
+    <!-- Overlays -->
     <include
         android:id="@+id/layout_settings"
         layout="@layout/dialog_settings"
@@ -177,23 +215,5 @@
         android:id="@+id/layout_lose_dialog"
         layout="@layout/dialog_lose"
         android:visibility="gone" />
-
-    <Button
-        android:id="@+id/btn_back_level_select"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Back"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/btn_next_level"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Next"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

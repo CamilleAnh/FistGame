@@ -1,4 +1,4 @@
-package com.example.a2dgame
+package com.yourname.fruitsort
 
 import java.util.Stack
 import kotlin.random.Random
@@ -10,15 +10,15 @@ import kotlin.random.Random
 class LevelOneEngine(val levelId: Int = 1) {
 
     enum class ColorId(val colorHex: String, val displayName: String, val fruitIcon: String) {
-        STRAWBERRY("#FF4B4B", "DÂU", "🍓"), ORANGE("#FFA726", "CAM", "🍊"), 
-        APPLE_GREEN("#66BB6A", "TÁO", "🍏"), BANANA("#FDD835", "CHUỐI", "🍌"), 
-        PEACH("#FFAB91", "ĐÀO", "🍑"), MANGO("#FF9800", "XOÀI", "🥭"),
-        GRAPE("#AB47BC", "NHO", "🍇"), WATERMELON("#EF5350", "DƯA", "🍉"), 
-        PINEAPPLE("#FFEE58", "DỨA", "🍍"), BLUEBERRY("#5C6BC0", "VIỆT", "🫐"), 
-        PEAR("#D4E157", "LÊ", "🍐"), COCONUT("#795548", "DƯA", "🥥"),
-        KIWI("#9CCC65", "KIWI", "🥝"), CHERRY("#F44336", "ANH ĐÀO", "🍒"), 
-        LEMON("#FFF176", "CHANH", "🍋"), AVOCADO("#99CC33", "BƠ", "🥑"),
-        EMPTY("#333333", "TRỐNG", "");
+        STRAWBERRY("#FF4B4B", "STRAWBERRY", "🍓"), ORANGE("#FFA726", "ORANGE", "🍊"), 
+        APPLE_GREEN("#66BB6A", "APPLE", "🍏"), BANANA("#FDD835", "BANANA", "🍌"), 
+        PEACH("#FFAB91", "PEACH", "🍑"), MANGO("#FF9800", "MANGO", "🥭"),
+        GRAPE("#AB47BC", "GRAPE", "🍇"), WATERMELON("#EF5350", "WATERMELON", "🍉"), 
+        PINEAPPLE("#FFEE58", "PINEAPPLE", "🍍"), BLUEBERRY("#5C6BC0", "BLUEBERRY", "🫐"), 
+        PEAR("#D4E157", "PEAR", "🍐"), COCONUT("#795548", "COCONUT", "🥥"),
+        KIWI("#9CCC65", "KIWI", "🥝"), CHERRY("#F44336", "CHERRY", "🍒"), 
+        LEMON("#FFF176", "LEMON", "🍋"), AVOCADO("#99CC33", "AVOCADO", "🥑"),
+        EMPTY("#333333", "EMPTY", "");
 
         companion object {
             val allFruits by lazy { values().filter { it != EMPTY } }
@@ -62,15 +62,14 @@ class LevelOneEngine(val levelId: Int = 1) {
         var turnsLeft: Int = 25
     ) {
         fun remaining() = capacity - filled
-        fun getName() = "THÙNG ${targetColor.displayName}"
     }
 
     private val boxes = mutableListOf<Box>()
     private val boxSlots = mutableListOf<BoxSlot>()
     private val random = Random(levelId.toLong())
     
-    private var completedBoxesCount = 0
-    private var totalFullBoxesCount = 0
+    var completedBoxesCount = 0
+    var totalFullBoxesCount = 0
     private var colorsUsed = listOf<ColorId>()
     
     var selectedBoxIndex: Int? = null
@@ -309,7 +308,6 @@ class LevelOneEngine(val levelId: Int = 1) {
 
     fun getBoxes() = boxes
     fun getBoxSlots() = boxSlots
-    fun getProgressText() = "Thu hoạch: $completedBoxesCount/$totalFullBoxesCount thùng"
 
     /**
      * Kiểm tra bế tắc: không còn bước đi hợp lệ nào trên bàn chơi.

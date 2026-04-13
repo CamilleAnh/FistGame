@@ -27,7 +27,7 @@
             android:background="@drawable/level_title_bg"
             android:paddingHorizontal="32dp"
             android:paddingVertical="10dp"
-            android:text="SELECT STAGE"
+            android:text="@string/second_fragment_label"
             android:textColor="#FFFFFF"
             android:textSize="22sp"
             android:textStyle="bold"

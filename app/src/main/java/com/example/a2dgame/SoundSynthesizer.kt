@@ -1,4 +1,4 @@
-package com.example.a2dgame
+package com.yourname.fruitsort
 
 import android.media.AudioAttributes
 import android.media.AudioFormat

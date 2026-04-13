@@ -74,6 +74,128 @@
             android:paddingEnd="16dp"
             android:paddingBottom="24dp">
 
+            <!-- ============================== -->
+            <!-- Section: Premium (Remove Ads) -->
+            <!-- ============================== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/shop_section_premium"
+                android:textColor="#FFFFD54F"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+
+            <!-- Remove Ads Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_remove_ads"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardBackgroundColor="#1A1A2E"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="12dp">
+
+                <!-- Gold gradient border via background -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="2dp"
+                    android:background="#FFD54F">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:background="#1A1A2E">
+
+                        <!-- Title row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/shop_remove_ads_title"
+                                android:textColor="#FFFFFF"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <!-- Active badge (hidden by default) -->
+                            <TextView
+                                android:id="@+id/tv_remove_ads_active_badge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="✅ ĐÃ MUA"
+                                android:textColor="#A5D6A7"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+
+                        </LinearLayout>
+
+                        <!-- Description -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="@string/shop_remove_ads_desc"
+                            android:textColor="#AAFFFFFF"
+                            android:textSize="12sp"
+                            android:lineSpacingExtra="2dp" />
+
+                        <!-- Benefits list -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:text="● Xoá Banner Ad vĩnh viễn&#10;● Xoá Interstitial giữa các màn&#10;● Tự động nhận Rewarded không cần xem"
+                            android:textColor="#FFD54F"
+                            android:textSize="12sp"
+                            android:lineSpacingExtra="3dp" />
+
+                        <!-- Buy button -->
+                        <Button
+                            android:id="@+id/btn_buy_remove_ads"
+                            android:layout_width="match_parent"
+                            android:layout_height="50dp"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/shop_remove_ads_loading"
+                            android:textAllCaps="false"
+                            android:textColor="#1A1A2E"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:backgroundTint="#FFD54F"
+                            android:stateListAnimator="@null"
+                            android:elevation="6dp" />
+
+                        <!-- Restore link -->
+                        <TextView
+                            android:id="@+id/tv_restore_purchases"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="10dp"
+                            android:text="@string/shop_remove_ads_restore"
+                            android:textColor="#66FFFFFF"
+                            android:textSize="12sp"
+                            android:paddingTop="6dp"
+                            android:paddingBottom="6dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp" />
+
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Section: Free Gold -->
             <TextView
                 android:layout_width="wrap_content"

@@ -1,20 +1,31 @@
-package com.example.a2dgame
+package com.yourname.fruitsort
 
+import android.content.Context
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
-import com.example.a2dgame.databinding.ActivityMainBinding
+import com.yourname.fruitsort.databinding.ActivityMainBinding
 import com.google.android.gms.ads.MobileAds
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    override fun attachBaseContext(newBase: Context) {
+        // Load ngôn ngữ đã lưu trước khi khởi tạo Activity
+        super.attachBaseContext(LanguageManager.loadLocale(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Khởi tạo Google Mobile Ads SDK
-        MobileAds.initialize(this) {}
+        // Khởi tạo Google Mobile Ads SDK, sau đó pre-load Rewarded + Interstitial
+        MobileAds.initialize(this) {
+            AdManager.initialize(this)
+        }
+
+        // Khởi tạo Google Play Billing (mua Remove Ads)
+        BillingManager.initialize(this)
 
         // Hide system UI for full screen game experience
         window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -31,5 +42,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         GlobalMusicPlayer.releaseAll()
+        BillingManager.destroy()
     }
 }

@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.a2dgame"
-    compileSdk = 34
+    namespace = "com.yourname.fruitsort"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.a2dgame"
+        applicationId = "com.yourname.fruitsort"
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -20,7 +20,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.play.services.ads)
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

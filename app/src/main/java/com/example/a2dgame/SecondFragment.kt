@@ -1,4 +1,4 @@
-package com.example.a2dgame
+package com.yourname.fruitsort
 
 import android.content.Context
 import android.os.Bundle
@@ -10,9 +10,9 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
-import com.example.a2dgame.databinding.FragmentSecondBinding
-import com.example.a2dgame.databinding.ItemLevelBinding
-import com.example.a2dgame.databinding.ItemLevelPageBinding
+import com.yourname.fruitsort.databinding.FragmentSecondBinding
+import com.yourname.fruitsort.databinding.ItemLevelBinding
+import com.yourname.fruitsort.databinding.ItemLevelPageBinding
 import com.google.android.material.tabs.TabLayoutMediator
 
 class SecondFragment : Fragment() {
