@@ -13,6 +13,7 @@
     <string name="game_over_title">GAME OVER!</string>
     <string name="turns_remaining_format"> | Moves: %1$d</string>
     <string name="bag_info_format">BAG %1$s\n%2$d/%3$d\n(%4$d moves)</string>
+    <string name="bag_numeric_format">%1$d/%2$d</string>
     <string name="congratulations_format">CONGRATS! YOU COMPLETED LEVEL %1$d</string>
     <string name="instruction_ice">Break ice by pouring same colors into the tube.</string>
     <string name="instruction_cobweb">Tap the cobweb 🕸️ to clean it.</string>

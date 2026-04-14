@@ -1,0 +1,68 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="150dp"
+    android:height="100dp"
+    android:viewportWidth="150"
+    android:viewportHeight="100">
+
+    <!-- Rear Wheel Arc -->
+    <path android:fillColor="#FFCA28" android:pathData="M 30 75 A 15 15 0 1 0 60 75 Z" />
+    <!-- Rear Wheel -->
+    <path android:fillColor="#263238" android:pathData="M 33 80 A 12 12 0 1 0 57 80 A 12 12 0 1 0 33 80 Z" />
+    <path android:fillColor="#B0BEC5" android:pathData="M 40 80 A 5 5 0 1 0 50 80 A 5 5 0 1 0 40 80 Z" />
+
+    <!-- Front Wheel Arc -->
+    <path android:fillColor="#FFCA28" android:pathData="M 95 75 A 15 15 0 1 0 125 75 Z" />
+    <!-- Front Wheel -->
+    <path android:fillColor="#263238" android:pathData="M 98 80 A 12 12 0 1 0 122 80 A 12 12 0 1 0 98 80 Z" />
+    <path android:fillColor="#B0BEC5" android:pathData="M 105 80 A 5 5 0 1 0 115 80 A 5 5 0 1 0 105 80 Z" />
+
+    <!-- Yellow Cargo Box (thick rounded rectangle) -->
+    <path
+        android:fillColor="#FFCA28"
+        android:pathData="M 10 20 C 10 10, 85 10, 85 20 V 65 H 10 Z" />
+    <!-- Horizontal lines on cargo box -->
+    <path
+        android:strokeColor="#FFB300"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M 15 30 H 80 M 15 45 H 80 M 15 60 H 80" />
+
+    <!-- Blue lower truck chassis -->
+    <path
+        android:fillColor="#42A5F5"
+        android:pathData="M 10 65 H 85 V 75 H 10 Z" />
+
+    <!-- Blue Cab -->
+    <path
+        android:fillColor="#29B6F6"
+        android:pathData="M 85 25 H 115 C 130 25 140 45 140 60 V 75 H 85 Z" />
+        
+    <!-- Cab inner lines -->
+    <path
+        android:strokeColor="#1E88E5"
+        android:strokeWidth="2"
+        android:pathData="M 85 75 H 140" />
+
+    <!-- Cab Window -->
+    <path
+        android:fillColor="#E1F5FE"
+        android:pathData="M 90 30 H 110 C 118 30 125 45 125 50 H 90 Z" />
+    <path
+        android:fillColor="#B3E5FC"
+        android:pathData="M 95 35 H 108 C 113 35 118 43 118 47 H 95 Z" />
+
+    <!-- Bumper & lights -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M 135 65 C 145 65 145 75 135 75 H 125 V 65 Z" />
+    <!-- Headlight -->
+    <path
+        android:fillColor="#FFEE58"
+        android:pathData="M 138 67 H 142 V 73 H 138 Z" />
+
+    <!-- Tail light -->
+    <path
+        android:fillColor="#EF5350"
+        android:pathData="M 5 66 H 10 V 74 H 5 Z" />
+
+</vector>

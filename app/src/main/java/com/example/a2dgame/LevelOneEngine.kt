@@ -18,6 +18,13 @@ class LevelOneEngine(val levelId: Int = 1) {
         PEAR("#D4E157", "PEAR", "🍐"), COCONUT("#795548", "COCONUT", "🥥"),
         KIWI("#9CCC65", "KIWI", "🥝"), CHERRY("#F44336", "CHERRY", "🍒"), 
         LEMON("#FFF176", "LEMON", "🍋"), AVOCADO("#99CC33", "AVOCADO", "🥑"),
+        TOMATO("#E53935", "TOMATO", "🍅"), CORN("#FFB300", "CORN", "🌽"),
+        CARROT("#FB8C00", "CARROT", "🥕"), EGGPLANT("#8E24AA", "EGGPLANT", "🍆"),
+        BROCCOLI("#43A047", "BROCCOLI", "🥦"), POTATO("#8D6E63", "POTATO", "🥔"),
+        CHILI("#E53935", "CHILI", "🌶️"), SWEET_POTATO("#D81B60", "SWEET POTATO", "🍠"),
+        ONION("#F4511E", "ONION", "🧅"), MUSHROOM("#D32F2F", "MUSHROOM", "🍄"),
+        BELL_PEPPER("#7CB342", "BELL PEPPER", "🫑"), CUCUMBER("#388E3C", "CUCUMBER", "🥒"),
+        GARLIC("#BDBDBD", "GARLIC", "🧄"), PEANUT("#A1887F", "PEANUT", "🥜"),
         EMPTY("#333333", "EMPTY", "");
 
         companion object {

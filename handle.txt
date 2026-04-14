@@ -1,0 +1,143 @@
+    private fun handleBoxTap(index: Int) {
+        if (engine.isGameOver) return
+        if (animatingBoxes.contains(index)) return
+
+        // ≡ƒöì K├¡nh l├║p mode: tap v├áo hß╗Öp ─æß╗â lß╗Ö lß╗¢p ß║⌐n
+        if (isMagnifyMode) {
+            val box = engine.getBoxes().find { it.id == index }
+            if (box != null && !box.isArchived && box.hiddenLayers > 0) {
+                powerupMagnify--
+                engine.revealHiddenLayers(index)
+                soundManager?.play("complete")
+            }
+            // Tho├ít mode d├╣ hß╗Öp c├│ ß║⌐n hay kh├┤ng
+            isMagnifyMode = false
+            updatePowerupButtons()
+            renderBoard()
+            return
+        }
+
+        val boxes = engine.getBoxes()
+        val clickedBox = boxes.find { it.id == index } ?: return
+        val selectedIdx = engine.selectedBoxIndex
+
+        if (selectedIdx == null) {
+            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isComplete()) {
+                engine.selectedBoxIndex = index
+                soundManager?.play("pickup")
+                val view = binding.glGameBoard.findViewWithTag<View>(index)
+                animateSelection(view, true)
+            }
+        } else if (selectedIdx == index) {
+            engine.selectedBoxIndex = null
+            soundManager?.play("drop")
+            val view = binding.glGameBoard.findViewWithTag<View>(index)
+            animateSelection(view, false)
+        } else {
+            val srcBox = boxes.find { it.id == selectedIdx }!!
+            if (engine.canMove(srcBox, clickedBox)) {
+                animateMoveSequence(selectedIdx, index)
+            } else {
+                val oldView = binding.glGameBoard.findViewWithTag<View>(selectedIdx)
+                animateSelection(oldView, false)
+                
+                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isComplete()) {
+                    engine.selectedBoxIndex = index
+                    soundManager?.play("pickup")
+                    val view = binding.glGameBoard.findViewWithTag<View>(index)
+                    animateSelection(view, true)
+                } else {
+                    engine.selectedBoxIndex = null
+                    soundManager?.play("drop")
+                }
+            }
+        }
+    }
+
+    private fun animateSelection(boxView: View?, isSelected: Boolean) {
+        val boxLayout = (boxView as? ViewGroup)?.getChildAt(0) as? ViewGroup ?: return
+        val density = resources.displayMetrics.density
+        val boxId = boxView.tag as Int
+        val box = engine.getBoxes().find { it.id == boxId } ?: return
+        val color = box.peekColor()
+
+        // T├¡nh sß╗æ block LI├èN TIß║╛P tß╗½ ─Éß╗êNH stack c├│ c├╣ng m├áu (kh├┤ng t├¡nh block c├╣ng m├áu nh╞░ng kh├┤ng li├¬n tiß║┐p)
+        // blocks[blocks.size-1] = ─æß╗ënh, blocks[0] = ─æ├íy
+        var consecutiveCount = 0
+        for (idx in box.blocks.indices.reversed()) {
+            if (idx < box.hiddenLayers) break
+            if (box.blocks[idx] == color) consecutiveCount++
+            else break
+        }
+        // topStackRange: c├íc blockIndex (trong blocks[]) thuß╗Öc top-stack li├¬n tiß║┐p
+        // blockIndex cao nhß║Ñt = ─æß╗ënh = blocks.size-1
+        val topStackMinIndex = box.blocks.size - consecutiveCount
+
+        // boxLayout: getChildAt(0) = ─æß╗ënh stack (blocks[blocks.size-1])
+        //            getChildAt(childCount-1) = ─æ├íy stack (blocks[0])
+        // i trong loop ΓåÆ blockIndex trong blocks[] = blocks.size - 1 - i
+        for (i in 0 until boxLayout.childCount) {
+            val block = boxLayout.getChildAt(i)
+            // blockIndex l├á vß╗ï tr├¡ t╞░╞íng ß╗⌐ng trong blocks[]
+            val blockIndex = box.blocks.size - 1 - i
+            
+            // Chß╗ë animate block nß║▒m trong v├╣ng li├¬n tiß║┐p tß╗½ ─æß╗ënh
+            val isPartOfTopStack = blockIndex >= 0 &&
+                                   blockIndex >= topStackMinIndex &&
+                                   blockIndex >= box.hiddenLayers
+            
+            if (isPartOfTopStack) {
+                if (isSelected) {
+                    block.animate()
+                        .translationY(-15 * density)
+                        .scaleX(1.1f)
+                        .scaleY(1.1f)
+                        .setDuration(200)
+                        .setInterpolator(OvershootInterpolator())
+                        .withEndAction { startWiggle(block) }
+                        .start()
+                } else {
+                    stopWiggle(block)
+                    block.animate()
+                        .translationY(0f)
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(200)
+                        .start()
+                }
+            } else if (!isSelected) {
+                // ─Éß║úm bß║úo reset animation cho tß║Ñt cß║ú block (ph├▓ng tr╞░ß╗¥ng hß╗úp state c┼⌐)
+                stopWiggle(block)
+                block.animate()
+                    .translationY(0f)
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(200)
+                    .start()
+            }
+        }
+        
+        // Scale boxLayout (inner) thay v├¼ boxContainer ─æß╗â tr├ính overlap v├╣ng touch
+        boxLayout.animate()
+            .scaleX(if (isSelected) 1.05f else 1.0f)
+            .scaleY(if (isSelected) 1.05f else 1.0f)
+            .setDuration(200)
+            .start()
+    }
+
+    private fun startWiggle(view: View) {
+        if (wiggleAnimators.containsKey(view)) return
+        val anim = ObjectAnimator.ofFloat(view, View.ROTATION, -3f, 3f).apply {
+            duration = 150
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+            start()
+        }
+        wiggleAnimators[view] = anim
+    }
+
+    private fun stopWiggle(view: View) {
+        wiggleAnimators.remove(view)?.cancel()
+        view.rotation = 0f
+    }
+

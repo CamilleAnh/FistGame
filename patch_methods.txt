@@ -1,0 +1,519 @@
+    private fun animateSelection(boxView: View?, isSelected: Boolean) {
+        val boxLayout = (boxView as? ViewGroup)?.getChildAt(0) as? ViewGroup ?: return
+        val density = resources.displayMetrics.density
+        val boxId = boxView.tag as Int
+        val box = engine.getBoxes().find { it.id == boxId } ?: return
+        val color = box.peekColor()
+
+        // T├¡nh sß╗æ block LI├èN TIß║╛P tß╗½ ─Éß╗êNH stack c├│ c├╣ng m├áu (kh├┤ng t├¡nh block c├╣ng m├áu nh╞░ng kh├┤ng li├¬n tiß║┐p)
+        // blocks[blocks.size-1] = ─æß╗ënh, blocks[0] = ─æ├íy
+        var consecutiveCount = 0
+        for (idx in box.blocks.indices.reversed()) {
+            if (idx < box.hiddenLayers) break
+            if (box.blocks[idx] == color) consecutiveCount++
+            else break
+        }
+        // topStackRange: c├íc blockIndex (trong blocks[]) thuß╗Öc top-stack li├¬n tiß║┐p
+        // blockIndex cao nhß║Ñt = ─æß╗ënh = blocks.size-1
+        val topStackMinIndex = box.blocks.size - consecutiveCount
+
+        // boxLayout: getChildAt(0) = ─æß╗ënh stack (blocks[blocks.size-1])
+        //            getChildAt(childCount-1) = ─æ├íy stack (blocks[0])
+        // i trong loop ΓåÆ blockIndex trong blocks[] = blocks.size - 1 - i
+        for (i in 0 until boxLayout.childCount) {
+            val block = boxLayout.getChildAt(i)
+            // blockIndex l├á vß╗ï tr├¡ t╞░╞íng ß╗⌐ng trong blocks[]
+            val blockIndex = box.blocks.size - 1 - i
+            
+            // Chß╗ë animate block nß║▒m trong v├╣ng li├¬n tiß║┐p tß╗½ ─æß╗ënh
+            val isPartOfTopStack = blockIndex >= 0 &&
+                                   blockIndex >= topStackMinIndex &&
+                                   blockIndex >= box.hiddenLayers
+            
+            if (isPartOfTopStack) {
+                if (isSelected) {
+                    block.animate()
+                        .translationY(-15 * density)
+                        .scaleX(1.1f)
+                        .scaleY(1.1f)
+                        .setDuration(200)
+                        .setInterpolator(OvershootInterpolator())
+                        .withEndAction { startWiggle(block) }
+                        .start()
+                } else {
+                    stopWiggle(block)
+                    block.animate()
+                        .translationY(0f)
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(200)
+                        .start()
+                }
+            } else if (!isSelected) {
+                // ─Éß║úm bß║úo reset animation cho tß║Ñt cß║ú block (ph├▓ng tr╞░ß╗¥ng hß╗úp state c┼⌐)
+                stopWiggle(block)
+                block.animate()
+                    .translationY(0f)
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(200)
+                    .start()
+            }
+        }
+        
+        // Scale boxLayout (inner) thay v├¼ boxContainer ─æß╗â tr├ính overlap v├╣ng touch
+        boxLayout.animate()
+            .scaleX(if (isSelected) 1.05f else 1.0f)
+            .scaleY(if (isSelected) 1.05f else 1.0f)
+            .setDuration(200)
+            .start()
+    }
+
+    private fun startWiggle(view: View) {
+        if (wiggleAnimators.containsKey(view)) return
+        val anim = ObjectAnimator.ofFloat(view, View.ROTATION, -3f, 3f).apply {
+            duration = 150
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+            start()
+        }
+        wiggleAnimators[view] = anim
+    }
+
+    private fun stopWiggle(view: View) {
+        wiggleAnimators.remove(view)?.cancel()
+        view.rotation = 0f
+    }
+
+    private fun animateMoveSequence(srcId: Int, dstId: Int) {
+        activeAnimationsCount++
+        animatingBoxes.add(srcId)
+        animatingBoxes.add(dstId)
+        engine.selectedBoxIndex = null
+        
+        val srcView = binding.glGameBoard.findViewWithTag<ViewGroup>(srcId)
+        val dstView = binding.glGameBoard.findViewWithTag<ViewGroup>(dstId)
+        val srcLayout = srcView?.getChildAt(0) as? ViewGroup
+        val dstLayout = dstView?.getChildAt(0) as? ViewGroup
+        
+        if (srcLayout == null || dstLayout == null || srcView == null || dstView == null) {
+            animatingBoxes.remove(srcId)
+            animatingBoxes.remove(dstId)
+            activeAnimationsCount--
+            renderBoard()
+            return
+        }
+
+        val srcBox = engine.getBoxes().find { it.id == srcId }!!
+        val dstBox = engine.getBoxes().find { it.id == dstId }!!
+        val color = srcBox.peekColor()
+        
+        val movingViews = mutableListOf<View>()
+        for (i in 0 until srcLayout.childCount) {
+            // blockIndex trong box logic *hiß╗çn tß║íi* tr╞░ß╗¢c khi modify (d├╣ sao ta mß╗¢i lß║Ñy childCount)
+            val blockIndex = srcBox.blocks.size - 1 - i
+            if (blockIndex >= 0 &&
+                blockIndex >= srcBox.hiddenLayers &&
+                srcBox.blocks[blockIndex] == color &&
+                (dstBox.blocks.size + movingViews.size) < dstBox.capacity) {
+                movingViews.add(srcLayout.getChildAt(i))
+            } else if (blockIndex >= 0 && srcBox.blocks[blockIndex] != color) {
+                // Dß╗½ng ngay khi gß║╖p block kh├íc m├áu
+                break
+            }
+        }
+        
+        val count = movingViews.size
+        if (count == 0) {
+            animatingBoxes.remove(srcId)
+            animatingBoxes.remove(dstId)
+            activeAnimationsCount--
+            return
+        }
+
+        // IMMEDIATE LOGIC UPDATE & PENDING COUNT
+        pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) + count
+        engine.executeMove(srcBox, dstBox)
+
+        val rootLoc = IntArray(2)
+        binding.root.getLocationOnScreen(rootLoc)
+        
+        val srcLoc = IntArray(2)
+        val dstLoc = IntArray(2)
+        srcView.getLocationOnScreen(srcLoc)
+        dstView.getLocationOnScreen(dstLoc)
+        
+        val moveAnimators = mutableListOf<Animator>()
+        val density = resources.displayMetrics.density
+        
+        soundManager?.play("move")
+
+        // === RESET TRANSFORMS NGAY Lß║¼P Tß╗¿C ─æß╗â tr├ính ghost/b├│ng mß╗¥ ===
+        // 1. Reset scale cß╗ºa boxLayout nguß╗ôn vß╗ü 1.0 ngay (kh├┤ng animate)
+        srcLayout.animate().cancel()
+        srcLayout.scaleX = 1.0f
+        srcLayout.scaleY = 1.0f
+        // 2. Reset transform cß╗ºa c├íc block C├ÆN Lß║áI trong srcLayout (kh├┤ng bay)
+        for (i in 0 until srcLayout.childCount) {
+            val remaining = srcLayout.getChildAt(i)
+            if (!movingViews.contains(remaining)) {
+                remaining.animate().cancel()
+                remaining.translationY = 0f
+                remaining.scaleX = 1.0f
+                remaining.scaleY = 1.0f
+                remaining.rotation = 0f
+                remaining.alpha = 1.0f
+            }
+        }
+
+        movingViews.forEachIndexed { index, block ->
+            val blockLoc = IntArray(2)
+            block.getLocationOnScreen(blockLoc)
+            
+            val originalWidth = block.width
+            val originalHeight = block.height
+            
+            stopWiggle(block)
+            val parent = block.parent as ViewGroup
+            parent.removeView(block)
+            
+            val lp = ViewGroup.LayoutParams(originalWidth, originalHeight)
+            (binding.root as ViewGroup).addView(block, lp)
+            
+            // Reset transform tr├¬n block ─æang bay tr╞░ß╗¢c khi ─æß║╖t vß╗ï tr├¡ tuyß╗çt ─æß╗æi
+            block.scaleX = 1.0f
+            block.scaleY = 1.0f
+            block.rotation = 0f
+            block.translationX = 0f
+            block.translationY = 0f
+            block.alpha = 1.0f
+            block.x = (blockLoc[0] - rootLoc[0]).toFloat()
+            block.y = (blockLoc[1] - rootLoc[1]).toFloat()
+            
+            val targetX = (dstLoc[0] - rootLoc[0]).toFloat() + (dstView.width - originalWidth) / 2f
+            val targetSlotIndex = dstBox.blocks.size - count + (count - 1 - index)
+            val paddingBottom = 20 * density
+            val overlapAdjustment = targetSlotIndex * 4 * density
+            val targetY = (dstLoc[1] - rootLoc[1]).toFloat() + dstView.height - paddingBottom - (targetSlotIndex + 1) * originalHeight + overlapAdjustment
+
+            val path = Path().apply {
+                moveTo(block.x, block.y)
+                val arcHeight = 150 * density
+                quadTo((block.x + targetX) / 2, (dstLoc[1] - rootLoc[1]).toFloat() - arcHeight, targetX, targetY)
+            }
+            
+            val animator = ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply {
+                duration = 300 + index * 80L
+                interpolator = AccelerateDecelerateInterpolator()
+            }
+            moveAnimators.add(animator)
+        }
+        
+        android.animation.AnimatorSet().apply {
+            playTogether(moveAnimators)
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    movingViews.forEach { (binding.root as ViewGroup).removeView(it) }
+                    
+                    val currentPending = pendingIncomingMap[dstId] ?: 0
+                    if (currentPending >= count) {
+                        pendingIncomingMap[dstId] = currentPending - count
+                    } else {
+                        pendingIncomingMap[dstId] = 0
+                    }
+                    
+                    val finalDstBox = engine.getBoxes().find { it.id == dstId }!!
+                    
+                    if (finalDstBox.isComplete() && (pendingIncomingMap[dstId] ?: 0) == 0) {
+                        renderBoard()
+                        val newDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
+                        if (newDstView != null) {
+                            playCompletionAnimation(newDstView, dstId, srcId)
+                        } else {
+                            engine.archiveBox(dstId)
+                            engine.archiveAllReady()
+                            animatingBoxes.remove(srcId)
+                            animatingBoxes.remove(dstId)
+                            activeAnimationsCount--
+                            renderBoard()
+                            checkGameResults()
+                        }
+                    } else {
+                        engine.archiveAllReady()
+                        soundManager?.play("drop")
+                        animatingBoxes.remove(srcId)
+                        animatingBoxes.remove(dstId)
+                        activeAnimationsCount--
+                        renderBoard()
+                        val updatedDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
+                        if (updatedDstView != null) animateContainerBounce(updatedDstView)
+                        checkGameResults()
+                    }
+                }
+            })
+            start()
+        }
+    }
+
+    private fun playCompletionAnimation(view: View, boxId: Int, srcBoxId: Int = -1) {
+        view.post {
+            val density = resources.displayMetrics.density
+            val width = view.width
+            val height = view.height
+
+            soundManager?.play("complete")
+
+            // 1. Scale & Bounce
+            val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.3f, 1f)
+            val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.3f, 1f)
+            val bounceAnim = ObjectAnimator.ofPropertyValuesHolder(view, scaleX, scaleY).apply {
+                duration = 600
+                interpolator = AnticipateOvershootInterpolator()
+            }
+
+            // 2. Shine Sweep Effect
+            val shineView = View(context).apply {
+                background = GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    intArrayOf(Color.TRANSPARENT, Color.parseColor("#B0FFFFFF"), Color.TRANSPARENT)
+                )
+                alpha = 0f
+            }
+            (view as ViewGroup).addView(shineView, FrameLayout.LayoutParams(width, height))
+            shineView.translationX = -width.toFloat()
+            
+            val shineAnim = AnimatorSet().apply {
+                playTogether(
+                    ObjectAnimator.ofFloat(shineView, View.ALPHA, 0f, 1f, 0f).apply { duration = 500 },
+                    ObjectAnimator.ofFloat(shineView, View.TRANSLATION_X, -width.toFloat(), width.toFloat()).apply { 
+                        duration = 500
+                        interpolator = LinearInterpolator()
+                    }
+                )
+            }
+
+            // 3. Glow Highlight
+            val glowColor = Color.parseColor("#80FFEB3B")
+            val glowAnim = ValueAnimator.ofArgb(Color.TRANSPARENT, glowColor, Color.TRANSPARENT).apply {
+                duration = 800
+                addUpdateListener { animator ->
+                    view.foreground = GradientDrawable().apply {
+                        setColor(animator.animatedValue as Int)
+                        cornerRadius = 8 * density
+                    }
+                }
+            }
+
+            // 4. Checkmark
+            val checkmark = TextView(context).apply {
+                text = "Γ£à"
+                textSize = 40f
+                alpha = 0f
+                gravity = Gravity.CENTER
+            }
+            (view as ViewGroup).addView(checkmark, FrameLayout.LayoutParams(-1, -1, Gravity.CENTER))
+            
+            val checkmarkAnim = AnimatorSet().apply {
+                playTogether(
+                    ObjectAnimator.ofFloat(checkmark, View.ALPHA, 0f, 1f, 1f, 0f).apply { duration = 1000 },
+                    ObjectAnimator.ofFloat(checkmark, View.SCALE_X, 0.5f, 1.5f, 1f).apply { duration = 600 },
+                    ObjectAnimator.ofFloat(checkmark, View.SCALE_Y, 0.5f, 1.5f, 1f).apply { duration = 600 }
+                )
+            }
+
+            // 5. Particles
+            spawnParticles(view)
+
+            // 6. Vibration & Shake
+            triggerVibration(25)
+            val shakeX = ObjectAnimator.ofFloat(binding.glGameBoard, View.TRANSLATION_X, 0f, 10f, -10f, 10f, -10f, 0f).apply {
+                duration = 400
+            }
+
+            AnimatorSet().apply {
+                playTogether(bounceAnim, glowAnim, shineAnim, checkmarkAnim, shakeX)
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        view.foreground = null
+                        (view as? ViewGroup)?.removeView(shineView)
+                        (view as? ViewGroup)?.removeView(checkmark)
+                        engine.archiveBox(boxId)
+                        engine.archiveAllReady() // cascade: archive c├íc hß╗Öp kh├íc ─æ├ú sß║╡n s├áng
+                        if (srcBoxId != -1) animatingBoxes.remove(srcBoxId)
+                        animatingBoxes.remove(boxId)
+                        activeAnimationsCount--
+                        renderBoard()
+                        checkGameResults()
+                    }
+                })
+                start()
+            }
+        }
+    }
+
+    private fun spawnParticles(anchor: View) {
+        val root = binding.root as ViewGroup
+        val loc = IntArray(2)
+        anchor.getLocationOnScreen(loc)
+        val rootLoc = IntArray(2)
+        root.getLocationOnScreen(rootLoc)
+        
+        val centerX = (loc[0] - rootLoc[0]) + anchor.width / 2f
+        val centerY = (loc[1] - rootLoc[1]) + anchor.height / 2f
+        
+        val emojis = listOf("Γ£¿", "Γ¡É", "≡ƒÄë", "≡ƒìÅ", "≡ƒìÄ", "≡ƒìÉ", "≡ƒìè", "≡ƒìï", "≡ƒìî", "≡ƒìë", "≡ƒìç", "≡ƒìô", "≡ƒ½É", "≡ƒìê", "≡ƒìÆ", "≡ƒìæ", "≡ƒÑ¡", "≡ƒìì", "≡ƒÑÑ", "≡ƒÑ¥")
+        
+        repeat(20) {
+            val particle = TextView(context).apply {
+                text = emojis.random()
+                textSize = 18f
+            }
+            root.addView(particle)
+            particle.x = centerX - 10 * resources.displayMetrics.density
+            particle.y = centerY - 10 * resources.displayMetrics.density
+            
+            val angle = Random.nextDouble(0.0, Math.PI * 2)
+            val velocity = Random.nextFloat() * 500f + 200f
+            val destX = centerX + (Math.cos(angle) * velocity).toFloat()
+            val destY = centerY + (Math.sin(angle) * velocity).toFloat() - 200f
+            
+            particle.animate()
+                .x(destX)
+                .y(destY)
+                .alpha(0f)
+                .scaleX(1.5f)
+                .scaleY(1.5f)
+                .rotation(Random.nextFloat() * 360f)
+                .setDuration(1000 + Random.nextLong(500))
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction { root.removeView(particle) }
+                .start()
+        }
+    }
+
+    private fun triggerVibration(ms: Long) {
+        val prefs = requireContext().getSharedPreferences("game_settings", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("vibration_on", true)) return
+
+        val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        if (vibrator?.hasVibrator() == true) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(ms)
+            }
+        }
+    }
+
+    private fun playBackgroundMusic() {
+        GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen)
+    }
+
+    private fun checkGameResults() {
+        if (engine.isWin) {
+            soundManager?.playWin()
+            showWinDialog()
+        } else if (engine.isGameOver && !engine.isWin) {
+            engine.isGameOver = true
+            soundManager?.playLose()
+            triggerVibration(200)
+            showLoseDialog()
+        } else if (engine.isDeadlocked()) {
+            engine.isGameOver = true
+            soundManager?.playLose()
+            triggerVibration(200)
+            showLoseDialog()
+        }
+    }
+
+    private fun showWinDialog() {
+        if (isWinDialogShowing) return
+        isWinDialogShowing = true
+        val levelId = args.levelId
+
+        val dialog = binding.layoutWinDialog
+        val dialogRoot = dialog.root
+        val winCard = dialog.winCard
+
+        // Set subtitle
+        dialog.tvWinSubtitle.text = getString(R.string.win_dialog_subtitle, levelId)
+
+        // Animate in: overlay fade + card scale bounce
+        dialogRoot.visibility = View.VISIBLE
+        dialogRoot.alpha = 0f
+        winCard.scaleX = 0.75f
+        winCard.scaleY = 0.75f
+        dialogRoot.animate().alpha(1f).setDuration(220).start()
+        winCard.animate()
+            .scaleX(1f).scaleY(1f)
+            .setDuration(420)
+            .setInterpolator(OvershootInterpolator(1.4f))
+            .start()
+
+        // Buttons spring up with slight stagger
+        val btnContinue = dialog.btnWinContinue
+        val btnX3 = dialog.btnWinWatchX3
+        for ((i, btn) in listOf(btnContinue, btnX3).withIndex()) {
+            btn.translationY = 50f
+            btn.alpha = 0f
+            btn.animate()
+                .translationY(0f)
+                .alpha(1f)
+                .setStartDelay(180L + i * 70L)
+                .setDuration(350)
+                .setInterpolator(OvershootInterpolator())
+                .start()
+        }
+
+        // ΓöÇΓöÇ Continue: nhß║¡n th╞░ß╗ƒng c╞í bß║ún v├á ch╞íi tiß║┐p ΓöÇΓöÇ
+        dialog.btnWinContinue.setOnClickListener {
+            dialog.btnWinContinue.isEnabled = false
+            dialog.btnWinWatchX3.isEnabled = false
+            // Coin pop animation on button
+            animateCoinReward(dialog.btnWinContinue)
+            soundManager?.play("complete")
+            GoldManager.addGold(requireContext(), GoldManager.REWARD_BASE)
+            updateGoldDisplay()
+            binding.root.postDelayed({ dismissWinDialogAndProceed() }, 450)
+        }
+
+        // ΓöÇΓöÇ x3 Reward: mock ad 2s ΓåÆ nhß║¡n th╞░ß╗ƒng x3 ΓåÆ ch╞íi tiß║┐p ΓöÇΓöÇ
+        dialog.btnWinWatchX3.setOnClickListener {
+            dialog.btnWinWatchX3.isEnabled = false
+            dialog.btnWinContinue.isEnabled = false
+            dialog.pbWinLoading.visibility = View.VISIBLE
+            dialog.tvWinWatching.visibility = View.VISIBLE
+            dialog.btnWinWatchX3.text = "ΓÅ│  WatchingΓÇª"
+
+            binding.root.postDelayed({
+                if (_binding == null) return@postDelayed
+                dialog.pbWinLoading.visibility = View.GONE
+                dialog.tvWinWatching.visibility = View.GONE
+                animateCoinReward(dialog.btnWinWatchX3)
+                soundManager?.play("complete")
+                GoldManager.addGold(requireContext(), GoldManager.REWARD_X3)
+                updateGoldDisplay()
+                dialog.tvX3Reward.text = "≡ƒÄë +${GoldManager.REWARD_X3} coins!"
+                binding.root.postDelayed({ dismissWinDialogAndProceed() }, 600)
+            }, 2000)
+        }
+    }
+
+    /** Small coin pulse animation on a button to celebrate reward */
+    private fun animateCoinReward(anchor: View) {
+        val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.25f, 1f)
+        val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.25f, 1f)
+        ObjectAnimator.ofPropertyValuesHolder(anchor, scaleX, scaleY).apply {
+            duration = 300
+            interpolator = OvershootInterpolator()
+            start()
+        }
+    }
+
+    private fun dismissWinDialogAndProceed() {
+        isWinDialogShowing = false
+        binding.layoutWinDialog.root.visibility = View.GONE
+        navigateToNextLevel()
+    }
+
