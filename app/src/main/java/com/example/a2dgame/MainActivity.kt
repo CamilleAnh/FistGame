@@ -6,6 +6,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.view.View
 import com.yourname.fruitsort.databinding.ActivityMainBinding
 import com.google.android.gms.ads.MobileAds
+import androidx.core.view.WindowCompat
+import android.graphics.Color
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,6 +21,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Bật chế độ Edge-to-Edge hiện đại
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+
         // Khởi tạo Google Mobile Ads SDK, sau đó pre-load Rewarded + Interstitial
         MobileAds.initialize(this) {
             AdManager.initialize(this)
@@ -26,14 +33,6 @@ class MainActivity : AppCompatActivity() {
 
         // Khởi tạo Google Play Billing (mua Remove Ads)
         BillingManager.initialize(this)
-
-        // Hide system UI for full screen game experience
-        window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_FULLSCREEN)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

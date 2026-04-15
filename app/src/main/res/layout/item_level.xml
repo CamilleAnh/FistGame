@@ -2,13 +2,13 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/fl_level_item"
-    android:layout_width="65dp"
-    android:layout_height="65dp"
+    android:layout_width="58dp"
+    android:layout_height="58dp"
     android:layout_margin="4dp"
     android:clickable="true"
     android:focusable="true"
-    android:duplicateParentState="false"
-    android:background="@drawable/level_item_unlocked">
+    android:elevation="4dp"
+    android:background="@drawable/powerup_button_bg">
 
     <TextView
         android:id="@+id/tv_level_number"
@@ -17,14 +17,14 @@
         android:layout_gravity="center"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
-        android:textStyle="bold" />
+        android:fontFamily="sans-serif-black" />
 
     <ImageView
         android:id="@+id/iv_lock"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:layout_gravity="center"
         android:src="@drawable/ic_lock"
-        app:tint="#FFFFFF"
+        app:tint="#44000000"
         android:visibility="gone" />
 </FrameLayout>

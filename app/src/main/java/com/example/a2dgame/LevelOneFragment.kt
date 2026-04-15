@@ -20,6 +20,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AnticipateOvershootInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
@@ -35,6 +36,10 @@ import com.yourname.fruitsort.databinding.FragmentLevelOneBinding
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
+import androidx.constraintlayout.widget.ConstraintLayout
 import kotlin.random.Random
 
 class LevelOneFragment : Fragment() {
@@ -89,6 +94,8 @@ class LevelOneFragment : Fragment() {
         setupSettings()
         setupPowerups()
         updateGoldDisplay()
+        setupTruckIdleAnimations()
+
     }
 
     private fun updateGoldDisplay() {
@@ -228,8 +235,8 @@ class LevelOneFragment : Fragment() {
     private fun renderBoard() {
         binding.glGameBoard.removeAllViews()
         val boxes = engine.getBoxes().filter { !it.isArchived }
-        
         val totalBoxes = boxes.size
+        
         val cols = when {
             totalBoxes <= 15 -> 5
             totalBoxes <= 25 -> 6
@@ -239,12 +246,14 @@ class LevelOneFragment : Fragment() {
         val screenWidth = resources.displayMetrics.widthPixels
         val sideMargins = (24 * resources.displayMetrics.density).toInt()
         val boxWidth = (screenWidth - sideMargins) / cols
-        val blockHeight = (boxWidth * 0.52).toInt()
-        val baseBoxHeight = (blockHeight * 4) + (16 * resources.displayMetrics.density).toInt()
         
-        // Honeycomb layout calculations
-        val verticalGap = (8 * resources.displayMetrics.density).toInt()
-        val stepY = baseBoxHeight + verticalGap
+        // Tăng chiều cao hộp rõ rệt theo yêu cầu
+        val boxHeight = (boxWidth * 1.5f).toInt()
+        val blockHeight = (boxWidth * 0.38f).toInt()
+        
+        // Logic Honeycomb nguyên bản (So le hàng chẵn hàng lẻ)
+        val verticalGap = (16 * resources.displayMetrics.density).toInt()
+        val stepY = boxHeight + verticalGap
         val narrowCols = cols - 1
         
         val rowLengths = mutableListOf<Int>()
@@ -260,8 +269,10 @@ class LevelOneFragment : Fragment() {
 
         if (engine.isBagMechanismEnabled) {
             val slots = engine.getBoxSlots()
-            slots.getOrNull(0)?.let { updateBoxUI(binding.tvBoxAFruit, binding.tvBoxAInfo, binding.tvBoxATurns, it) } ?: run { binding.truckContainerA.visibility = View.INVISIBLE }
-            slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) } ?: run { binding.truckContainerB.visibility = View.INVISIBLE }
+            slots.getOrNull(0)?.let { updateBoxUI(binding.tvBoxAFruit, binding.tvBoxAInfo, binding.tvBoxATurns, it) } 
+                ?: run { binding.truckContainerA.visibility = View.INVISIBLE }
+            slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) } 
+                ?: run { binding.truckContainerB.visibility = View.INVISIBLE }
         }
 
         var currentBoxIndex = 0
@@ -275,7 +286,9 @@ class LevelOneFragment : Fragment() {
                 
                 val boxContainer = FrameLayout(requireContext()).apply {
                     tag = box.id
-                    layoutParams = FrameLayout.LayoutParams(boxWidth, baseBoxHeight).apply {
+                    clipChildren = false
+                    clipToPadding = false
+                    layoutParams = FrameLayout.LayoutParams(boxWidth, boxHeight).apply {
                         leftMargin = leftOffset + (i * boxWidth)
                         topMargin = topOffset
                     }
@@ -285,35 +298,67 @@ class LevelOneFragment : Fragment() {
                 val boxLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.BOTTOM
-                    background = ContextCompat.getDrawable(context, R.drawable.carton_box_bg)
-                    setPadding(8, 6, 8, 12)
+                    clipChildren = false
+                    clipToPadding = false
+                    background = ContextCompat.getDrawable(context, R.drawable.isometric_box_bg)
+                    setPadding(
+                        (8 * resources.displayMetrics.density).toInt(),
+                        (2 * resources.displayMetrics.density).toInt(),
+                        (8 * resources.displayMetrics.density).toInt(),
+                        (16 * resources.displayMetrics.density).toInt()
+                    )
                     layoutParams = FrameLayout.LayoutParams(-1, -1)
                 }
 
                 val pending = pendingIncomingMap[box.id] ?: 0
                 val visibleCount = (box.blocks.size - pending).coerceAtLeast(0)
+                
                 for (bIdx in 0 until visibleCount) {
                     val fruit = box.blocks[bIdx]
                     val isHidden = bIdx < box.hiddenLayers
                     val blockView = FrameLayout(requireContext()).apply {
-                        layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply { setMargins(3, -2, 3, 0) }
-                        background = if (isHidden) GradientDrawable().apply { setColor(0x55000000); cornerRadius = 12f }
-                                     else ContextCompat.getDrawable(context, R.drawable.item_fruit_box)
+                        layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply { 
+                            setMargins(2, - (blockHeight * 0.20).toInt(), 2, 0) 
+                        }
+                        background = if (isHidden) GradientDrawable().apply { 
+                            setColor(0xCC333333.toInt())
+                            cornerRadius = 6 * resources.displayMetrics.density
+                        } else ContextCompat.getDrawable(context, R.drawable.item_fruit_box)
                         
                         addView(TextView(context).apply {
                             gravity = Gravity.CENTER
                             text = if (isHidden) "?" else fruit.fruitIcon
-                            textSize = if (isHidden) 16f else 24f
+                            textSize = 16f
                             setTextColor(if (isHidden) Color.WHITE else Color.BLACK)
+                            setShadowLayer(2f, 1f, 1f, 0x88000000.toInt())
                         })
                     }
                     boxLayout.addView(blockView, 0)
                 }
+                
+                if (box.isFrozen) {
+                    boxLayout.foreground = GradientDrawable().apply {
+                        setColor(0x4400BCD4.toInt())
+                        cornerRadius = 8 * resources.displayMetrics.density
+                    }
+                } else {
+                    boxLayout.foreground = null
+                }
+
                 boxContainer.addView(boxLayout)
                 binding.glGameBoard.addView(boxContainer)
                 currentBoxIndex++
             }
         }
+
+        if (engine.isBagMechanismEnabled) {
+            val slots = engine.getBoxSlots()
+            slots.getOrNull(0)?.let { updateBoxUI(binding.tvBoxAFruit, binding.tvBoxAInfo, binding.tvBoxATurns, it) } 
+                ?: run { binding.truckContainerA.visibility = View.INVISIBLE }
+            slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) } 
+                ?: run { binding.truckContainerB.visibility = View.INVISIBLE }
+        }
+        
         updateStatusUI()
     }
 
@@ -372,31 +417,31 @@ class LevelOneFragment : Fragment() {
     private fun animateSelection(boxView: View?, isSelected: Boolean) {
         val boxLayout = (boxView as? ViewGroup)?.getChildAt(0) as? ViewGroup ?: return
         val density = resources.displayMetrics.density
+        
+        // Vô hiệu hóa clipping cho toàn bộ cây thư mục cha
+        var p = boxView.parent
+        while (p is ViewGroup) {
+            p.clipChildren = false
+            p.clipToPadding = false
+            if (p.id == android.R.id.content) break // Đã tới root content
+            p = p.parent
+        }
         val boxId = boxView.tag as Int
         val box = engine.getBoxes().find { it.id == boxId } ?: return
         val color = box.peekColor()
 
-        // T├¡nh sß╗æ block LI├èN TIß║╛P tß╗½ ─Éß╗êNH stack c├│ c├╣ng m├áu (kh├┤ng t├¡nh block c├╣ng m├áu nh╞░ng kh├┤ng li├¬n tiß║┐p)
-        // blocks[blocks.size-1] = ─æß╗ënh, blocks[0] = ─æ├íy
         var consecutiveCount = 0
         for (idx in box.blocks.indices.reversed()) {
             if (idx < box.hiddenLayers) break
             if (box.blocks[idx] == color) consecutiveCount++
             else break
         }
-        // topStackRange: c├íc blockIndex (trong blocks[]) thuß╗Öc top-stack li├¬n tiß║┐p
-        // blockIndex cao nhß║Ñt = ─æß╗ënh = blocks.size-1
         val topStackMinIndex = box.blocks.size - consecutiveCount
 
-        // boxLayout: getChildAt(0) = ─æß╗ënh stack (blocks[blocks.size-1])
-        //            getChildAt(childCount-1) = ─æ├íy stack (blocks[0])
-        // i trong loop ΓåÆ blockIndex trong blocks[] = blocks.size - 1 - i
         for (i in 0 until boxLayout.childCount) {
             val block = boxLayout.getChildAt(i)
-            // blockIndex l├á vß╗ï tr├¡ t╞░╞íng ß╗⌐ng trong blocks[]
             val blockIndex = box.blocks.size - 1 - i
             
-            // Chß╗ë animate block nß║▒m trong v├╣ng li├¬n tiß║┐p tß╗½ ─æß╗ënh
             val isPartOfTopStack = blockIndex >= 0 &&
                                    blockIndex >= topStackMinIndex &&
                                    blockIndex >= box.hiddenLayers
@@ -404,10 +449,11 @@ class LevelOneFragment : Fragment() {
             if (isPartOfTopStack) {
                 if (isSelected) {
                     block.animate()
-                        .translationY(-15 * density)
-                        .scaleX(1.1f)
-                        .scaleY(1.1f)
-                        .setDuration(200)
+                        .translationY(-35 * density) 
+                        .translationZ(30 * density)
+                        .scaleX(1.15f)
+                        .scaleY(1.15f)
+                        .setDuration(250)
                         .setInterpolator(OvershootInterpolator())
                         .withEndAction { startWiggle(block) }
                         .start()
@@ -415,16 +461,17 @@ class LevelOneFragment : Fragment() {
                     stopWiggle(block)
                     block.animate()
                         .translationY(0f)
-                        .scaleX(1.0f)
-                        .scaleY(1.0f)
+                        .translationZ(0f)
+                        .scaleX(1.1f)
+                        .scaleY(1.1f)
                         .setDuration(200)
                         .start()
                 }
             } else if (!isSelected) {
-                // ─Éß║úm bß║úo reset animation cho tß║Ñt cß║ú block (ph├▓ng tr╞░ß╗¥ng hß╗úp state c┼⌐)
                 stopWiggle(block)
                 block.animate()
                     .translationY(0f)
+                    .translationZ(0f)
                     .scaleX(1.0f)
                     .scaleY(1.0f)
                     .setDuration(200)
@@ -432,11 +479,13 @@ class LevelOneFragment : Fragment() {
             }
         }
         
-        // Scale boxLayout (inner) thay v├¼ boxContainer ─æß╗â tr├ính overlap v├╣ng touch
-        boxLayout.animate()
-            .scaleX(if (isSelected) 1.05f else 1.0f)
-            .scaleY(if (isSelected) 1.05f else 1.0f)
-            .setDuration(200)
+        // Nâng toàn bộ hộp lên theo trục Z (3D Lift)
+        boxView.animate()
+            .translationZ(if (isSelected) 20 * density else 0f)
+            .scaleX(if (isSelected) 1.1f else 1.0f)
+            .scaleY(if (isSelected) 1.1f else 1.0f)
+            .setDuration(300)
+            .setInterpolator(DecelerateInterpolator())
             .start()
     }
 
@@ -574,10 +623,19 @@ class LevelOneFragment : Fragment() {
             }
             
             val animator = ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply {
-                duration = 300 + index * 80L
-                interpolator = AccelerateDecelerateInterpolator()
+                duration = 400 + index * 60L
+                interpolator = AnticipateOvershootInterpolator(0.8f)
             }
+            
+            // Bay kèm hiệu ứng xoay và scale
+            val scaleAnimX = ObjectAnimator.ofFloat(block, View.SCALE_X, 1.0f, 1.3f, 1.0f).apply { duration = 400 }
+            val scaleAnimY = ObjectAnimator.ofFloat(block, View.SCALE_Y, 1.0f, 1.3f, 1.0f).apply { duration = 400 }
+            val rotateAnim = ObjectAnimator.ofFloat(block, View.ROTATION, 0f, 10f, -10f, 0f).apply { duration = 400 }
+            
             moveAnimators.add(animator)
+            moveAnimators.add(scaleAnimX)
+            moveAnimators.add(scaleAnimY)
+            moveAnimators.add(rotateAnim)
         }
         
         android.animation.AnimatorSet().apply {
@@ -741,14 +799,33 @@ class LevelOneFragment : Fragment() {
         }
     }
 
+    private fun setupTruckIdleAnimations() {
+        val bounceA = ObjectAnimator.ofFloat(binding.imgTruckA, View.TRANSLATION_Y, 0f, 6f, 0f).apply {
+            duration = 2000
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        val bounceB = ObjectAnimator.ofFloat(binding.imgTruckB, View.TRANSLATION_Y, 0f, 6f, 0f).apply {
+            duration = 2200
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        bounceA.start()
+        bounceB.start()
+    }
+
     private fun animateTruckCompletion(truckView: View, onEnd: () -> Unit) {
         val screenWidth = resources.displayMetrics.widthPixels.toFloat()
-        val bounceY = ObjectAnimator.ofFloat(truckView, View.TRANSLATION_Y, 0f, -20f, 0f).apply { duration = 200 }
+        val bounceY = ObjectAnimator.ofFloat(truckView, View.TRANSLATION_Y, 0f, -30f, 0f).apply { duration = 300 }
         val driveOff = ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply {
-            duration = 500
+            duration = 700
             interpolator = AnticipateOvershootInterpolator()
         }
         
+        // Hiệu ứng khói khi xuất phát
+        spawnSmokeParticles(truckView)
         truckView.postDelayed({ soundManager?.play("move") }, 200)
         
         AnimatorSet().apply {
@@ -760,7 +837,7 @@ class LevelOneFragment : Fragment() {
                     
                     truckView.postDelayed({ soundManager?.play("move") }, 50)
                     ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply {
-                        duration = 600
+                        duration = 800
                         interpolator = OvershootInterpolator()
                         start()
                     }
@@ -770,41 +847,67 @@ class LevelOneFragment : Fragment() {
         }
     }
 
+    private fun spawnSmokeParticles(anchor: View) {
+        val root = binding.root as ViewGroup
+        val loc = IntArray(2)
+        anchor.getLocationOnScreen(loc)
+        val centerX = loc[0].toFloat() + (anchor.width * 0.2f)
+        val centerY = loc[1].toFloat() + (anchor.height * 0.8f)
+        
+        repeat(8) {
+            val p = TextView(context).apply {
+                text = listOf("💨", "☁️", "🔘").random()
+                textSize = 14f
+                alpha = 0.8f
+            }
+            root.addView(p)
+            p.x = centerX
+            p.y = centerY
+            p.animate()
+                .translationXBy(-(Random.nextFloat() * 200f))
+                .translationYBy(-(Random.nextFloat() * 100f))
+                .alpha(0f)
+                .scaleX(2f)
+                .scaleY(2f)
+                .setDuration(800)
+                .withEndAction { root.removeView(p) }
+                .start()
+        }
+    }
+
     private fun spawnParticles(anchor: View) {
         val root = binding.root as ViewGroup
         val loc = IntArray(2)
         anchor.getLocationOnScreen(loc)
-        val rootLoc = IntArray(2)
-        root.getLocationOnScreen(rootLoc)
         
-        val centerX = (loc[0] - rootLoc[0]) + anchor.width / 2f
-        val centerY = (loc[1] - rootLoc[1]) + anchor.height / 2f
+        val centerX = loc[0].toFloat() + anchor.width / 2f
+        val centerY = loc[1].toFloat() + anchor.height / 2f
         
-        val emojis = listOf("✨", "⭐", "🎉", "🍎", "🍏", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝")
+        val emojis = listOf("✨", "⭐", "🎉", "🔥", "🌈", "🎊", "💎", "❤️", "🎈", "🍒", "🍇", "🍑")
         
-        repeat(20) {
+        repeat(40) { // Tăng gấp đôi số hạt
             val particle = TextView(context).apply {
                 text = emojis.random()
-                textSize = 18f
+                textSize = 24f
             }
             root.addView(particle)
-            particle.x = centerX - 10 * resources.displayMetrics.density
-            particle.y = centerY - 10 * resources.displayMetrics.density
+            particle.x = centerX
+            particle.y = centerY
             
             val angle = Random.nextDouble(0.0, Math.PI * 2)
-            val velocity = Random.nextFloat() * 500f + 200f
+            val velocity = Random.nextFloat() * 800f + 300f
             val destX = centerX + (Math.cos(angle) * velocity).toFloat()
-            val destY = centerY + (Math.sin(angle) * velocity).toFloat() - 200f
+            val destY = centerY + (Math.sin(angle) * velocity).toFloat() - 300f
             
             particle.animate()
                 .x(destX)
                 .y(destY)
                 .alpha(0f)
-                .scaleX(1.5f)
-                .scaleY(1.5f)
-                .rotation(Random.nextFloat() * 360f)
-                .setDuration(1000 + Random.nextLong(500))
-                .setInterpolator(AccelerateDecelerateInterpolator())
+                .scaleX(2.0f)
+                .scaleY(2.0f)
+                .rotation(Random.nextFloat() * 720f)
+                .setDuration(1200 + Random.nextLong(800))
+                .setInterpolator(DecelerateInterpolator())
                 .withEndAction { root.removeView(particle) }
                 .start()
         }
@@ -844,8 +947,26 @@ class LevelOneFragment : Fragment() {
     private fun showWinDialog() {
         soundManager?.playWin()
         isWinDialogShowing = true
+        
+        val dialogCard = binding.layoutWinDialog.winCard
         binding.layoutWinDialog.root.visibility = View.VISIBLE
         binding.layoutWinDialog.tvWinSubtitle.text = getString(R.string.win_dialog_subtitle, args.levelId)
+        
+        // Hoạt ảnh xuất hiện chuyên nghiệp
+        dialogCard.scaleX = 0.5f
+        dialogCard.scaleY = 0.5f
+        dialogCard.alpha = 0f
+        dialogCard.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(500)
+            .setInterpolator(OvershootInterpolator())
+            .withEndAction { 
+                spawnParticles(binding.tvLevelName)
+                spawnParticles(dialogCard)
+            }
+            .start()
         
         val prefs = requireContext().getSharedPreferences("game_prefs", 0)
         val highest = prefs.getInt("highest_level", 1)
@@ -863,11 +984,31 @@ class LevelOneFragment : Fragment() {
         soundManager?.playLose()
         val vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
         if (vibrator?.hasVibrator() == true) { vibrator.vibrate(200) }
+        
+        // Rung lắc bàn chơi trước khi hiện dialog
         ObjectAnimator.ofFloat(binding.glGameBoard, View.TRANSLATION_X, 0f, 18f, -18f, 14f, -14f, 8f, -8f, 0f).apply { duration = 450; start() }
+        
         isLoseDialogShowing = true
+        val dialogCard = binding.layoutLoseDialog.loseCard
         binding.layoutLoseDialog.root.visibility = View.VISIBLE
+        
+        // Hoạt ảnh xuất hiện chuyên nghiệp
+        dialogCard.scaleX = 0.5f
+        dialogCard.scaleY = 0.5f
+        dialogCard.alpha = 0f
+        dialogCard.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .alpha(1f)
+            .setDuration(500)
+            .setInterpolator(OvershootInterpolator())
+            .start()
+
         binding.layoutLoseDialog.btnLoseRetry.setOnClickListener {
             activity?.recreate()
+        }
+        binding.layoutLoseDialog.btnLoseBack.setOnClickListener {
+            findNavController().popBackStack()
         }
     }
 

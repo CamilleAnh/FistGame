@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cooler Glass Gradient -->
+    <gradient
+        android:startColor="#EE2D1B2E"
+        android:centerColor="#DD1A1A2E"
+        android:endColor="#EE2D1B2E"
+        android:angle="45" />
+    
+    <corners android:radius="32dp" />
+    
+    <stroke
+        android:width="2dp"
+        android:color="#33FF5252" /> <!-- Reddish subtle border -->
+</shape>

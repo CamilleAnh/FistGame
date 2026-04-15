@@ -8,192 +8,183 @@
     android:clickable="true"
     android:focusable="true">
 
-    <androidx.cardview.widget.CardView
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/win_card"
         android:layout_width="320dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_margin="24dp"
-        app:cardBackgroundColor="#1A1A2E"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="20dp">
+        android:background="@drawable/dialog_premium_bg"
+        android:padding="28dp"
+        android:elevation="30dp">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <!-- Glowing Star Effect -->
+        <TextView
+            android:id="@+id/tv_win_stars"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✨ ⭐ ⭐ ⭐ ✨"
+            android:textSize="32sp"
+            android:letterSpacing="0.1"
+            android:shadowColor="#FFD54F"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="15"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Premium Title -->
+        <TextView
+            android:id="@+id/tv_win_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="VICTORY!"
+            android:textColor="#FFD54F"
+            android:textSize="34sp"
+            android:fontFamily="sans-serif-black"
+            android:shadowColor="#000000"
+            android:shadowDx="3"
+            android:shadowDy="3"
+            android:shadowRadius="6"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_win_stars" />
+
+        <TextView
+            android:id="@+id/tv_win_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Level Complete!"
+            android:textColor="#CCFFFFFF"
+            android:textSize="16sp"
+            android:fontFamily="sans-serif-medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_win_title" />
+
+        <View
+            android:id="@+id/win_divider"
+            android:layout_width="60dp"
+            android:layout_height="3dp"
+            android:layout_marginTop="20dp"
+            android:background="#FFD54F"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_win_subtitle" />
+
+        <TextView
+            android:id="@+id/tv_win_reward_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="COLLECT YOUR REWARD"
+            android:textColor="#AAFFFFFF"
+            android:textSize="12sp"
+            android:letterSpacing="0.1"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/win_divider" />
+
+        <!-- Buttons Row -->
+        <LinearLayout
+            android:id="@+id/ll_buttons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="22dp"
-            android:paddingTop="26dp"
-            android:paddingEnd="22dp"
-            android:paddingBottom="24dp">
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            app:layout_constraintTop_toBottomOf="@id/tv_win_reward_label">
 
-            <!-- Stars decoration top -->
-            <TextView
-                android:id="@+id/tv_win_stars"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⭐ ⭐ ⭐"
-                android:textSize="30sp"
-                android:letterSpacing="0.1"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <!-- Title -->
-            <TextView
-                android:id="@+id/tv_win_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/win_dialog_title"
-                android:textColor="#FFD54F"
-                android:textSize="27sp"
-                android:textStyle="bold"
-                android:shadowColor="#000000"
-                android:shadowDx="2"
-                android:shadowDy="2"
-                android:shadowRadius="4"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_win_stars" />
-
-            <!-- Subtitle (level X) -->
-            <TextView
-                android:id="@+id/tv_win_subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:text="Level ? complete!"
-                android:textColor="#AAFFFFFF"
-                android:textSize="14sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_win_title" />
-
-            <!-- Divider -->
-            <View
-                android:id="@+id/win_divider"
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_marginTop="16dp"
-                android:background="#33FFFFFF"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_win_subtitle" />
-
-            <!-- Reward label -->
-            <TextView
-                android:id="@+id/tv_win_reward_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="Choose your reward:"
-                android:textColor="#CCFFFFFF"
-                android:textSize="13sp"
-                android:letterSpacing="0.02"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/win_divider" />
-
-            <!-- ===== CONTINUE button (left / normal reward) ===== -->
             <LinearLayout
                 android:id="@+id/ll_continue_btn"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginEnd="6dp"
-                android:orientation="vertical"
-                android:gravity="center"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/ll_x3_btn"
-                app:layout_constraintTop_toBottomOf="@id/tv_win_reward_label">
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:orientation="vertical">
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_win_continue"
                     android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:text="▶  Continue"
-                    android:textAllCaps="false"
+                    android:layout_height="60dp"
+                    android:background="@drawable/powerup_button_bg"
+                    app:backgroundTint="#4CAF50"
+                    android:text="NEXT"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:backgroundTint="#2E7D32"
-                    android:stateListAnimator="@null"
+                    android:textSize="18sp"
+                    android:fontFamily="sans-serif-black"
                     android:elevation="6dp" />
 
                 <TextView
                     android:id="@+id/tv_continue_reward"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:text="🪙 +50 coins"
-                    android:textColor="#AAFFFFFF"
-                    android:textSize="12sp"
-                    android:gravity="center" />
+                    android:layout_gravity="center"
+                    android:layout_marginTop="6dp"
+                    android:text="🪙 +50"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- ===== x3 REWARD button (right / ad reward) ===== -->
             <LinearLayout
                 android:id="@+id/ll_x3_btn"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginStart="6dp"
-                android:orientation="vertical"
-                android:gravity="center"
-                app:layout_constraintStart_toEndOf="@id/ll_continue_btn"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_win_reward_label">
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:orientation="vertical">
 
-                <Button
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_win_watch_x3"
                     android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:text="📺  x3 Reward"
-                    android:textAllCaps="false"
+                    android:layout_height="60dp"
+                    android:background="@drawable/powerup_button_bg"
+                    app:backgroundTint="#FFD54F"
+                    android:text="🎁 X3"
                     android:textColor="#1A1A2E"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:backgroundTint="#FFD54F"
-                    android:stateListAnimator="@null"
-                    android:elevation="8dp" />
+                    android:textSize="18sp"
+                    android:fontFamily="sans-serif-black"
+                    android:elevation="6dp" />
 
                 <TextView
                     android:id="@+id/tv_x3_reward"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:text="🪙 +150 coins"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="6dp"
+                    android:text="🪙 +150"
                     android:textColor="#FFD54F"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:gravity="center" />
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
+        </LinearLayout>
 
-            <!-- Loading indicator (hidden, shows while ad plays) -->
-            <ProgressBar
-                android:id="@+id/pb_win_loading"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/ll_x3_btn" />
+        <ProgressBar
+            android:id="@+id/pb_win_loading"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/ll_buttons" />
 
-            <!-- "Watching ad..." label -->
-            <TextView
-                android:id="@+id/tv_win_watching"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Watching ad... please wait"
-                android:textColor="#AAFFFFFF"
-                android:textSize="12sp"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/pb_win_loading" />
+        <TextView
+            android:id="@+id/tv_win_watching"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Loading reward..."
+            android:textColor="#AAFFFFFF"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/pb_win_loading" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.cardview.widget.CardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

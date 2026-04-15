@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Semi-transparent Glass Gradient -->
+    <gradient
+        android:startColor="#EE1A1A2E"
+        android:centerColor="#DD16213E"
+        android:endColor="#EE1A1A2E"
+        android:angle="45" />
+    
+    <!-- Large Rounded Corners -->
+    <corners android:radius="32dp" />
+    
+    <!-- Premium Border (White/Gold mix) -->
+    <stroke
+        android:width="2dp"
+        android:color="#44FFFFFF" />
+</shape>

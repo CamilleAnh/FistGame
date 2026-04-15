@@ -14,6 +14,10 @@ import com.yourname.fruitsort.databinding.FragmentSecondBinding
 import com.yourname.fruitsort.databinding.ItemLevelBinding
 import com.yourname.fruitsort.databinding.ItemLevelPageBinding
 import com.google.android.material.tabs.TabLayoutMediator
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
+import androidx.constraintlayout.widget.ConstraintLayout
 
 class SecondFragment : Fragment() {
 

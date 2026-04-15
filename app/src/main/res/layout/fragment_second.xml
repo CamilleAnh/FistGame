@@ -7,82 +7,93 @@
     android:background="@drawable/backgroup_fragment_second"
     tools:context=".SecondFragment">
 
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/safe_top_guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_begin="48dp" />
+
     <!-- Container chính -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/cl_level_container"
-        android:layout_width="338dp"
-        android:layout_height="601dp"
-        android:layout_margin="16dp"
-        android:background="@drawable/level_container_bg"
-        app:layout_constraintBottom_toTopOf="@+id/guideline_h_bottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="28dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/dialog_premium_bg"
+        android:padding="12dp"
+        android:elevation="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="@id/safe_top_guideline"
+        app:layout_constraintBottom_toTopOf="@+id/guideline_h_bottom"
+        app:layout_constraintVertical_bias="0.4">
 
         <TextView
             android:id="@+id/tv_level_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/level_title_bg"
-            android:paddingHorizontal="32dp"
-            android:paddingVertical="10dp"
-            android:text="@string/second_fragment_label"
-            android:textColor="#FFFFFF"
+            android:layout_marginTop="10dp"
+            android:text="CHOOSE LEVEL"
+            android:textColor="#FFD54F"
             android:textSize="22sp"
-            android:textStyle="bold"
+            android:fontFamily="sans-serif-black"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- ViewPager2 cho phép lướt qua lại các trang level -->
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/vp_levels"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginVertical="12dp"
-            app:layout_constraintBottom_toTopOf="@+id/page_indicator"
+            android:layout_height="340dp"
+            android:layout_marginVertical="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_level_title" />
 
-        <!-- Chỉ báo trang (Dấu chấm) -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/page_indicator"
             android:layout_width="wrap_content"
-            android:layout_height="20dp"
-            android:layout_marginBottom="8dp"
+            android:layout_height="16dp"
+            android:layout_marginTop="4dp"
             android:background="@android:color/transparent"
-            app:layout_constraintBottom_toTopOf="@+id/btn_next"
+            app:layout_constraintTop_toBottomOf="@id/vp_levels"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:tabBackground="@drawable/dot_selector"
             app:tabGravity="center"
             app:tabIndicatorHeight="0dp"
-            app:tabMaxWidth="15dp" />
+            app:tabMaxWidth="12dp" />
 
         <ImageButton
             android:id="@+id/btn_prev"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/level_item_unlocked"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/powerup_button_bg"
             android:src="@drawable/ic_prev"
-            app:backgroundTint="#FFB300"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            app:layout_constraintTop_toBottomOf="@id/page_indicator"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:tint="#FFFFFF" />
 
         <ImageButton
             android:id="@+id/btn_next"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginEnd="24dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/level_item_unlocked"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/powerup_button_bg"
             android:src="@drawable/ic_next"
-            app:backgroundTint="#FFB300"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            app:layout_constraintTop_toBottomOf="@id/page_indicator"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:tint="#FFFFFF" />
