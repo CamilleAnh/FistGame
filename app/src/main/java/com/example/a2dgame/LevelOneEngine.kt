@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 /**
  * Engine xử lý logic Xếp Hộp Trái Cây (1000 Level).
- * Đảm bảo: 100% thắng, fill đầy 4 trái cho mỗi hộp, quản lý thùng đóng gói chuẩn xác.
+ * Cập nhật Cơ chế Boss & Siết độ khó (V3.3) - Giữ nguyên cấu trúc render.
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
@@ -32,9 +32,6 @@ class LevelOneEngine(val levelId: Int = 1) {
         }
     }
 
-    /**
-     * Đại diện cho một hộp trái cây trên bàn chơi (trước đây gọi là Tube).
-     */
     data class Box(
         val id: Int,
         var capacity: Int = 4,
@@ -58,9 +55,6 @@ class LevelOneEngine(val levelId: Int = 1) {
         }
     }
 
-    /**
-     * Thùng đóng gói mục tiêu (Bags/BoxSlots).
-     */
     data class BoxSlot(
         val id: Int,
         var targetColor: ColorId,
@@ -83,25 +77,34 @@ class LevelOneEngine(val levelId: Int = 1) {
     var isGameOver = false
     var isWin = false
     var isBagMechanismEnabled = false
+    var isBossLevel = false
 
     init { setupLevel() }
 
     private fun setupLevel() {
+        // Nhận diện Boss mỗi 20 màn
+        isBossLevel = (levelId > 0 && levelId % 20 == 0)
+
         // 1. Phân bổ màu sắc
-        val numDistinctColors = when {
+        var numDistinctColors = when {
             levelId < 10 -> 3
             levelId < 30 -> 5
             levelId < 100 -> 8
             levelId < 500 -> 12
             else -> 16
         }
-        
-        // Cơ chế trùng màu: level cao có thể có nhiều hộp cùng màu (multiplier)
-        val multiplier = if (levelId < 100) 1.0 else 1.3
+        if (isBossLevel) numDistinctColors = (numDistinctColors + 1).coerceAtMost(16)
+
+        // 2. Hệ số nhân số lượng hộp (Difficulty Scaling V3.3)
+        val multiplier = when {
+            levelId < 100 -> 1.2
+            levelId < 400 -> 1.3
+            levelId < 800 -> 1.5
+            else -> 1.8
+        }
         totalFullBoxesCount = (numDistinctColors * multiplier).toInt()
         isBagMechanismEnabled = levelId >= 20
         
-        // Số hộp trống: Duy trì ít nhất 3 hộp để đảm bảo cửa thắng
         val numEmptyBoxes = if (levelId >= 500) 2 else 3
         val totalBoxesCount = totalFullBoxesCount + numEmptyBoxes
         
@@ -111,27 +114,26 @@ class LevelOneEngine(val levelId: Int = 1) {
         boxes.clear()
         repeat(totalBoxesCount) { boxes.add(Box(it)) }
 
-        // 2. Thuật toán Pool-Shuffle đúng chuẩn
         generateFilledAndShuffledLevel(numDistinctColors, totalFullBoxesCount)
 
         // 3. Cơ chế nâng cao cho level cực khó
-        if (levelId > 150) {
-            injectComplexityIntoEmptyBoxes()
-        }
+        if (levelId > 150) injectComplexityIntoEmptyBoxes()
 
-        // 4. Áp dụng chướng ngại vật
+        // 4. Áp dụng chướng ngại vật (Siết chặt độ ẩn theo V3.3)
         if (levelId >= 20) {
-            boxes.filter { it.blocks.size >= 2 }.forEach { it.hiddenLayers = (it.blocks.size - 1).coerceAtMost(2) }
+            boxes.filter { it.blocks.size >= 2 }.forEach { 
+                // Màn Boss ẩn sâu hơn (chỉ lộ 1 quả trên đỉnh)
+                it.hiddenLayers = if (isBossLevel) (it.blocks.size - 1) else 2.coerceAtMost(it.blocks.size - 1)
+            }
         }
-        if (levelId >= 80) {
-            val spiderCount = (totalFullBoxesCount / 4).coerceAtLeast(1)
-            boxes.filter { it.blocks.isNotEmpty() }.shuffled(random).take(spiderCount).forEach { it.hasCobweb = true }
+        
+        if (levelId >= 80 || (isBossLevel && levelId >= 40)) {
+            val spiderCount = if (isBossLevel) (totalFullBoxesCount / 3) else (totalFullBoxesCount / 4)
+            boxes.filter { it.blocks.isNotEmpty() }.shuffled(random).take(spiderCount.coerceAtLeast(1)).forEach { it.hasCobweb = true }
         }
-        if (levelId >= 120) {
-            boxes.filter { it.blocks.isNotEmpty() && !it.hasCobweb }.shuffled(random).take(1).forEach { it.isFrozen = true }
-        }
-        if (levelId >= 160) {
-            boxes.filter { it.blocks.isNotEmpty() && !it.hasCobweb && !it.isFrozen }.shuffled(random).take(1).forEach { it.isLockedByChain = true }
+        
+        if (levelId >= 120 || (isBossLevel && levelId >= 60)) {
+            boxes.filter { it.blocks.isNotEmpty() && !it.hasCobweb }.shuffled(random).take(if (isBossLevel) 2 else 1).forEach { it.isFrozen = true }
         }
 
         completedBoxesCount = 0
@@ -144,22 +146,17 @@ class LevelOneEngine(val levelId: Int = 1) {
             val color = colorsUsed[i % numColors]
             repeat(4) { pool.add(color) }
         }
-
         val shuffled = pool.shuffled(random).toMutableList()
-
         var idx = 0
         for (i in 0 until totalFull) {
             boxes[i].blocks.clear()
-            repeat(4) {
-                boxes[i].blocks.push(shuffled[idx++])
-            }
+            repeat(4) { boxes[i].blocks.push(shuffled[idx++]) }
         }
     }
 
     private fun injectComplexityIntoEmptyBoxes() {
         val emptyBoxes = boxes.filter { it.isEmpty() }
         val fullBoxes = boxes.filter { it.blocks.size == 4 }
-        
         if (emptyBoxes.isNotEmpty() && fullBoxes.size >= 2) {
             val targetEmpty = emptyBoxes.random(random)
             repeat(2) {
@@ -179,20 +176,22 @@ class LevelOneEngine(val levelId: Int = 1) {
         }
     }
 
-    private fun createBox(id: Int, color: ColorId) = BoxSlot(id = id, targetColor = color, turnsLeft = 25)
+    // Túi của Boss chỉ có 15 lượt, màn thường 25 lượt
+    private fun createBox(id: Int, color: ColorId) = BoxSlot(
+        id = id, 
+        targetColor = color, 
+        turnsLeft = if (isBossLevel) 15 else 25
+    )
 
     fun handleBoxClick(index: Int): Boolean {
         if (isGameOver) return false
         val clicked = boxes.getOrNull(index) ?: return false
         if (clicked.isArchived) return false
-
         if (clicked.hasCobweb) {
             clicked.hasCobweb = false
             return consumeTurn()
         }
-
         if (clicked.isLockedByChain || clicked.isComplete()) return false
-
         val srcIdx = selectedBoxIndex
         if (srcIdx == null) {
             if (!clicked.isEmpty() && !clicked.isFrozen && (clicked.blocks.size - 1) >= clicked.hiddenLayers) {
@@ -221,7 +220,6 @@ class LevelOneEngine(val levelId: Int = 1) {
     fun executeMove(s: Box, d: Box) {
         val color = s.peekColor()
         val originalHiddenLimit = s.hiddenLayers 
-
         while (!s.isEmpty() && s.peekColor() == color && (s.blocks.size - 1) >= originalHiddenLimit && d.blocks.size < d.capacity) {
             d.blocks.push(s.blocks.pop())
             if (s.hiddenLayers >= s.blocks.size && !s.isEmpty()) s.hiddenLayers = s.blocks.size - 1
@@ -248,9 +246,7 @@ class LevelOneEngine(val levelId: Int = 1) {
     fun archiveBox(id: Int) {
         val box = boxes.find { it.id == id } ?: return
         if (box.isArchived) return
-        
         val color = if (box.blocks.isNotEmpty()) box.blocks[0] else ColorId.EMPTY
-        
         val bag = boxSlots.find { it.targetColor == color && it.remaining() > 0 }
         if (bag != null) {
             bag.filled++
@@ -264,7 +260,6 @@ class LevelOneEngine(val levelId: Int = 1) {
             box.blocks.clear()
             completedBoxesCount++
         }
-
         if (completedBoxesCount >= totalFullBoxesCount) {
             isGameOver = true
             isWin = true
@@ -275,25 +270,17 @@ class LevelOneEngine(val levelId: Int = 1) {
         val idx = boxSlots.indexOfFirst { it.id == id }
         if (idx == -1) return
         val other = if (boxSlots.size > 1) boxSlots[1 - idx].targetColor else null
-
-        val completedWaiting = boxes
-            .filter { !it.isArchived && it.isComplete() }
-            .map { it.blocks[0] }
-            .filter { it != other && boxSlots.none { b -> b.targetColor == it } }
+        val completedWaiting = boxes.filter { !it.isArchived && it.isComplete() }.map { it.blocks[0] }.filter { it != other && boxSlots.none { b -> b.targetColor == it } }
         if (completedWaiting.isNotEmpty()) {
             boxSlots[idx] = createBox(id, completedWaiting.random(random))
             return
         }
-
         val onBoard = boxes.filter { !it.isArchived && !it.isEmpty() }.flatMap { it.blocks }.distinct()
         val pool = onBoard.filter { it != other }
         if (pool.isNotEmpty()) boxSlots[idx] = createBox(id, pool.shuffled(random).first())
         else boxSlots.removeAt(idx)
     }
 
-    /**
-     * Quét tất cả hộp hoàn chỉnh có túi khớp → archive liên tục.
-     */
     fun archiveAllReady(): List<Int> {
         val archived = mutableListOf<Int>()
         var changed = true
@@ -301,8 +288,7 @@ class LevelOneEngine(val levelId: Int = 1) {
             changed = false
             boxes.filter { !it.isArchived && it.isComplete() }.forEach { box ->
                 val color = box.blocks[0]
-                val canArchive = !isBagMechanismEnabled ||
-                        boxSlots.any { it.targetColor == color && it.remaining() > 0 }
+                val canArchive = !isBagMechanismEnabled || boxSlots.any { it.targetColor == color && it.remaining() > 0 }
                 if (canArchive) {
                     archiveBox(box.id)
                     archived.add(box.id)
@@ -316,17 +302,10 @@ class LevelOneEngine(val levelId: Int = 1) {
     fun getBoxes() = boxes
     fun getBoxSlots() = boxSlots
 
-    /**
-     * Kiểm tra bế tắc: không còn bước đi hợp lệ nào trên bàn chơi.
-     * Một bước hợp lệ = có thể canMove(src, dst) với src ≠ dst.
-     * Cũng tính trường hợp box bị cobweb (cần tap để xóa cobweb trước).
-     */
     fun isDeadlocked(): Boolean {
         if (isGameOver) return false
         val active = boxes.filter { !it.isArchived }
-        // Nếu còn hộp có cobweb → vẫn có action (tap để xóa), chưa bế tắc
         if (active.any { it.hasCobweb }) return false
-        // Kiểm tra xem có cặp (src, dst) hợp lệ nào không
         for (src in active) {
             if (src.isEmpty() || src.isFrozen || src.isLockedByChain) continue
             if ((src.blocks.size - 1) < src.hiddenLayers) continue
@@ -338,34 +317,16 @@ class LevelOneEngine(val levelId: Int = 1) {
         return true
     }
 
-    // ===== POWER-UPS =====
-
     fun rerollBags() {
         if (boxSlots.isEmpty()) return
-
-        val completedColors = boxes
-            .filter { !it.isArchived && it.isComplete() }
-            .map { it.blocks[0] }
-            .distinct()
-
-        val frequentColors = boxes
-            .filter { !it.isArchived }
-            .flatMap { it.blocks.toList() }
-            .filter { it != ColorId.EMPTY }
-            .groupBy { it }
-            .entries
-            .sortedByDescending { it.value.size }
-            .map { it.key }
-
+        val completedColors = boxes.filter { !it.isArchived && it.isComplete() }.map { it.blocks[0] }.distinct()
+        val frequentColors = boxes.filter { !it.isArchived }.flatMap { it.blocks.toList() }.filter { it != ColorId.EMPTY }.groupBy { it }.entries.sortedByDescending { it.value.size }.map { it.key }
         val pool = (completedColors + frequentColors).distinct()
         if (pool.isEmpty()) return
-
         boxSlots.forEachIndexed { i, box ->
             val otherColor = if (boxSlots.size > 1) boxSlots[1 - i].targetColor else null
-            val newColor = pool.firstOrNull { it != otherColor && it != box.targetColor }
-                ?: pool.firstOrNull() ?: return@forEachIndexed
-            boxSlots[i] = BoxSlot(id = box.id, targetColor = newColor,
-                capacity = box.capacity, turnsLeft = 30)
+            val newColor = pool.firstOrNull { it != otherColor && it != box.targetColor } ?: pool.firstOrNull() ?: return@forEachIndexed
+            boxSlots[i] = BoxSlot(id = box.id, targetColor = newColor, capacity = box.capacity, turnsLeft = if (isBossLevel) 20 else 30)
         }
     }
 
@@ -376,20 +337,13 @@ class LevelOneEngine(val levelId: Int = 1) {
 
     fun shuffleAllBoxes() {
         val activeBoxes = boxes.filter { !it.isArchived }
-        val boxSizes        = activeBoxes.map { it.blocks.size }
+        val boxSizes = activeBoxes.map { it.blocks.size }
         val boxHiddenLayers = activeBoxes.map { it.hiddenLayers }
-
-        val allBlocks = activeBoxes
-            .flatMap { it.blocks.toList() }
-            .toMutableList()
-            .also { it.shuffle(random) }
-
+        val allBlocks = activeBoxes.flatMap { it.blocks.toList() }.toMutableList().also { it.shuffle(random) }
         var idx = 0
         activeBoxes.forEachIndexed { i, box ->
             box.blocks.clear()
-            repeat(boxSizes[i]) {
-                if (idx < allBlocks.size) box.blocks.push(allBlocks[idx++])
-            }
+            repeat(boxSizes[i]) { if (idx < allBlocks.size) box.blocks.push(allBlocks[idx++]) }
             box.hiddenLayers = minOf(boxHiddenLayers[i], (box.blocks.size - 1).coerceAtLeast(0))
         }
     }
