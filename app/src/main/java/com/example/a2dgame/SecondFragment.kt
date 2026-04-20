@@ -1,31 +1,23 @@
 package com.yourname.fruitsort
 
-import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.viewpager2.widget.ViewPager2
 import com.yourname.fruitsort.databinding.FragmentSecondBinding
-import com.yourname.fruitsort.databinding.ItemLevelBinding
-import com.yourname.fruitsort.databinding.ItemLevelPageBinding
-import com.google.android.material.tabs.TabLayoutMediator
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
-import androidx.constraintlayout.widget.ConstraintLayout
+import com.yourname.fruitsort.databinding.ItemLevelCardBinding
 
 class SecondFragment : Fragment() {
 
     private var _binding: FragmentSecondBinding? = null
     private val binding get() = _binding!!
 
-    private val levelsPerPage = 20
-    private val totalPages = 5 // 100 levels
+    private val totalLevels = 100
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,90 +31,77 @@ class SecondFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         startBgMusic()
 
-        val prefs = requireContext().getSharedPreferences("game_prefs", 0)
-        val highestLevel = prefs.getInt("highest_level", 1)
+        setupLevelList()
+        updateCurrencyDisplay()
+        setupNavBar()
+    }
 
-        val adapter = LevelPagerAdapter(highestLevel) { levelId ->
+    // ─── Level RecyclerView ───────────────────────────────────────────────────
+
+    private fun setupLevelList() {
+        val prefs         = requireContext().getSharedPreferences("game_prefs", 0)
+        val highestLevel  = prefs.getInt("highest_level", 1)
+
+        val adapter = LevelCardAdapter(
+            totalLevels  = totalLevels,
+            highestLevel = highestLevel
+        ) { levelId ->
             val bundle = Bundle().apply { putInt("levelId", levelId) }
             findNavController().navigate(R.id.action_SecondFragment_to_LevelOneFragment, bundle)
         }
-        
-        binding.vpLevels.adapter = adapter
 
-        // Kết nối ViewPager2 với TabLayout (Chỉ báo dấu chấm)
-        TabLayoutMediator(binding.pageIndicator, binding.vpLevels) { _, _ -> }.attach()
+        binding.rvLevels.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            this.adapter  = adapter
+            setHasFixedSize(true)
+        }
 
-        binding.btnBackHome.setOnClickListener {
+        // Scroll to current progress (show 2 levels above highest)
+        if (highestLevel > 3) {
+            (binding.rvLevels.layoutManager as? LinearLayoutManager)
+                ?.scrollToPositionWithOffset(highestLevel - 2, 0)
+        }
+    }
+
+    // ─── Currency display ─────────────────────────────────────────────────────
+
+    private fun updateCurrencyDisplay() {
+        if (_binding == null) return
+        val gold = GoldManager.getGold(requireContext())
+        binding.tvGold.text = "🪙 ${formatGold(gold)}"
+        binding.tvGems.text = "💎 0"   // Reserved for future gem currency
+    }
+
+    private fun formatGold(gold: Int): String =
+        if (gold >= 10000) "${gold / 1000}K" else gold.toString()
+
+    // ─── Bottom navigation bar ────────────────────────────────────────────────
+
+    private fun setupNavBar() {
+        // Home → back to main menu
+        binding.navBtnHome.setOnClickListener {
             findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
         }
 
-        binding.btnNext.setOnClickListener {
-            if (binding.vpLevels.currentItem < totalPages - 1) {
-                binding.vpLevels.currentItem += 1
-            }
+        // Play / Levels → already here, scroll to top
+        binding.navBtnPlay.setOnClickListener {
+            binding.rvLevels.smoothScrollToPosition(0)
         }
 
-        binding.btnPrev.setOnClickListener {
-            if (binding.vpLevels.currentItem > 0) {
-                binding.vpLevels.currentItem -= 1
-            }
-        }
-        
-        // Cập nhật trạng thái nút khi đổi trang
-        binding.vpLevels.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                binding.btnPrev.alpha = if (position > 0) 1.0f else 0.5f
-                binding.btnPrev.isEnabled = position > 0
-                binding.btnNext.alpha = if (position < totalPages - 1) 1.0f else 0.5f
-                binding.btnNext.isEnabled = position < totalPages - 1
-            }
-        })
-    }
-
-    inner class LevelPagerAdapter(
-        private val highestLevel: Int,
-        private val onLevelClick: (Int) -> Unit
-    ) : RecyclerView.Adapter<LevelPagerAdapter.PageViewHolder>() {
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
-            val binding = ItemLevelPageBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return PageViewHolder(binding)
+        // Shop → ShopFragment
+        binding.navBtnShop.setOnClickListener {
+            findNavController().navigate(R.id.action_SecondFragment_to_ShopFragment)
         }
 
-        override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
-            holder.bind(position)
-        }
-
-        override fun getItemCount(): Int = totalPages
-
-        inner class PageViewHolder(val pageBinding: ItemLevelPageBinding) : RecyclerView.ViewHolder(pageBinding.root) {
-            fun bind(pageIndex: Int) {
-                pageBinding.glLevels.removeAllViews()
-                val startLevel = (pageIndex * levelsPerPage) + 1
-                
-                for (i in 0 until levelsPerPage) {
-                    val levelId = startLevel + i
-                    val itemBinding = ItemLevelBinding.inflate(LayoutInflater.from(pageBinding.root.context), pageBinding.glLevels, false)
-                    
-                    itemBinding.tvLevelNumber.text = levelId.toString()
-                    
-                    if (levelId <= highestLevel) {
-                        itemBinding.flLevelItem.setBackgroundResource(R.drawable.level_item_unlocked)
-                        itemBinding.tvLevelNumber.visibility = View.VISIBLE
-                        itemBinding.ivLock.visibility = View.GONE
-                        itemBinding.flLevelItem.setOnClickListener { onLevelClick(levelId) }
-                    } else {
-                        itemBinding.flLevelItem.setBackgroundResource(R.drawable.level_item_locked)
-                        itemBinding.tvLevelNumber.visibility = View.GONE
-                        itemBinding.ivLock.visibility = View.VISIBLE
-                        itemBinding.flLevelItem.setOnClickListener(null)
-                    }
-                    
-                    pageBinding.glLevels.addView(itemBinding.root)
-                }
-            }
+        // Skins → show bottom sheet
+        binding.navBtnSkins.setOnClickListener {
+            val sheet = SkinShopBottomSheet()
+            sheet.onDismissCallback = { updateCurrencyDisplay() }
+            sheet.show(childFragmentManager, "SkinShop")
         }
     }
+
+    // ─── Music ───────────────────────────────────────────────────────────────
 
     private fun startBgMusic() {
         GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen)
@@ -131,6 +110,7 @@ class SecondFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         startBgMusic()
+        updateCurrencyDisplay()       // Refresh gold after returning from shop
     }
 
     override fun onPause() {
@@ -140,7 +120,86 @@ class SecondFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Không release ở đây – GlobalMusicPlayer quản lý
         _binding = null
+    }
+
+    // ─── Companion ────────────────────────────────────────────────────────────
+
+    companion object {
+        /** Fruit / vegetable icons cycling per level */
+        val FRUIT_ICONS = listOf(
+            "🌽", "🍍", "🥕", "🍓", "🍉", "🍇", "🍎", "🍊",
+            "🍋", "🫐", "🥝", "🍑", "🍒", "🍆", "🥦",
+            "🌶️", "🍅", "🥑", "🫒", "🍌"
+        )
+    }
+
+    // ─── Level Card Adapter ──────────────────────────────────────────────────
+
+    private inner class LevelCardAdapter(
+        private val totalLevels:  Int,
+        private val highestLevel: Int,
+        private val onLevelClick: (Int) -> Unit
+    ) : RecyclerView.Adapter<LevelCardAdapter.LevelViewHolder>() {
+
+        override fun getItemCount() = totalLevels
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LevelViewHolder {
+            val b = ItemLevelCardBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+            return LevelViewHolder(b)
+        }
+
+        override fun onBindViewHolder(holder: LevelViewHolder, position: Int) {
+            holder.bind(position + 1)   // levels are 1-indexed
+        }
+
+        inner class LevelViewHolder(val b: ItemLevelCardBinding) :
+            RecyclerView.ViewHolder(b.root) {
+
+            fun bind(levelId: Int) {
+                // Badge & fruit
+                b.tvLevelBadge.text  = levelId.toString()
+                b.tvFruitIcon.text   = FRUIT_ICONS[(levelId - 1) % FRUIT_ICONS.size]
+                b.tvLevelName.text   = "Level $levelId"
+
+                when {
+                    levelId < highestLevel -> {
+                        // ✅ Completed — 3 gold stars, warm card
+                        b.tvStars.text       = "⭐⭐⭐"
+                        b.lockOverlay.visibility  = View.GONE
+                        b.ivLockIcon.visibility   = View.GONE
+                        b.root.setCardBackgroundColor(Color.parseColor("#FFF3E0"))
+                        b.root.strokeColor   = Color.parseColor("#FFCC80")
+                        b.root.strokeWidth   = 1
+                        b.root.isClickable   = true
+                        b.root.setOnClickListener { onLevelClick(levelId) }
+                    }
+                    levelId == highestLevel -> {
+                        // 🎮 Current level — orange border, no stars yet
+                        b.tvStars.text       = "☆☆☆"
+                        b.lockOverlay.visibility  = View.GONE
+                        b.ivLockIcon.visibility   = View.GONE
+                        b.root.setCardBackgroundColor(Color.parseColor("#FFF8E1"))
+                        b.root.strokeColor   = Color.parseColor("#FF8F00")
+                        b.root.strokeWidth   = 3
+                        b.root.isClickable   = true
+                        b.root.setOnClickListener { onLevelClick(levelId) }
+                    }
+                    else -> {
+                        // 🔒 Locked — grey, no click
+                        b.tvStars.text       = ""
+                        b.lockOverlay.visibility  = View.VISIBLE
+                        b.ivLockIcon.visibility   = View.VISIBLE
+                        b.root.setCardBackgroundColor(Color.parseColor("#ECEFF1"))
+                        b.root.strokeColor   = Color.parseColor("#B0BEC5")
+                        b.root.strokeWidth   = 1
+                        b.root.isClickable   = false
+                        b.root.setOnClickListener(null)
+                    }
+                }
+            }
+        }
     }
 }

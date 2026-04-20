@@ -1,7 +1,11 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme._2DGame" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <!-- Game không cần dark mode — luôn dùng light theme để tránh màn đen -->
+    <style name="Base.Theme._2DGame" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Nền sáng để tránh màn đen khi khởi động -->
+        <item name="android:windowBackground">@color/launch_bg</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowNoTitle">true</item>
     </style>
+
+    <style name="Theme._2DGame" parent="Base.Theme._2DGame" />
 </resources>

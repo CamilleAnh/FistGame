@@ -41,6 +41,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.constraintlayout.widget.ConstraintLayout
 import kotlin.random.Random
+import com.example.a2dgame.SkinManager
 
 class LevelOneFragment : Fragment() {
 
@@ -236,6 +237,10 @@ class LevelOneFragment : Fragment() {
         binding.glGameBoard.removeAllViews()
         val boxes = engine.getBoxes().filter { !it.isArchived }
         val totalBoxes = boxes.size
+
+        // ─── Load skin nhất lần, dùng cho toàn bộ board ───────────────────
+        val skinStyle = SkinManager.getSelectedStyle(requireContext())
+        val density   = resources.displayMetrics.density
         
         val cols = when {
             totalBoxes <= 15 -> 5
@@ -244,7 +249,7 @@ class LevelOneFragment : Fragment() {
         }
         
         val screenWidth = resources.displayMetrics.widthPixels
-        val sideMargins = (24 * resources.displayMetrics.density).toInt()
+        val sideMargins = (24 * density).toInt()
         val boxWidth = (screenWidth - sideMargins) / cols
         
         // Tăng chiều cao hộp rõ rệt theo yêu cầu
@@ -252,7 +257,7 @@ class LevelOneFragment : Fragment() {
         val blockHeight = (boxWidth * 0.38f).toInt()
         
         // Logic Honeycomb nguyên bản (So le hàng chẵn hàng lẻ)
-        val verticalGap = (16 * resources.displayMetrics.density).toInt()
+        val verticalGap = (16 * density).toInt()
         val stepY = boxHeight + verticalGap
         val narrowCols = cols - 1
         
@@ -274,6 +279,14 @@ class LevelOneFragment : Fragment() {
             slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) } 
                 ?: run { binding.truckContainerB.visibility = View.INVISIBLE }
         }
+
+        // Màu chữ block: skin tối dùng chữ trắng, skin sáng dùng chữ đen
+        val blockBgRaw = skinStyle.blockBgColor
+        val r = (blockBgRaw shr 16) and 0xFF
+        val g = (blockBgRaw shr 8) and 0xFF
+        val b = blockBgRaw and 0xFF
+        val isDarkSkin = (0.299 * r + 0.587 * g + 0.114 * b) < 128
+        val blockTextColor = if (isDarkSkin) Color.WHITE else Color.BLACK
 
         var currentBoxIndex = 0
         rowLengths.forEachIndexed { rowIndex, rowItemCount ->
@@ -300,12 +313,13 @@ class LevelOneFragment : Fragment() {
                     gravity = Gravity.BOTTOM
                     clipChildren = false
                     clipToPadding = false
-                    background = ContextCompat.getDrawable(context, R.drawable.isometric_box_bg)
+                    // ─── ÁP DỤNG SKIN VÀO HỘP ───────────────────────────
+                    background = SkinManager.makeBoxBodyDrawable(skinStyle, density)
                     setPadding(
-                        (8 * resources.displayMetrics.density).toInt(),
-                        (2 * resources.displayMetrics.density).toInt(),
-                        (8 * resources.displayMetrics.density).toInt(),
-                        (16 * resources.displayMetrics.density).toInt()
+                        (8 * density).toInt(),
+                        (2 * density).toInt(),
+                        (8 * density).toInt(),
+                        (16 * density).toInt()
                     )
                     layoutParams = FrameLayout.LayoutParams(-1, -1)
                 }
@@ -320,16 +334,17 @@ class LevelOneFragment : Fragment() {
                         layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply { 
                             setMargins(2, - (blockHeight * 0.20).toInt(), 2, 0) 
                         }
+                        // ─── ÁP DỤNG SKIN VÀO BLOCK ─────────────────────
                         background = if (isHidden) GradientDrawable().apply { 
                             setColor(0xCC333333.toInt())
-                            cornerRadius = 6 * resources.displayMetrics.density
-                        } else ContextCompat.getDrawable(context, R.drawable.item_fruit_box)
+                            cornerRadius = 6 * density
+                        } else SkinManager.makeBlockDrawable(skinStyle, density)
                         
                         addView(TextView(context).apply {
                             gravity = Gravity.CENTER
                             text = if (isHidden) "?" else fruit.fruitIcon
                             textSize = 16f
-                            setTextColor(if (isHidden) Color.WHITE else Color.BLACK)
+                            setTextColor(if (isHidden) Color.WHITE else blockTextColor)
                             setShadowLayer(2f, 1f, 1f, 0x88000000.toInt())
                         })
                     }
@@ -339,7 +354,7 @@ class LevelOneFragment : Fragment() {
                 if (box.isFrozen) {
                     boxLayout.foreground = GradientDrawable().apply {
                         setColor(0x4400BCD4.toInt())
-                        cornerRadius = 8 * resources.displayMetrics.density
+                        cornerRadius = 8 * density
                     }
                 } else {
                     boxLayout.foreground = null
@@ -361,6 +376,7 @@ class LevelOneFragment : Fragment() {
         
         updateStatusUI()
     }
+
 
     private fun handleBoxTap(index: Int) {
         if (engine.isGameOver || animatingBoxes.contains(index)) return
@@ -721,15 +737,14 @@ class LevelOneFragment : Fragment() {
                 )
             }
 
-            // 3. Glow Highlight
+            // 3. Glow Highlight — tái sử dụng 1 GradientDrawable thay vì tạo mới mỗi frame
             val glowColor = Color.parseColor("#80FFEB3B")
+            val glowDrawable = GradientDrawable().apply { cornerRadius = 8 * density }
             val glowAnim = ValueAnimator.ofArgb(Color.TRANSPARENT, glowColor, Color.TRANSPARENT).apply {
-                duration = 800
+                duration = 600
                 addUpdateListener { animator ->
-                    view.foreground = GradientDrawable().apply {
-                        setColor(animator.animatedValue as Int)
-                        cornerRadius = 8 * density
-                    }
+                    glowDrawable.setColor(animator.animatedValue as Int)
+                    view.foreground = glowDrawable
                 }
             }
 
@@ -853,23 +868,28 @@ class LevelOneFragment : Fragment() {
         anchor.getLocationOnScreen(loc)
         val centerX = loc[0].toFloat() + (anchor.width * 0.2f)
         val centerY = loc[1].toFloat() + (anchor.height * 0.8f)
-        
-        repeat(8) {
-            val p = TextView(context).apply {
-                text = listOf("💨", "☁️", "🔘").random()
-                textSize = 14f
-                alpha = 0.8f
+
+        // Giảm từ 8 xuống 4 particle, dùng View đơn giản thay vì emoji
+        val smokeColors = intArrayOf(0xFFBBBBBB.toInt(), 0xFFCCCCCC.toInt(), 0xFF999999.toInt(), 0xFFAAAAAA.toInt())
+        repeat(4) { i ->
+            val size = (20 + i * 4).toInt()
+            val p = View(context).apply {
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(smokeColors[i % smokeColors.size])
+                }
+                alpha = 0.7f
             }
-            root.addView(p)
+            root.addView(p, FrameLayout.LayoutParams(size, size))
             p.x = centerX
             p.y = centerY
             p.animate()
-                .translationXBy(-(Random.nextFloat() * 200f))
-                .translationYBy(-(Random.nextFloat() * 100f))
+                .translationXBy(-(Random.nextFloat() * 150f + 30f))
+                .translationYBy(-(Random.nextFloat() * 80f + 20f))
                 .alpha(0f)
-                .scaleX(2f)
-                .scaleY(2f)
-                .setDuration(800)
+                .scaleX(1.8f)
+                .scaleY(1.8f)
+                .setDuration(600)
                 .withEndAction { root.removeView(p) }
                 .start()
         }
@@ -879,34 +899,48 @@ class LevelOneFragment : Fragment() {
         val root = binding.root as ViewGroup
         val loc = IntArray(2)
         anchor.getLocationOnScreen(loc)
-        
+
         val centerX = loc[0].toFloat() + anchor.width / 2f
         val centerY = loc[1].toFloat() + anchor.height / 2f
-        
-        val emojis = listOf("✨", "⭐", "🎉", "🔥", "🌈", "🎊", "💎", "❤️", "🎈", "🍒", "🍇", "🍑")
-        
-        repeat(40) { // Tăng gấp đôi số hạt
-            val particle = TextView(context).apply {
-                text = emojis.random()
-                textSize = 24f
+
+        // Màu hạt lễ hội — dùng View hình tròn thay vì emoji TextView
+        // (nhẹ hơn ~5x về GPU: không cần render font/emoji)
+        val colors = intArrayOf(
+            0xFFFFD600.toInt(), 0xFFFF6D00.toInt(), 0xFF00E676.toInt(),
+            0xFF2979FF.toInt(), 0xFFE040FB.toInt(), 0xFFFF1744.toInt(),
+            0xFF00E5FF.toInt(), 0xFFFFEA00.toInt()
+        )
+
+        // 16 hạt thay vì 40 — đủ đẹp, nhẹ hơn 2.5x
+        repeat(16) { i ->
+            val color = colors[i % colors.size]
+            val sizeDp = (8 + (i % 4) * 3).toFloat()
+            val sizePx = (sizeDp * resources.displayMetrics.density).toInt()
+
+            val particle = View(context).apply {
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(color)
+                }
             }
-            root.addView(particle)
+            root.addView(particle, FrameLayout.LayoutParams(sizePx, sizePx))
             particle.x = centerX
             particle.y = centerY
-            
-            val angle = Random.nextDouble(0.0, Math.PI * 2)
-            val velocity = Random.nextFloat() * 800f + 300f
+
+            val angle = (i * (360.0 / 16) + Random.nextDouble(-15.0, 15.0)) * Math.PI / 180.0
+            val velocity = Random.nextFloat() * 350f + 150f
             val destX = centerX + (Math.cos(angle) * velocity).toFloat()
-            val destY = centerY + (Math.sin(angle) * velocity).toFloat() - 300f
-            
+            val destY = centerY + (Math.sin(angle) * velocity).toFloat() - 150f
+            val duration = 700L + (i % 4) * 60L  // 700–880ms, không ngẫu nhiên hoàn toàn
+
             particle.animate()
                 .x(destX)
                 .y(destY)
                 .alpha(0f)
-                .scaleX(2.0f)
-                .scaleY(2.0f)
-                .rotation(Random.nextFloat() * 720f)
-                .setDuration(1200 + Random.nextLong(800))
+                .scaleX(1.4f)
+                .scaleY(1.4f)
+                .rotation(Random.nextFloat() * 360f)  // Chỉ 360° thay vì 720°
+                .setDuration(duration)
                 .setInterpolator(DecelerateInterpolator())
                 .withEndAction { root.removeView(particle) }
                 .start()

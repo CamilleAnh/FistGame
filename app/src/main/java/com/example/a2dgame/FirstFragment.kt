@@ -16,6 +16,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.constraintlayout.widget.ConstraintLayout
+import android.widget.Toast
 
 class FirstFragment : Fragment() {
 
@@ -45,11 +46,24 @@ class FirstFragment : Fragment() {
             findNavController().navigate(R.id.action_FirstFragment_to_PrivacyPolicyFragment)
         }
 
+        // Test Buttons Logic
+        binding.btnTestGold.setOnClickListener {
+            GoldManager.addGold(requireContext(), 99999)
+            updateGoldDisplay()
+            Toast.makeText(context, "Added 99999 Gold!", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnTestUnlock.setOnClickListener {
+            requireContext().getSharedPreferences("game_prefs", 0).edit {
+                putInt("highest_level", 100)
+            }
+            Toast.makeText(context, "All Levels Unlocked!", Toast.LENGTH_SHORT).show()
+        }
+
         setupSettings()
         startBgMusic()
         updateGoldDisplay()
         
-        // Cập nhật text từ strings.xml để đảm bảo hiển thị đúng ngôn ngữ vừa đổi
         refreshUIText()
     }
 
@@ -100,7 +114,6 @@ class FirstFragment : Fragment() {
             prefs.edit { putBoolean("vibration_on", isChecked) }
         }
 
-        // Xử lý đổi ngôn ngữ
         settingsBinding.btnLangEn.setOnClickListener {
             changeLanguage("en")
         }
@@ -124,8 +137,6 @@ class FirstFragment : Fragment() {
         if (langCode == LanguageManager.getSavedLanguage(requireContext())) return
         
         LanguageManager.setLocale(requireContext(), langCode)
-        
-        // Khởi động lại Activity để áp dụng ngôn ngữ mới cho toàn bộ app
         activity?.recreate()
     }
 

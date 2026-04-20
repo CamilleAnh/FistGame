@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    app:cardBackgroundColor="#FFF8F2"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:strokeColor="#FFE0B2"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Crate Box Preview with emoji overlay -->
+        <FrameLayout
+            android:layout_width="60dp"
+            android:layout_height="90dp">
+
+            <View
+                android:id="@+id/view_skin_color"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/tv_skin_emoji"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:textSize="28sp"
+                android:shadowColor="#80000000"
+                android:shadowDx="1"
+                android:shadowDy="2"
+                android:shadowRadius="2" />
+
+        </FrameLayout>
+
+        <!-- Skin name -->
+        <TextView
+            android:id="@+id/tv_skin_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif-black"
+            android:textColor="#4E342E"
+            android:textSize="13sp" />
+
+        <!-- Price or SELECTED status -->
+        <TextView
+            android:id="@+id/tv_skin_price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="12sp" />
+
+        <!-- Buy / Equip button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_skin_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:layout_marginTop="8dp"
+            android:paddingHorizontal="16dp"
+            android:textSize="11sp"
+            android:contentDescription="Equip or buy skin"
+            app:cornerRadius="18dp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

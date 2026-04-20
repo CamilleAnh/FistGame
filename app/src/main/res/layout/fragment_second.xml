@@ -7,137 +7,238 @@
     android:background="@drawable/backgroup_fragment_second"
     tools:context=".SecondFragment">
 
+    <!-- Safe area top guideline (notch/status bar) -->
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/safe_top_guideline"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_begin="48dp" />
+        app:layout_constraintGuide_begin="52dp" />
 
-    <!-- Container chính -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/cl_level_container"
-        android:layout_width="match_parent"
+    <!-- ─── TOP CURRENCY BAR ─────────────────────── -->
+    <LinearLayout
+        android:id="@+id/top_currency_bar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="28dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/dialog_premium_bg"
-        android:padding="12dp"
-        android:elevation="20dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/safe_top_guideline"
-        app:layout_constraintBottom_toTopOf="@+id/guideline_h_bottom"
-        app:layout_constraintVertical_bias="0.4">
+        app:layout_constraintTop_toTopOf="@id/safe_top_guideline">
 
+        <!-- Gold display pill -->
+        <TextView
+            android:id="@+id/tv_gold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/currency_pill_bg"
+            android:fontFamily="sans-serif-black"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="7dp"
+            android:text="🪙 0"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:elevation="4dp" />
+
+        <View
+            android:layout_width="8dp"
+            android:layout_height="1dp" />
+
+        <!-- Gem display pill -->
+        <TextView
+            android:id="@+id/tv_gems"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gem_pill_bg"
+            android:fontFamily="sans-serif-black"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="7dp"
+            android:text="💎 0"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:elevation="4dp" />
+
+    </LinearLayout>
+
+    <!-- ─── MAIN LEVEL PANEL ─────────────────────── -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/main_panel"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="14dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/dialog_premium_bg"
+        android:elevation="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_nav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/top_currency_bar">
+
+        <!-- Panel title -->
         <TextView
             android:id="@+id/tv_level_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="14dp"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="0.05"
             android:text="CHOOSE LEVEL"
             android:textColor="#FFD54F"
-            android:textSize="22sp"
-            android:fontFamily="sans-serif-black"
+            android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/vp_levels"
+        <!-- Level list RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_levels"
             android:layout_width="match_parent"
-            android:layout_height="340dp"
-            android:layout_marginVertical="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_level_title" />
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/page_indicator"
-            android:layout_width="wrap_content"
-            android:layout_height="16dp"
-            android:layout_marginTop="4dp"
-            android:background="@android:color/transparent"
-            app:layout_constraintTop_toBottomOf="@id/vp_levels"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:tabBackground="@drawable/dot_selector"
-            app:tabGravity="center"
-            app:tabIndicatorHeight="0dp"
-            app:tabMaxWidth="12dp" />
-
-        <ImageButton
-            android:id="@+id/btn_prev"
-            android:layout_width="54dp"
-            android:layout_height="54dp"
-            android:layout_marginStart="16dp"
+            android:layout_height="0dp"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/powerup_button_bg"
-            android:src="@drawable/ic_prev"
-            android:padding="12dp"
-            android:scaleType="fitCenter"
-            app:layout_constraintTop_toBottomOf="@id/page_indicator"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:tint="#FFFFFF" />
-
-        <ImageButton
-            android:id="@+id/btn_next"
-            android:layout_width="54dp"
-            android:layout_height="54dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/powerup_button_bg"
-            android:src="@drawable/ic_next"
-            android:padding="12dp"
-            android:scaleType="fitCenter"
-            app:layout_constraintTop_toBottomOf="@id/page_indicator"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:paddingBottom="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:tint="#FFFFFF" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_level_title" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline_h_bottom"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- ─── BOTTOM NAVIGATION BAR ───────────────── -->
+    <LinearLayout
+        android:id="@+id/bottom_nav"
+        android:layout_width="0dp"
+        android:layout_height="68dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/nav_bar_bg"
+        android:elevation="16dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.82" />
-
-    <ImageButton
-        android:id="@+id/btn_back_home"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:background="@drawable/level_item_unlocked"
-        android:src="@drawable/ic_revert"
-        app:backgroundTint="#EF5350"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/guideline_v"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/guideline_h_bottom"
-        app:tint="#FFFFFF" />
-
-    <ImageButton
-        android:id="@+id/btn_start_game"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:background="@drawable/level_item_unlocked"
-        android:src="@drawable/ic_play"
-        app:backgroundTint="#66BB6A"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@+id/guideline_v"
-        app:layout_constraintTop_toBottomOf="@+id/guideline_h_bottom"
-        app:tint="#FFFFFF" />
+        app:layout_constraintStart_toStartOf="parent">
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline_v"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.5" />
+        <!-- Home -->
+        <LinearLayout
+            android:id="@+id/nav_btn_home"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_home"
+                app:tint="#78909C" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Home"
+                android:textColor="#78909C"
+                android:textSize="10sp" />
+
+        </LinearLayout>
+
+        <!-- Levels (ACTIVE) -->
+        <LinearLayout
+            android:id="@+id/nav_btn_play"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:background="@drawable/nav_active_bg"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_play"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFamily="sans-serif-black"
+                android:text="LEVELS"
+                android:textColor="#FFFFFF"
+                android:textSize="9sp" />
+
+        </LinearLayout>
+
+        <!-- Shop -->
+        <LinearLayout
+            android:id="@+id/nav_btn_shop"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:gravity="center"
+                android:text="🛍️"
+                android:textSize="18sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Shop"
+                android:textColor="#78909C"
+                android:textSize="10sp" />
+
+        </LinearLayout>
+
+        <!-- Skins -->
+        <LinearLayout
+            android:id="@+id/nav_btn_skins"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:gravity="center"
+                android:text="🎨"
+                android:textSize="18sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Skins"
+                android:textColor="#78909C"
+                android:textSize="10sp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -28,7 +28,7 @@
             android:shadowDx="4"
             android:shadowDy="4"
             android:shadowRadius="8"
-            android:text="FRUIT SORT:"
+            android:text="FRUIT SORT"
             android:textColor="#FFFFFF"
             android:textSize="48sp"
             android:textStyle="bold" />
