@@ -2,10 +2,11 @@ package com.yourname.fruitsort
 
 import java.util.Stack
 import kotlin.random.Random
+import kotlin.math.max
 
 /**
- * Engine xử lý logic Xếp Hộp Trái Cây (1000 Level).
- * Cập nhật Cơ chế Boss & Siết độ khó (V3.3) - Giữ nguyên cấu trúc render.
+ * Engine logic V3.6: Mega Truck "Direct Pour" Mechanism.
+ * Ở màn Boss 1, xe tải đóng vai trò như một hố thu hoạch trực tiếp từng quả.
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
@@ -45,7 +46,6 @@ class LevelOneEngine(val levelId: Int = 1) {
         fun isEmpty() = blocks.isEmpty()
         fun isFull() = blocks.size >= capacity
         fun peekColor() = if (blocks.isEmpty()) ColorId.EMPTY else blocks.peek()
-        
         fun isComplete(): Boolean {
             if (isArchived || isFrozen || isLockedByChain || hasCobweb) return false
             if (hiddenLayers > 0) return false
@@ -58,7 +58,7 @@ class LevelOneEngine(val levelId: Int = 1) {
     data class BoxSlot(
         val id: Int,
         var targetColor: ColorId,
-        var capacity: Int = 1,
+        var capacity: Int = 1, // Ở Boss 1, capacity sẽ là tổng số quả (vd: 32 quả)
         var filled: Int = 0,
         var turnsLeft: Int = 25
     ) {
@@ -78,73 +78,79 @@ class LevelOneEngine(val levelId: Int = 1) {
     var isWin = false
     var isBagMechanismEnabled = false
     var isBossLevel = false
+    var currentBossType = 0 
 
     init { setupLevel() }
 
     private fun setupLevel() {
-        // Nhận diện Boss mỗi 20 màn
         isBossLevel = (levelId > 0 && levelId % 20 == 0)
+        if (isBossLevel) currentBossType = ((levelId / 20 - 1) % 4) + 1
 
-        // 1. Phân bổ màu sắc
-        var numDistinctColors = when {
-            levelId < 10 -> 3
-            levelId < 30 -> 5
-            levelId < 100 -> 8
-            levelId < 500 -> 12
-            else -> 16
+        var numColors = when {
+            levelId < 20 -> 3
+            levelId < 100 -> 6
+            levelId < 300 -> 9
+            else -> 12
         }
-        if (isBossLevel) numDistinctColors = (numDistinctColors + 1).coerceAtMost(16)
+        if (isBossLevel) numColors = (numColors + 2).coerceAtMost(16)
 
-        // 2. Hệ số nhân số lượng hộp (Difficulty Scaling V3.3)
-        val multiplier = when {
-            levelId < 100 -> 1.2
-            levelId < 400 -> 1.3
-            levelId < 800 -> 1.5
-            else -> 1.8
-        }
-        totalFullBoxesCount = (numDistinctColors * multiplier).toInt()
+        val baseMultiplier = 1.1 + (levelId / 1000.0) * 0.5 
+        val finalMultiplier = if (isBossLevel) baseMultiplier + 0.2 else baseMultiplier
+
+        totalFullBoxesCount = (numColors * finalMultiplier).toInt()
         isBagMechanismEnabled = levelId >= 20
         
-        val numEmptyBoxes = if (levelId >= 500) 2 else 3
-        val totalBoxesCount = totalFullBoxesCount + numEmptyBoxes
+        // Cụ thể cho Boss Type 1: Tối thiểu 10 hộp full, và KHÔNG CÓ hộp trống
+        if (isBossLevel && currentBossType == 1) {
+            totalFullBoxesCount = maxOf(totalFullBoxesCount, 12)
+        }
+        val totalBoxesCount = totalFullBoxesCount + (if (isBossLevel && currentBossType == 1) 0 else 3)
         
         val allAvailable = ColorId.allFruits.shuffled(random)
-        colorsUsed = allAvailable.take(numDistinctColors)
+        colorsUsed = allAvailable.take(numColors)
 
         boxes.clear()
         repeat(totalBoxesCount) { boxes.add(Box(it)) }
 
-        generateFilledAndShuffledLevel(numDistinctColors, totalFullBoxesCount)
-
-        // 3. Cơ chế nâng cao cho level cực khó
-        if (levelId > 150) injectComplexityIntoEmptyBoxes()
-
-        // 4. Áp dụng chướng ngại vật (Siết chặt độ ẩn theo V3.3)
-        if (levelId >= 20) {
-            boxes.filter { it.blocks.size >= 2 }.forEach { 
-                // Màn Boss ẩn sâu hơn (chỉ lộ 1 quả trên đỉnh)
-                it.hiddenLayers = if (isBossLevel) (it.blocks.size - 1) else 2.coerceAtMost(it.blocks.size - 1)
-            }
-        }
-        
-        if (levelId >= 80 || (isBossLevel && levelId >= 40)) {
-            val spiderCount = if (isBossLevel) (totalFullBoxesCount / 3) else (totalFullBoxesCount / 4)
-            boxes.filter { it.blocks.isNotEmpty() }.shuffled(random).take(spiderCount.coerceAtLeast(1)).forEach { it.hasCobweb = true }
-        }
-        
-        if (levelId >= 120 || (isBossLevel && levelId >= 60)) {
-            boxes.filter { it.blocks.isNotEmpty() && !it.hasCobweb }.shuffled(random).take(if (isBossLevel) 2 else 1).forEach { it.isFrozen = true }
-        }
+        generateFilledAndShuffledLevel(numColors, totalFullBoxesCount)
+        applyBossMechanics()
 
         completedBoxesCount = 0
-        if (isBagMechanismEnabled) setupInitialBags()
+        setupInitialBags()
     }
+
+    private fun applyBossMechanics() {
+        if (!isBossLevel) {
+            if (levelId >= 20) boxes.filter { it.blocks.size >= 2 }.forEach { it.hiddenLayers = 1 }
+            return
+        }
+        when (currentBossType) {
+            1 -> { /* T1: No hidden layers */ }
+            2 -> boxes.filter { !it.isEmpty() }.forEach { it.hasCobweb = true }
+            3 -> boxes.filter { !it.isEmpty() }.shuffled(random).take(3).forEach { it.isFrozen = true }
+            4 -> boxes.forEach { if (!it.isEmpty()) it.hiddenLayers = it.blocks.size }
+        }
+    }
+
+    private var type1TargetColor: ColorId? = null
 
     private fun generateFilledAndShuffledLevel(numColors: Int, totalFull: Int) {
         val pool = mutableListOf<ColorId>()
-        for (i in 0 until totalFull) {
-            val color = colorsUsed[i % numColors]
-            repeat(4) { pool.add(color) }
+        if (isBossLevel && currentBossType == 1) {
+            type1TargetColor = colorsUsed.random(random)
+            val targetBoxes = random.nextInt(4, 6) // 16 to 20 fruits
+            repeat(targetBoxes * 4) { pool.add(type1TargetColor!!) }
+            val remainingBoxes = totalFull - targetBoxes
+            val otherColors = colorsUsed.filter { it != type1TargetColor }
+            for (i in 0 until remainingBoxes) {
+                val color = otherColors[i % otherColors.size]
+                repeat(4) { pool.add(color) }
+            }
+        } else {
+            for (i in 0 until totalFull) {
+                val color = colorsUsed[i % numColors]
+                repeat(4) { pool.add(color) }
+            }
         }
         val shuffled = pool.shuffled(random).toMutableList()
         var idx = 0
@@ -152,80 +158,107 @@ class LevelOneEngine(val levelId: Int = 1) {
             boxes[i].blocks.clear()
             repeat(4) { boxes[i].blocks.push(shuffled[idx++]) }
         }
-    }
-
-    private fun injectComplexityIntoEmptyBoxes() {
-        val emptyBoxes = boxes.filter { it.isEmpty() }
-        val fullBoxes = boxes.filter { it.blocks.size == 4 }
-        if (emptyBoxes.isNotEmpty() && fullBoxes.size >= 2) {
-            val targetEmpty = emptyBoxes.random(random)
-            repeat(2) {
-                val src = boxes.filter { it.blocks.size > 2 }.random(random)
-                targetEmpty.blocks.push(src.blocks.pop())
+        
+        if (isBossLevel && currentBossType == 1) {
+            val target = type1TargetColor!!
+            val hasTopTarget = boxes.any { it.peekColor() == target }
+            if (!hasTopTarget) {
+                for (box in boxes) {
+                    val targetIdx = box.blocks.indexOf(target)
+                    if (targetIdx != -1) {
+                        val topColor = box.blocks.peek()
+                        box.blocks[box.blocks.size - 1] = target
+                        box.blocks[targetIdx] = topColor
+                        break
+                    }
+                }
             }
         }
     }
 
     private fun setupInitialBags() {
         boxSlots.clear()
-        val available = boxes.filter { !it.isEmpty() }.map { it.peekColor() }.distinct().filter { it != ColorId.EMPTY }
-        if (available.isNotEmpty()) {
-            val p = available.shuffled(random)
-            boxSlots.add(createBox(0, p[0]))
-            if (p.size > 1) boxSlots.add(createBox(1, p[1]))
+        if (isBossLevel && currentBossType == 1) {
+            // MEGA TRUCK: Chọn 1 màu làm mục tiêu duy nhất. Capacity = Tổng số quả màu đó có trên bàn.
+            val target = type1TargetColor ?: colorsUsed.random(random)
+            // Tìm chính xác số quả màu đó có trong pool
+            var exactCount = 0
+            boxes.forEach { box -> box.blocks.forEach { if (it == target) exactCount++ } }
+            
+            boxSlots.add(BoxSlot(0, target, capacity = exactCount, turnsLeft = exactCount * 4))
+        } else {
+            val available = boxes.filter { !it.isEmpty() }.map { it.peekColor() }.distinct().filter { it != ColorId.EMPTY }
+            if (available.isNotEmpty()) {
+                val p = available.shuffled(random)
+                boxSlots.add(BoxSlot(0, p[0], capacity = 1, turnsLeft = 25))
+                if (p.size > 1) boxSlots.add(BoxSlot(1, p[1], capacity = 1, turnsLeft = 25))
+            }
         }
     }
 
-    // Túi của Boss chỉ có 15 lượt, màn thường 25 lượt
-    private fun createBox(id: Int, color: ColorId) = BoxSlot(
-        id = id, 
-        targetColor = color, 
-        turnsLeft = if (isBossLevel) 15 else 25
-    )
+    /**
+     * Logic đặc biệt cho Mega Truck: Đổ từng quả vào xe.
+     * Trả về số lượng quả thực tế đã được chuyển đi.
+     */
+    fun pourFruitsToTruck(srcIndex: Int): Int {
+        if (isGameOver || !isBossLevel || currentBossType != 1) return 0
+        val src = boxes.getOrNull(srcIndex) ?: return 0
+        val truck = boxSlots.getOrNull(0) ?: return 0
+        
+        if (src.isEmpty() || src.isFrozen || src.isLockedByChain || src.hasCobweb) return 0
+        if (src.peekColor() != truck.targetColor) return 0
+
+        var countMoved = 0
+        while (!src.isEmpty() && src.peekColor() == truck.targetColor && truck.remaining() > 0 && (src.blocks.size - 1) >= src.hiddenLayers) {
+            src.blocks.pop()
+            truck.filled++
+            countMoved++
+        }
+        
+        if (src.isEmpty()) src.hiddenLayers = 0
+        if (countMoved > 0) consumeTurn()
+
+        // Check thắng Boss 1: Xe tải đầy quả
+        if (truck.remaining() <= 0) {
+            isGameOver = true
+            isWin = true
+        }
+        return countMoved
+    }
 
     fun handleBoxClick(index: Int): Boolean {
         if (isGameOver) return false
         val clicked = boxes.getOrNull(index) ?: return false
         if (clicked.isArchived) return false
-        if (clicked.hasCobweb) {
-            clicked.hasCobweb = false
-            return consumeTurn()
-        }
-        if (clicked.isLockedByChain || clicked.isComplete()) return false
+        if (clicked.hasCobweb) { clicked.hasCobweb = false; return consumeTurn() }
+        if (clicked.isLockedByChain || (clicked.isComplete() && !isBossLevel)) return false
+
         val srcIdx = selectedBoxIndex
         if (srcIdx == null) {
-            if (!clicked.isEmpty() && !clicked.isFrozen && (clicked.blocks.size - 1) >= clicked.hiddenLayers) {
+            if (!clicked.isEmpty() && !clicked.isFrozen && ((clicked.blocks.size - 1) >= clicked.hiddenLayers || (isBossLevel && currentBossType == 4))) {
                 selectedBoxIndex = index
                 return true
             }
         } else {
-            if (srcIdx == index) {
-                selectedBoxIndex = null
-                return true
-            }
+            if (srcIdx == index) { selectedBoxIndex = null; return true }
             val src = boxes[srcIdx]
-            if (canMove(src, clicked)) {
-                executeMove(src, clicked)
-                selectedBoxIndex = null
-                return true
-            }
+            if (canMove(src, clicked)) { executeMove(src, clicked); selectedBoxIndex = null; return true }
             selectedBoxIndex = if (!clicked.isEmpty() && !clicked.isFrozen) index else null
         }
         return false
     }
 
     fun canMove(s: Box, d: Box) = !s.isEmpty() && d.blocks.size < d.capacity && 
-            (d.isEmpty() || d.peekColor() == s.peekColor()) && (s.blocks.size - 1) >= s.hiddenLayers
+            (d.isEmpty() || d.peekColor() == s.peekColor()) && ((s.blocks.size - 1) >= s.hiddenLayers || (isBossLevel && currentBossType == 4)) && !d.isFrozen
 
     fun executeMove(s: Box, d: Box) {
         val color = s.peekColor()
         val originalHiddenLimit = s.hiddenLayers 
-        while (!s.isEmpty() && s.peekColor() == color && (s.blocks.size - 1) >= originalHiddenLimit && d.blocks.size < d.capacity) {
+        while (!s.isEmpty() && s.peekColor() == color && ((s.blocks.size - 1) >= originalHiddenLimit || (isBossLevel && currentBossType == 4)) && d.blocks.size < d.capacity) {
             d.blocks.push(s.blocks.pop())
-            if (s.hiddenLayers >= s.blocks.size && !s.isEmpty()) s.hiddenLayers = s.blocks.size - 1
+            if (s.hiddenLayers > s.blocks.size) s.hiddenLayers = s.blocks.size
         }
         if (s.isEmpty()) s.hiddenLayers = 0
-        if (d.isFrozen) d.isFrozen = false
         consumeTurn()
     }
 
@@ -234,16 +267,14 @@ class LevelOneEngine(val levelId: Int = 1) {
         boxSlots.forEach { box ->
             if (box.turnsLeft > 0) {
                 box.turnsLeft--
-                if (box.turnsLeft <= 0 && !isGameOver) {
-                    isGameOver = true
-                    isWin = false
-                }
+                if (box.turnsLeft <= 0 && !isGameOver) { isGameOver = true; isWin = false }
             }
         }
         return true
     }
 
     fun archiveBox(id: Int) {
+        if (isBossLevel && currentBossType == 1) return // Boss 1 không dùng cơ chế archive box
         val box = boxes.find { it.id == id } ?: return
         if (box.isArchived) return
         val color = if (box.blocks.isNotEmpty()) box.blocks[0] else ColorId.EMPTY
@@ -254,30 +285,34 @@ class LevelOneEngine(val levelId: Int = 1) {
             box.blocks.clear()
             completedBoxesCount++
             boxes.forEach { it.isLockedByChain = false }
+            
+            // Unfreeze one box for Type 3
+            if (isBossLevel && currentBossType == 3) {
+                boxes.firstOrNull { it.isFrozen }?.let { it.isFrozen = false }
+            }
+            
             if (bag.remaining() <= 0) replaceBag(bag.id)
         } else if (!isBagMechanismEnabled) {
             box.isArchived = true
             box.blocks.clear()
             completedBoxesCount++
         }
-        if (completedBoxesCount >= totalFullBoxesCount) {
-            isGameOver = true
-            isWin = true
-        }
+        if (completedBoxesCount >= totalFullBoxesCount) { isGameOver = true; isWin = true }
     }
 
     private fun replaceBag(id: Int) {
+        if (isBossLevel && currentBossType == 1) return 
         val idx = boxSlots.indexOfFirst { it.id == id }
         if (idx == -1) return
         val other = if (boxSlots.size > 1) boxSlots[1 - idx].targetColor else null
         val completedWaiting = boxes.filter { !it.isArchived && it.isComplete() }.map { it.blocks[0] }.filter { it != other && boxSlots.none { b -> b.targetColor == it } }
         if (completedWaiting.isNotEmpty()) {
-            boxSlots[idx] = createBox(id, completedWaiting.random(random))
+            boxSlots[idx] = BoxSlot(id, completedWaiting.random(random), turnsLeft = 25)
             return
         }
         val onBoard = boxes.filter { !it.isArchived && !it.isEmpty() }.flatMap { it.blocks }.distinct()
         val pool = onBoard.filter { it != other }
-        if (pool.isNotEmpty()) boxSlots[idx] = createBox(id, pool.shuffled(random).first())
+        if (pool.isNotEmpty()) boxSlots[idx] = BoxSlot(id, pool.shuffled(random).first(), turnsLeft = 25)
         else boxSlots.removeAt(idx)
     }
 
@@ -289,11 +324,7 @@ class LevelOneEngine(val levelId: Int = 1) {
             boxes.filter { !it.isArchived && it.isComplete() }.forEach { box ->
                 val color = box.blocks[0]
                 val canArchive = !isBagMechanismEnabled || boxSlots.any { it.targetColor == color && it.remaining() > 0 }
-                if (canArchive) {
-                    archiveBox(box.id)
-                    archived.add(box.id)
-                    changed = true
-                }
+                if (canArchive) { archiveBox(box.id); archived.add(box.id); changed = true }
             }
         }
         return archived
@@ -309,6 +340,11 @@ class LevelOneEngine(val levelId: Int = 1) {
         for (src in active) {
             if (src.isEmpty() || src.isFrozen || src.isLockedByChain) continue
             if ((src.blocks.size - 1) < src.hiddenLayers) continue
+            // Boss 1: Có thể di chuyển vào xe tải
+            if (isBossLevel && currentBossType == 1) {
+                val truck = boxSlots.getOrNull(0)
+                if (truck != null && src.peekColor() == truck.targetColor) return false
+            }
             for (dst in active) {
                 if (src.id == dst.id) continue
                 if (canMove(src, dst)) return false
@@ -319,14 +355,12 @@ class LevelOneEngine(val levelId: Int = 1) {
 
     fun rerollBags() {
         if (boxSlots.isEmpty()) return
-        val completedColors = boxes.filter { !it.isArchived && it.isComplete() }.map { it.blocks[0] }.distinct()
-        val frequentColors = boxes.filter { !it.isArchived }.flatMap { it.blocks.toList() }.filter { it != ColorId.EMPTY }.groupBy { it }.entries.sortedByDescending { it.value.size }.map { it.key }
-        val pool = (completedColors + frequentColors).distinct()
+        val pool = boxes.filter { !it.isArchived && !it.isEmpty() }.flatMap { it.blocks }.distinct()
         if (pool.isEmpty()) return
         boxSlots.forEachIndexed { i, box ->
             val otherColor = if (boxSlots.size > 1) boxSlots[1 - i].targetColor else null
             val newColor = pool.firstOrNull { it != otherColor && it != box.targetColor } ?: pool.firstOrNull() ?: return@forEachIndexed
-            boxSlots[i] = BoxSlot(id = box.id, targetColor = newColor, capacity = box.capacity, turnsLeft = if (isBossLevel) 20 else 30)
+            boxSlots[i] = BoxSlot(box.id, newColor, capacity = box.capacity, turnsLeft = 30)
         }
     }
 

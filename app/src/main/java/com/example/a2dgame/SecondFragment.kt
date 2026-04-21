@@ -17,7 +17,7 @@ class SecondFragment : Fragment() {
     private var _binding: FragmentSecondBinding? = null
     private val binding get() = _binding!!
 
-    private val totalLevels = 100
+    private val totalLevels = 1000
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

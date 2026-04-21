@@ -40,7 +40,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.graphics.ColorUtils
 import kotlin.random.Random
+
 import com.example.a2dgame.SkinManager
 
 class LevelOneFragment : Fragment() {
@@ -52,7 +54,6 @@ class LevelOneFragment : Fragment() {
     private lateinit var engine: LevelOneEngine
     private var soundManager: SoundManager? = null
 
-    // Power-up counts
     private var powerupReroll    = 1
     private var powerupMagnify   = 1
     private var powerupReshuffle = 1
@@ -82,7 +83,7 @@ class LevelOneFragment : Fragment() {
         soundManager = SoundManager(requireContext())
         soundManager?.setEnabled(true)
         
-        binding.tvLevelName.text = getString(R.string.level_name_format, levelId)
+        setupUIForBossStatus()
         
         loadBannerAd()
         playBackgroundMusic()
@@ -96,7 +97,16 @@ class LevelOneFragment : Fragment() {
         setupPowerups()
         updateGoldDisplay()
         setupTruckIdleAnimations()
+    }
 
+    private fun setupUIForBossStatus() {
+        if (engine.isBossLevel) {
+            binding.tvLevelName.text = "👹 BOSS LV ${args.levelId}"
+            binding.tvLevelName.setTextColor(Color.RED)
+        } else {
+            binding.tvLevelName.text = getString(R.string.level_name_format, args.levelId)
+            binding.tvLevelName.setTextColor(Color.WHITE)
+        }
     }
 
     private fun updateGoldDisplay() {
@@ -106,68 +116,31 @@ class LevelOneFragment : Fragment() {
 
     private fun setupSettings() {
         val settingsBinding = binding.layoutSettings
-
         binding.btnSettings.setOnClickListener { anchor ->
             val popup = PopupMenu(requireContext(), anchor)
             popup.menu.add(0, 1, 0, getString(R.string.home_menu))
             popup.menu.add(0, 2, 1, getString(R.string.reset_level))
             popup.menu.add(0, 3, 2, getString(R.string.settings_menu))
-            
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
-                    1 -> {
-                        findNavController().popBackStack(R.id.SecondFragment, false)
-                        true
-                    }
-                    2 -> {
-                        if (activeAnimationsCount > 0) return@setOnMenuItemClickListener true
-                        engine = LevelOneEngine(args.levelId)
-                        renderBoard()
-                        true
-                    }
-                    3 -> {
-                        showSettings(true)
-                        true
-                    }
+                    1 -> { findNavController().popBackStack(R.id.SecondFragment, false); true }
+                    2 -> { if (activeAnimationsCount > 0) return@setOnMenuItemClickListener true; engine = LevelOneEngine(args.levelId); renderBoard(); true }
+                    3 -> { showSettings(true); true }
                     else -> false
                 }
             }
             popup.show()
         }
-
         settingsBinding.btnCloseSettings.setOnClickListener { showSettings(false) }
-        
         settingsBinding.btnLangEn.setOnClickListener { changeLanguage("en") }
         settingsBinding.btnLangVi.setOnClickListener { changeLanguage("vi") }
-
-        updateLanguageButtons(LanguageManager.getSavedLanguage(requireContext()))
-
         val prefs = requireContext().getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE)
-        
         settingsBinding.switchMusic.isChecked = prefs.getBoolean("music_on", true)
         settingsBinding.switchSound.isChecked = prefs.getBoolean("sound_on", true)
         settingsBinding.switchVibration.isChecked = prefs.getBoolean("vibration_on", true)
-
-        settingsBinding.switchMusic.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("music_on", isChecked).apply()
-            GlobalMusicPlayer.setEnabled(requireContext(), isChecked)
-        }
-
-        settingsBinding.switchSound.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("sound_on", isChecked).apply()
-            soundManager?.setEnabled(isChecked)
-        }
-
-        settingsBinding.switchVibration.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("vibration_on", isChecked).apply()
-        }
-
-        val btnResetAll = settingsBinding.root.findViewById<android.widget.Button>(R.id.btn_reset_all)
-        btnResetAll?.setOnClickListener {
-            settingsBinding.switchMusic.isChecked = true
-            settingsBinding.switchSound.isChecked = true
-            settingsBinding.switchVibration.isChecked = true
-        }
+        settingsBinding.switchMusic.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("music_on", isChecked).apply(); GlobalMusicPlayer.setEnabled(requireContext(), isChecked) }
+        settingsBinding.switchSound.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("sound_on", isChecked).apply(); soundManager?.setEnabled(isChecked) }
+        settingsBinding.switchVibration.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("vibration_on", isChecked).apply() }
     }
 
     private fun changeLanguage(langCode: String) {
@@ -177,21 +150,8 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun showSettings(show: Boolean) {
-        val settingsCard = binding.layoutSettings.settingsCard
         val overlay = binding.layoutSettings.root
-        if (show) {
-            overlay.visibility = View.VISIBLE
-            settingsCard.alpha = 0f
-            settingsCard.animate().alpha(1f).setDuration(300).start()
-        } else {
-            overlay.visibility = View.GONE
-        }
-    }
-
-    private fun updateLanguageButtons(lang: String) {
-        val settingsBinding = binding.layoutSettings
-        settingsBinding.btnLangEn.alpha = if (lang == "en") 1.0f else 0.5f
-        settingsBinding.btnLangVi.alpha = if (lang == "vi") 1.0f else 0.5f
+        overlay.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     private fun setupPowerups() {
@@ -200,31 +160,9 @@ class LevelOneFragment : Fragment() {
         powerupMagnify   = 1 + GoldManager.getRevealCount(ctx)
         powerupReshuffle = 1 + GoldManager.getShuffleCount(ctx)
         updatePowerupButtons()
-
-        binding.btnRerollBags.setOnClickListener {
-            if (powerupReroll <= 0 || activeAnimationsCount > 0) return@setOnClickListener
-            powerupReroll--
-            engine.rerollBags()
-            engine.archiveAllReady()
-            soundManager?.play("pickup")
-            updatePowerupButtons()
-            renderBoard()
-        }
-
-        binding.btnMagnify.setOnClickListener {
-            if (powerupMagnify <= 0 || activeAnimationsCount > 0) return@setOnClickListener
-            isMagnifyMode = !isMagnifyMode
-            updatePowerupButtons()
-        }
-
-        binding.btnReshuffle.setOnClickListener {
-            if (powerupReshuffle <= 0 || activeAnimationsCount > 0) return@setOnClickListener
-            powerupReshuffle--
-            engine.shuffleAllBoxes()
-            soundManager?.play("move")
-            updatePowerupButtons()
-            renderBoard()
-        }
+        binding.btnRerollBags.setOnClickListener { if (powerupReroll > 0 && activeAnimationsCount == 0) { powerupReroll--; engine.rerollBags(); engine.archiveAllReady(); renderBoard(); updatePowerupButtons() } }
+        binding.btnMagnify.setOnClickListener { if (powerupMagnify > 0 && activeAnimationsCount == 0) { isMagnifyMode = !isMagnifyMode; updatePowerupButtons() } }
+        binding.btnReshuffle.setOnClickListener { if (powerupReshuffle > 0 && activeAnimationsCount == 0) { powerupReshuffle--; engine.shuffleAllBoxes(); renderBoard(); updatePowerupButtons() } }
     }
 
     private fun updatePowerupButtons() {
@@ -236,876 +174,317 @@ class LevelOneFragment : Fragment() {
     private fun renderBoard() {
         binding.glGameBoard.removeAllViews()
         val boxes = engine.getBoxes().filter { !it.isArchived }
-        val totalBoxes = boxes.size
-
-        // ─── Load skin nhất lần, dùng cho toàn bộ board ───────────────────
         val skinStyle = SkinManager.getSelectedStyle(requireContext())
         val density   = resources.displayMetrics.density
         
-        val cols = when {
-            totalBoxes <= 15 -> 5
-            totalBoxes <= 25 -> 6
-            else -> 7
-        }
+        var cols = when { boxes.size <= 15 -> 5; boxes.size <= 25 -> 6; else -> 7 }
+        if (engine.isBossLevel && engine.currentBossType == 1 && cols < 6) cols = 6
         
-        val screenWidth = resources.displayMetrics.widthPixels
-        val sideMargins = (24 * density).toInt()
-        val boxWidth = (screenWidth - sideMargins) / cols
-        
-        // Tăng chiều cao hộp rõ rệt theo yêu cầu
+        val boxWidth = (resources.displayMetrics.widthPixels - (24 * density).toInt()) / cols
         val boxHeight = (boxWidth * 1.5f).toInt()
         val blockHeight = (boxWidth * 0.38f).toInt()
-        
-        // Logic Honeycomb nguyên bản (So le hàng chẵn hàng lẻ)
-        val verticalGap = (16 * density).toInt()
-        val stepY = boxHeight + verticalGap
-        val narrowCols = cols - 1
-        
-        val rowLengths = mutableListOf<Int>()
-        var remaining = totalBoxes
-        var isWideRow = true
-        while (remaining > 0) {
-            val c = if (isWideRow) cols else narrowCols
-            val toTake = minOf(remaining, c)
-            rowLengths.add(toTake)
-            remaining -= toTake
-            isWideRow = !isWideRow
-        }
+        val stepY = boxHeight + (16 * density).toInt()
 
         if (engine.isBagMechanismEnabled) {
-            val slots = engine.getBoxSlots()
-            slots.getOrNull(0)?.let { updateBoxUI(binding.tvBoxAFruit, binding.tvBoxAInfo, binding.tvBoxATurns, it) } 
-                ?: run { binding.truckContainerA.visibility = View.INVISIBLE }
-            slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) } 
-                ?: run { binding.truckContainerB.visibility = View.INVISIBLE }
-        }
+            if (engine.isBossLevel && engine.currentBossType == 1) {
+                binding.llBoxes.visibility = View.GONE
+            } else {
+                binding.llBoxes.visibility = View.VISIBLE
+                val slots = engine.getBoxSlots()
+                binding.truckContainerB.visibility = if (slots.size >= 2) View.VISIBLE else View.INVISIBLE
+                binding.truckContainerA.visibility = if (slots.size >= 1) View.VISIBLE else View.INVISIBLE
+                binding.truckContainerA.updateLayoutParams<LinearLayout.LayoutParams> { width = 0; weight = 1f; marginEnd = (4 * density).toInt() }
+                binding.imgTruckA.scaleX = 1.0f; binding.imgTruckA.scaleY = 1.0f
+                binding.tvBoxAFruit.textSize = 32f
+                binding.tvBoxAInfo.textSize = 12f
+                slots.getOrNull(0)?.let { updateBoxUI(binding.tvBoxAFruit, binding.tvBoxAInfo, binding.tvBoxATurns, it) }
+                slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) }
+            }
+        } else { binding.llBoxes.visibility = View.GONE }
 
-        // Màu chữ block: skin tối dùng chữ trắng, skin sáng dùng chữ đen
-        val blockBgRaw = skinStyle.blockBgColor
-        val r = (blockBgRaw shr 16) and 0xFF
-        val g = (blockBgRaw shr 8) and 0xFF
-        val b = blockBgRaw and 0xFF
-        val isDarkSkin = (0.299 * r + 0.587 * g + 0.114 * b) < 128
+        val isDarkSkin = ColorUtils.calculateLuminance(skinStyle.blockBgColor) < 0.5
         val blockTextColor = if (isDarkSkin) Color.WHITE else Color.BLACK
 
-        var currentBoxIndex = 0
-        rowLengths.forEachIndexed { rowIndex, rowItemCount ->
-            val rowWidth = rowItemCount * boxWidth
-            val leftOffset = (screenWidth - sideMargins - rowWidth) / 2
-            val topOffset = rowIndex * stepY
-            
-            for (i in 0 until rowItemCount) {
-                val box = boxes[currentBoxIndex]
-                
-                val boxContainer = FrameLayout(requireContext()).apply {
-                    tag = box.id
-                    clipChildren = false
-                    clipToPadding = false
-                    layoutParams = FrameLayout.LayoutParams(boxWidth, boxHeight).apply {
-                        leftMargin = leftOffset + (i * boxWidth)
-                        topMargin = topOffset
-                    }
-                    setOnClickListener { handleBoxTap(box.id) }
+        val createBoxContainer: (LevelOneEngine.Box, Int, Int) -> Unit = { box, leftMar, topMar ->
+            val boxContainer = FrameLayout(requireContext()).apply {
+                tag = box.id
+                layoutParams = FrameLayout.LayoutParams(boxWidth, boxHeight).apply { leftMargin = leftMar; topMargin = topMar }
+                setOnClickListener { handleBoxTap(box.id) }
+            }
+            val boxLayout = FrameLayout(requireContext()).apply { layoutParams = FrameLayout.LayoutParams(-1, -1) }
+            val boxBody = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.BOTTOM
+                background = SkinManager.makeBoxBodyDrawable(skinStyle, density)
+                setPadding((8 * density).toInt(), (2 * density).toInt(), (8 * density).toInt(), (16 * density).toInt())
+                layoutParams = FrameLayout.LayoutParams(-1, -1)
+            }
+            val pending = pendingIncomingMap[box.id] ?: 0
+            val visibleCount = (box.blocks.size - pending).coerceAtLeast(0)
+            for (bIdx in 0 until visibleCount) {
+                val fruit = box.blocks[bIdx]
+                val isHidden = bIdx < box.hiddenLayers && !(engine.isBossLevel && engine.currentBossType == 4 && engine.selectedBoxIndex == box.id && bIdx == box.blocks.size - 1)
+                val blockView = FrameLayout(requireContext()).apply {
+                    layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply { setMargins(2, -(blockHeight * 0.20).toInt(), 2, 0) }
+                    background = if (isHidden) GradientDrawable().apply { setColor(0xCC333333.toInt()); cornerRadius = 6 * density } else SkinManager.makeBlockDrawable(skinStyle, density)
+                    addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = if (isHidden) "?" else fruit.fruitIcon; textSize = 16f; setTextColor(if (isHidden) Color.WHITE else blockTextColor); setShadowLayer(2f, 1f, 1f, 0x88000000.toInt()) })
                 }
+                boxBody.addView(blockView, 0)
+            }
+            boxLayout.addView(boxBody)
+            if (box.hasCobweb) boxLayout.addView(TextView(requireContext()).apply { text = "🕸️"; textSize = 36f; gravity = Gravity.CENTER; translationZ = 10f; layoutParams = FrameLayout.LayoutParams(-1, -1) })
+            if (box.isFrozen) boxLayout.addView(FrameLayout(requireContext()).apply { background = GradientDrawable().apply { setColor(0x7780D8FF.toInt()); cornerRadius = 8 * density; setStroke((2 * density).toInt(), Color.WHITE) }; translationZ = 15f; layoutParams = FrameLayout.LayoutParams(-1, -1); addView(TextView(requireContext()).apply { text = "❄️"; textSize = 24f; gravity = Gravity.CENTER }) })
+            if (box.isLockedByChain) boxLayout.addView(TextView(requireContext()).apply { text = "⛓️"; textSize = 32f; gravity = Gravity.CENTER; translationZ = 20f; layoutParams = FrameLayout.LayoutParams(-1, -1) })
+            boxContainer.addView(boxLayout); binding.glGameBoard.addView(boxContainer)
+        }
 
-                val boxLayout = LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.BOTTOM
-                    clipChildren = false
-                    clipToPadding = false
-                    // ─── ÁP DỤNG SKIN VÀO HỘP ───────────────────────────
+        if (engine.isBossLevel && engine.currentBossType == 1) {
+            val sw = resources.displayMetrics.widthPixels.toFloat()
+            val availableWidth = sw - 24 * density
+            val center_x = availableWidth / 2f
+            val center_y = center_x * 1.3f // Giãn khoảng cách dọc
+            val rx = center_x - boxWidth / 2f - 4 * density
+            val ry = center_y - boxHeight / 2f + 16 * density // Mở rộng bán kính dọc thêm chút
+            
+            val megaSlot = engine.getBoxSlots().getOrNull(0)
+            if (megaSlot != null) {
+                val megaWidth = (boxWidth * 2.5f).toInt()
+                val megaHeight = (boxWidth * 2.5f).toInt()
+                val megaContainer = FrameLayout(requireContext()).apply {
+                    tag = "mega_container"
+                    layoutParams = FrameLayout.LayoutParams(megaWidth, megaHeight).apply {
+                        leftMargin = (center_x - megaWidth / 2f + 12 * density).toInt()
+                        topMargin = (center_y - megaHeight / 2f).toInt()
+                    }
+                }
+                val megaBody = LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
                     background = SkinManager.makeBoxBodyDrawable(skinStyle, density)
-                    setPadding(
-                        (8 * density).toInt(),
-                        (2 * density).toInt(),
-                        (8 * density).toInt(),
-                        (16 * density).toInt()
-                    )
                     layoutParams = FrameLayout.LayoutParams(-1, -1)
                 }
-
-                val pending = pendingIncomingMap[box.id] ?: 0
-                val visibleCount = (box.blocks.size - pending).coerceAtLeast(0)
-                
-                for (bIdx in 0 until visibleCount) {
-                    val fruit = box.blocks[bIdx]
-                    val isHidden = bIdx < box.hiddenLayers
-                    val blockView = FrameLayout(requireContext()).apply {
-                        layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply { 
-                            setMargins(2, - (blockHeight * 0.20).toInt(), 2, 0) 
-                        }
-                        // ─── ÁP DỤNG SKIN VÀO BLOCK ─────────────────────
-                        background = if (isHidden) GradientDrawable().apply { 
-                            setColor(0xCC333333.toInt())
-                            cornerRadius = 6 * density
-                        } else SkinManager.makeBlockDrawable(skinStyle, density)
-                        
-                        addView(TextView(context).apply {
-                            gravity = Gravity.CENTER
-                            text = if (isHidden) "?" else fruit.fruitIcon
-                            textSize = 16f
-                            setTextColor(if (isHidden) Color.WHITE else blockTextColor)
-                            setShadowLayer(2f, 1f, 1f, 0x88000000.toInt())
-                        })
-                    }
-                    boxLayout.addView(blockView, 0)
+                megaBody.addView(TextView(requireContext()).apply { text = megaSlot.targetColor.fruitIcon; textSize = 64f; gravity = Gravity.CENTER; setShadowLayer(10f, 0f, 0f, Color.argb(100,0,0,0)) })
+                megaBody.addView(TextView(requireContext()).apply { text = "${megaSlot.filled} / ${megaSlot.capacity}"; textSize = 28f; setTextColor(Color.WHITE); setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setShadowLayer(8f, 2f, 2f, Color.BLACK) })
+                megaBody.addView(TextView(requireContext()).apply { text = "⏳ ${megaSlot.turnsLeft}"; textSize = 20f; setTextColor(Color.YELLOW); setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setShadowLayer(8f, 2f, 2f, Color.BLACK) })
+                megaContainer.addView(megaBody)
+                binding.glGameBoard.addView(megaContainer)
+            }
+            boxes.forEachIndexed { index, box ->
+                val angle = index.toDouble() * 2.0 * Math.PI / boxes.size
+                var x = center_x + rx * Math.cos(angle)
+                var y = center_y + ry * Math.sin(angle)
+                createBoxContainer(box, (x - boxWidth / 2f + 12 * density).toInt(), (y - boxHeight / 2f).toInt())
+            }
+        } else {
+            var currentIdx = 0
+            val rows = (boxes.size + cols - 1) / cols
+            for (r in 0 until rows) {
+                for (c in 0 until cols) {
+                    if (currentIdx >= boxes.size) break
+                    val box = boxes[currentIdx++]
+                    createBoxContainer(box, (12 * density).toInt() + (c * boxWidth), r * stepY)
                 }
-                
-                if (box.isFrozen) {
-                    boxLayout.foreground = GradientDrawable().apply {
-                        setColor(0x4400BCD4.toInt())
-                        cornerRadius = 8 * density
-                    }
-                } else {
-                    boxLayout.foreground = null
-                }
-
-                boxContainer.addView(boxLayout)
-                binding.glGameBoard.addView(boxContainer)
-                currentBoxIndex++
             }
         }
-
-        if (engine.isBagMechanismEnabled) {
-            val slots = engine.getBoxSlots()
-            slots.getOrNull(0)?.let { updateBoxUI(binding.tvBoxAFruit, binding.tvBoxAInfo, binding.tvBoxATurns, it) } 
-                ?: run { binding.truckContainerA.visibility = View.INVISIBLE }
-            slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) } 
-                ?: run { binding.truckContainerB.visibility = View.INVISIBLE }
-        }
-        
         updateStatusUI()
     }
 
-
     private fun handleBoxTap(index: Int) {
         if (engine.isGameOver || animatingBoxes.contains(index)) return
-        if (isMagnifyMode) {
-            val box = engine.getBoxes().find { it.id == index }
-            if (box != null && !box.isArchived && box.hiddenLayers > 0) {
-                powerupMagnify--
-                engine.revealHiddenLayers(index)
-                soundManager?.play("complete")
+        val clickedBox = engine.getBoxes().find { it.id == index } ?: return
+        if (isMagnifyMode) { if (clickedBox.hiddenLayers > 0) { powerupMagnify--; engine.revealHiddenLayers(index); soundManager?.play("complete") }; isMagnifyMode = false; updatePowerupButtons(); renderBoard(); return }
+        
+        // --- LOGIC MEGA TRUCK DIRECT POUR ---
+        if (engine.isBossLevel && engine.currentBossType == 1) {
+            val truck = engine.getBoxSlots().getOrNull(0)
+            if (truck != null && !clickedBox.isEmpty() && clickedBox.peekColor() == truck.targetColor && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.hasCobweb) {
+                animatePourToTruck(index)
+                return
             }
-            isMagnifyMode = false
-            updatePowerupButtons()
-            renderBoard()
-            return
         }
 
-        val boxes = engine.getBoxes()
-        val clickedBox = boxes.find { it.id == index } ?: return
         val selectedIdx = engine.selectedBoxIndex
-
         if (selectedIdx == null) {
-            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isComplete()) {
+            if (clickedBox.hasCobweb) { clickedBox.hasCobweb = false; renderBoard(); return }
+            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.isComplete()) { 
                 engine.selectedBoxIndex = index
-                soundManager?.play("pickup")
-                val view = binding.glGameBoard.findViewWithTag<View>(index)
-                animateSelection(view, true)
+                animateSelection(binding.glGameBoard.findViewWithTag(index), true)
+                // For Type 4 blind mode, picking up reveals the fruit, so we re-render
+                if (engine.isBossLevel && engine.currentBossType == 4) renderBoard()
             }
-        } else if (selectedIdx == index) {
+        } else if (selectedIdx == index) { 
             engine.selectedBoxIndex = null
-            soundManager?.play("drop")
-            val view = binding.glGameBoard.findViewWithTag<View>(index)
-            animateSelection(view, false)
-        } else {
-            val srcBox = boxes.find { it.id == selectedIdx }!!
+            animateSelection(binding.glGameBoard.findViewWithTag(index), false)
+            if (engine.isBossLevel && engine.currentBossType == 4) renderBoard()
+        }
+        else { 
+            val srcBox = engine.getBoxes().find { it.id == selectedIdx }!!
             if (engine.canMove(srcBox, clickedBox)) {
-                animateMoveSequence(selectedIdx, index)
-            } else {
-                val oldView = binding.glGameBoard.findViewWithTag<View>(selectedIdx)
-                animateSelection(oldView, false)
-                
-                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isComplete()) {
+                animateMoveSequence(selectedIdx, index) 
+            } else { 
+                animateSelection(binding.glGameBoard.findViewWithTag(selectedIdx), false)
+                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isLockedByChain && !clickedBox.isComplete()) { 
                     engine.selectedBoxIndex = index
-                    soundManager?.play("pickup")
-                    val view = binding.glGameBoard.findViewWithTag<View>(index)
-                    animateSelection(view, true)
+                    animateSelection(binding.glGameBoard.findViewWithTag(index), true) 
                 } else {
-                    engine.selectedBoxIndex = null
-                    soundManager?.play("drop")
+                    engine.selectedBoxIndex = null 
                 }
-            }
+                if (engine.isBossLevel && engine.currentBossType == 4) renderBoard()
+            } 
         }
     }
 
-    private fun animateSelection(boxView: View?, isSelected: Boolean) {
-        val boxLayout = (boxView as? ViewGroup)?.getChildAt(0) as? ViewGroup ?: return
-        val density = resources.displayMetrics.density
-        
-        // Vô hiệu hóa clipping cho toàn bộ cây thư mục cha
-        var p = boxView.parent
-        while (p is ViewGroup) {
-            p.clipChildren = false
-            p.clipToPadding = false
-            if (p.id == android.R.id.content) break // Đã tới root content
-            p = p.parent
-        }
-        val boxId = boxView.tag as Int
-        val box = engine.getBoxes().find { it.id == boxId } ?: return
-        val color = box.peekColor()
-
-        var consecutiveCount = 0
-        for (idx in box.blocks.indices.reversed()) {
-            if (idx < box.hiddenLayers) break
-            if (box.blocks[idx] == color) consecutiveCount++
-            else break
-        }
-        val topStackMinIndex = box.blocks.size - consecutiveCount
-
-        for (i in 0 until boxLayout.childCount) {
-            val block = boxLayout.getChildAt(i)
-            val blockIndex = box.blocks.size - 1 - i
-            
-            val isPartOfTopStack = blockIndex >= 0 &&
-                                   blockIndex >= topStackMinIndex &&
-                                   blockIndex >= box.hiddenLayers
-            
-            if (isPartOfTopStack) {
-                if (isSelected) {
-                    block.animate()
-                        .translationY(-35 * density) 
-                        .translationZ(30 * density)
-                        .scaleX(1.15f)
-                        .scaleY(1.15f)
-                        .setDuration(250)
-                        .setInterpolator(OvershootInterpolator())
-                        .withEndAction { startWiggle(block) }
-                        .start()
-                } else {
-                    stopWiggle(block)
-                    block.animate()
-                        .translationY(0f)
-                        .translationZ(0f)
-                        .scaleX(1.1f)
-                        .scaleY(1.1f)
-                        .setDuration(200)
-                        .start()
-                }
-            } else if (!isSelected) {
-                stopWiggle(block)
-                block.animate()
-                    .translationY(0f)
-                    .translationZ(0f)
-                    .scaleX(1.0f)
-                    .scaleY(1.0f)
-                    .setDuration(200)
-                    .start()
-            }
-        }
-        
-        // Nâng toàn bộ hộp lên theo trục Z (3D Lift)
-        boxView.animate()
-            .translationZ(if (isSelected) 20 * density else 0f)
-            .scaleX(if (isSelected) 1.1f else 1.0f)
-            .scaleY(if (isSelected) 1.1f else 1.0f)
-            .setDuration(300)
-            .setInterpolator(DecelerateInterpolator())
-            .start()
-    }
-
-    private fun startWiggle(view: View) {
-        if (wiggleAnimators.containsKey(view)) return
-        val anim = ObjectAnimator.ofFloat(view, View.ROTATION, -3f, 3f).apply {
-            duration = 150
-            repeatMode = ValueAnimator.REVERSE
-            repeatCount = ValueAnimator.INFINITE
-            start()
-        }
-        wiggleAnimators[view] = anim
-    }
-
-    private fun stopWiggle(view: View) {
-        wiggleAnimators.remove(view)?.cancel()
-        view.rotation = 0f
-    }
-
-    private fun animateMoveSequence(srcId: Int, dstId: Int) {
-        activeAnimationsCount++
-        animatingBoxes.add(srcId)
-        animatingBoxes.add(dstId)
-        engine.selectedBoxIndex = null
-        
+    private fun animatePourToTruck(srcId: Int) {
+        activeAnimationsCount++; animatingBoxes.add(srcId)
         val srcView = binding.glGameBoard.findViewWithTag<ViewGroup>(srcId)
-        val dstView = binding.glGameBoard.findViewWithTag<ViewGroup>(dstId)
-        val srcLayout = srcView?.getChildAt(0) as? ViewGroup
-        val dstLayout = dstView?.getChildAt(0) as? ViewGroup
+        val srcBody = (srcView?.getChildAt(0) as? ViewGroup)?.getChildAt(0) as? ViewGroup
+        if (srcBody == null) { activeAnimationsCount--; return }
         
-        if (srcLayout == null || dstLayout == null || srcView == null || dstView == null) {
-            animatingBoxes.remove(srcId)
-            animatingBoxes.remove(dstId)
-            activeAnimationsCount--
-            renderBoard()
-            return
-        }
-
-        val srcBox = engine.getBoxes().find { it.id == srcId }!!
-        val dstBox = engine.getBoxes().find { it.id == dstId }!!
-        val color = srcBox.peekColor()
+        val count = engine.pourFruitsToTruck(srcId)
+        if (count == 0) { activeAnimationsCount--; animatingBoxes.remove(srcId); return }
         
         val movingViews = mutableListOf<View>()
-        for (i in 0 until srcLayout.childCount) {
-            // blockIndex trong box logic *hiß╗çn tß║íi* tr╞░ß╗¢c khi modify (d├╣ sao ta mß╗¢i lß║Ñy childCount)
-            val blockIndex = srcBox.blocks.size - 1 - i
-            if (blockIndex >= 0 &&
-                blockIndex >= srcBox.hiddenLayers &&
-                srcBox.blocks[blockIndex] == color &&
-                (dstBox.blocks.size + movingViews.size) < dstBox.capacity) {
-                movingViews.add(srcLayout.getChildAt(i))
-            } else if (blockIndex >= 0 && srcBox.blocks[blockIndex] != color) {
-                // Dß╗½ng ngay khi gß║╖p block kh├íc m├áu
-                break
+        for (i in 0 until count) movingViews.add(srcBody.getChildAt(i))
+        
+        val rootLoc = IntArray(2); binding.root.getLocationOnScreen(rootLoc)
+        val moveAnimators = mutableListOf<Animator>(); val density = resources.displayMetrics.density
+        
+        val targetX: Float
+        val targetY: Float
+        val targetScale: Float
+        val megaContainer = binding.glGameBoard.findViewWithTag<View>("mega_container")
+        if (megaContainer != null) {
+            val megaLoc = IntArray(2); megaContainer.getLocationOnScreen(megaLoc)
+            targetX = (megaLoc[0] - rootLoc[0]).toFloat() + (megaContainer.width / 2f)
+            targetY = (megaLoc[1] - rootLoc[1]).toFloat() + (megaContainer.height / 2f)
+            targetScale = 0f // Make it shrink into the center
+            
+            // Wiggle mega container at the end
+            megaContainer.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).withEndAction {
+                soundManager?.play("complete") // Vibration handled here or separately
+                megaContainer.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
+            }.startDelay = 600
+            
+            // Use vibration
+            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator?.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                vibrator?.vibrate(100)
             }
-        }
-        
-        val count = movingViews.size
-        if (count == 0) {
-            animatingBoxes.remove(srcId)
-            animatingBoxes.remove(dstId)
-            activeAnimationsCount--
-            return
+        } else {
+            val truckLoc = IntArray(2); binding.imgTruckA.getLocationOnScreen(truckLoc)
+            targetX = (truckLoc[0] - rootLoc[0]).toFloat() + (binding.imgTruckA.width / 2f)
+            targetY = (truckLoc[1] - rootLoc[1]).toFloat() + (binding.imgTruckA.height / 2f)
+            targetScale = 0f
         }
 
-        // IMMEDIATE LOGIC UPDATE & PENDING COUNT
-        pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) + count
-        engine.executeMove(srcBox, dstBox)
-
-        val rootLoc = IntArray(2)
-        binding.root.getLocationOnScreen(rootLoc)
-        
-        val srcLoc = IntArray(2)
-        val dstLoc = IntArray(2)
-        srcView.getLocationOnScreen(srcLoc)
-        dstView.getLocationOnScreen(dstLoc)
-        
-        val moveAnimators = mutableListOf<Animator>()
-        val density = resources.displayMetrics.density
-        
         soundManager?.play("move")
-
-        // === RESET TRANSFORMS NGAY Lß║¼P Tß╗¿C ─æß╗â tr├ính ghost/b├│ng mß╗¥ ===
-        // 1. Reset scale cß╗ºa boxLayout nguß╗ôn vß╗ü 1.0 ngay (kh├┤ng animate)
-        srcLayout.animate().cancel()
-        srcLayout.scaleX = 1.0f
-        srcLayout.scaleY = 1.0f
-        // 2. Reset transform cß╗ºa c├íc block C├ÆN Lß║áI trong srcLayout (kh├┤ng bay)
-        for (i in 0 until srcLayout.childCount) {
-            val remaining = srcLayout.getChildAt(i)
-            if (!movingViews.contains(remaining)) {
-                remaining.animate().cancel()
-                remaining.translationY = 0f
-                remaining.scaleX = 1.0f
-                remaining.scaleY = 1.0f
-                remaining.rotation = 0f
-                remaining.alpha = 1.0f
-            }
-        }
-
-        movingViews.forEachIndexed { index, block ->
-            val blockLoc = IntArray(2)
-            block.getLocationOnScreen(blockLoc)
-            
-            val originalWidth = block.width
-            val originalHeight = block.height
-            
-            stopWiggle(block)
-            val parent = block.parent as ViewGroup
-            parent.removeView(block)
-            
-            val lp = ViewGroup.LayoutParams(originalWidth, originalHeight)
-            (binding.root as ViewGroup).addView(block, lp)
-            
-            // Reset transform tr├¬n block ─æang bay tr╞░ß╗¢c khi ─æß║╖t vß╗ï tr├¡ tuyß╗çt ─æß╗æi
-            block.scaleX = 1.0f
-            block.scaleY = 1.0f
-            block.rotation = 0f
-            block.translationX = 0f
-            block.translationY = 0f
-            block.alpha = 1.0f
-            block.x = (blockLoc[0] - rootLoc[0]).toFloat()
-            block.y = (blockLoc[1] - rootLoc[1]).toFloat()
-            
-            val targetX = (dstLoc[0] - rootLoc[0]).toFloat() + (dstView.width - originalWidth) / 2f
-            val targetSlotIndex = dstBox.blocks.size - count + (count - 1 - index)
-            val paddingBottom = 20 * density
-            val overlapAdjustment = targetSlotIndex * 4 * density
-            val targetY = (dstLoc[1] - rootLoc[1]).toFloat() + dstView.height - paddingBottom - (targetSlotIndex + 1) * originalHeight + overlapAdjustment
-
-            val path = Path().apply {
-                moveTo(block.x, block.y)
-                val arcHeight = 150 * density
-                quadTo((block.x + targetX) / 2, (dstLoc[1] - rootLoc[1]).toFloat() - arcHeight, targetX, targetY)
-            }
-            
-            val animator = ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply {
-                duration = 400 + index * 60L
-                interpolator = AnticipateOvershootInterpolator(0.8f)
-            }
-            
-            // Bay kèm hiệu ứng xoay và scale
-            val scaleAnimX = ObjectAnimator.ofFloat(block, View.SCALE_X, 1.0f, 1.3f, 1.0f).apply { duration = 400 }
-            val scaleAnimY = ObjectAnimator.ofFloat(block, View.SCALE_Y, 1.0f, 1.3f, 1.0f).apply { duration = 400 }
-            val rotateAnim = ObjectAnimator.ofFloat(block, View.ROTATION, 0f, 10f, -10f, 0f).apply { duration = 400 }
-            
-            moveAnimators.add(animator)
-            moveAnimators.add(scaleAnimX)
-            moveAnimators.add(scaleAnimY)
-            moveAnimators.add(rotateAnim)
+        movingViews.forEachIndexed { i, block ->
+            val blockLoc = IntArray(2); block.getLocationOnScreen(blockLoc)
+            val w = block.width; val h = block.height; (block.parent as ViewGroup).removeView(block); (binding.root as ViewGroup).addView(block, ViewGroup.LayoutParams(w, h))
+            block.x = (blockLoc[0] - rootLoc[0]).toFloat(); block.y = (blockLoc[1] - rootLoc[1]).toFloat()
+            val destX = targetX - (w / 2f)
+            val destY = targetY - (h / 2f)
+            val path = Path().apply { moveTo(block.x, block.y); quadTo((block.x + destX) / 2, (destY) - 200 * density, destX, destY) }
+            moveAnimators.add(ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply { duration = 500 + i * 80L; interpolator = DecelerateInterpolator() })
+            moveAnimators.add(ObjectAnimator.ofFloat(block, View.ALPHA, 1f, 0f).apply { duration = 500 + i * 80L; startDelay = 200L })
+            moveAnimators.add(ObjectAnimator.ofFloat(block, View.SCALE_X, 1f, targetScale).apply { duration = 500 + i * 80L; startDelay = 100L })
+            moveAnimators.add(ObjectAnimator.ofFloat(block, View.SCALE_Y, 1f, targetScale).apply { duration = 500 + i * 80L; startDelay = 100L })
         }
         
-        android.animation.AnimatorSet().apply {
+        AnimatorSet().apply {
             playTogether(moveAnimators)
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     movingViews.forEach { (binding.root as ViewGroup).removeView(it) }
-                    
-                    val currentPending = pendingIncomingMap[dstId] ?: 0
-                    if (currentPending >= count) {
-                        pendingIncomingMap[dstId] = currentPending - count
-                    } else {
-                        pendingIncomingMap[dstId] = 0
-                    }
-                    
-                    val finalDstBox = engine.getBoxes().find { it.id == dstId }!!
-                    
-                    if (finalDstBox.isComplete() && (pendingIncomingMap[dstId] ?: 0) == 0) {
-                        renderBoard()
-                        val newDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
-                        if (newDstView != null) {
-                            playCompletionAnimation(newDstView, dstId, srcId)
-                        } else {
-                            engine.archiveBox(dstId)
-                            engine.archiveAllReady()
-                            animatingBoxes.remove(srcId)
-                            animatingBoxes.remove(dstId)
-                            activeAnimationsCount--
-                            renderBoard()
-                            checkGameResults()
-                        }
-                    } else {
-                        engine.archiveAllReady()
-                        soundManager?.play("drop")
-                        animatingBoxes.remove(srcId)
-                        animatingBoxes.remove(dstId)
-                        activeAnimationsCount--
-                        renderBoard()
-                        val updatedDstView = binding.glGameBoard.findViewWithTag<View>(dstId)
-                        if (updatedDstView != null) animateContainerBounce(updatedDstView)
-                        checkGameResults()
-                    }
+                    animatingBoxes.remove(srcId); activeAnimationsCount--
+                    renderBoard(); checkGameResults()
                 }
             })
             start()
         }
     }
 
-    private fun playCompletionAnimation(view: View, boxId: Int, srcBoxId: Int = -1) {
-        view.post {
-            val density = resources.displayMetrics.density
-            val width = view.width
-            val height = view.height
-
-            soundManager?.play("complete")
-
-            // 1. Scale & Bounce
-            val scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.3f, 1f)
-            val scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.3f, 1f)
-            val bounceAnim = ObjectAnimator.ofPropertyValuesHolder(view, scaleX, scaleY).apply {
-                duration = 600
-                interpolator = AnticipateOvershootInterpolator()
-            }
-
-            // 2. Shine Sweep Effect
-            val shineView = View(context).apply {
-                background = GradientDrawable(
-                    GradientDrawable.Orientation.LEFT_RIGHT,
-                    intArrayOf(Color.TRANSPARENT, Color.parseColor("#B0FFFFFF"), Color.TRANSPARENT)
-                )
-                alpha = 0f
-            }
-            (view as ViewGroup).addView(shineView, FrameLayout.LayoutParams(width, height))
-            shineView.translationX = -width.toFloat()
-            
-            val shineAnim = AnimatorSet().apply {
-                playTogether(
-                    ObjectAnimator.ofFloat(shineView, View.ALPHA, 0f, 1f, 0f).apply { duration = 500 },
-                    ObjectAnimator.ofFloat(shineView, View.TRANSLATION_X, -width.toFloat(), width.toFloat()).apply { 
-                        duration = 500
-                        interpolator = LinearInterpolator()
-                    }
-                )
-            }
-
-            // 3. Glow Highlight — tái sử dụng 1 GradientDrawable thay vì tạo mới mỗi frame
-            val glowColor = Color.parseColor("#80FFEB3B")
-            val glowDrawable = GradientDrawable().apply { cornerRadius = 8 * density }
-            val glowAnim = ValueAnimator.ofArgb(Color.TRANSPARENT, glowColor, Color.TRANSPARENT).apply {
-                duration = 600
-                addUpdateListener { animator ->
-                    glowDrawable.setColor(animator.animatedValue as Int)
-                    view.foreground = glowDrawable
-                }
-            }
-
-            // 4. Checkmark
-            val checkmark = TextView(context).apply {
-                text = "✅"
-                textSize = 40f
-                alpha = 0f
-                gravity = Gravity.CENTER
-            }
-            (view as ViewGroup).addView(checkmark, FrameLayout.LayoutParams(-1, -1, Gravity.CENTER))
-            
-            val checkmarkAnim = AnimatorSet().apply {
-                playTogether(
-                    ObjectAnimator.ofFloat(checkmark, View.ALPHA, 0f, 1f, 1f, 0f).apply { duration = 1000 },
-                    ObjectAnimator.ofFloat(checkmark, View.SCALE_X, 0.5f, 1.5f, 1f).apply { duration = 600 },
-                    ObjectAnimator.ofFloat(checkmark, View.SCALE_Y, 0.5f, 1.5f, 1f).apply { duration = 600 }
-                )
-            }
-
-            // 5. Particles
-            spawnParticles(view)
-
-            // 6. Vibration & Shake
-            triggerVibration(25)
-            val shakeX = ObjectAnimator.ofFloat(binding.glGameBoard, View.TRANSLATION_X, 0f, 10f, -10f, 10f, -10f, 0f).apply {
-                duration = 400
-            }
-
-            AnimatorSet().apply {
-                playTogether(bounceAnim, glowAnim, shineAnim, checkmarkAnim, shakeX)
-                addListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        view.foreground = null
-                        (view as? ViewGroup)?.removeView(shineView)
-                        (view as? ViewGroup)?.removeView(checkmark)
-                        
-                        val box = engine.getBoxes().find { it.id == boxId }
-                        val color = box?.blocks?.firstOrNull()
-                        val bag = engine.getBoxSlots().find { it.targetColor == color && it.remaining() > 0 }
-                        val bagWillBeFilled = bag != null && bag.filled + 1 >= bag.capacity
-                        val truckView = if (bagWillBeFilled) {
-                            val isTruckA = engine.getBoxSlots().indexOf(bag) == 0
-                            if (isTruckA) binding.truckContainerA else binding.truckContainerB
-                        } else null
-
-                        engine.archiveBox(boxId)
-                        engine.archiveAllReady()
-                        if (srcBoxId != -1) animatingBoxes.remove(srcBoxId)
-                        animatingBoxes.remove(boxId)
-
-                        if (truckView != null && truckView.visibility == View.VISIBLE) {
-                            animateTruckCompletion(truckView) {
-                                activeAnimationsCount--
-                                renderBoard()
-                                checkGameResults()
-                            }
-                        } else {
-                            activeAnimationsCount--
-                            renderBoard()
-                            checkGameResults()
-                        }
-                    }
-                })
-                start()
-            }
-        }
+    private fun animateSelection(boxView: View?, isSelected: Boolean) {
+        boxView?.animate()?.translationZ(if (isSelected) 20 * resources.displayMetrics.density else 0f)?.scaleX(if (isSelected) 1.1f else 1.0f)?.scaleY(if (isSelected) 1.1f else 1.0f)?.setDuration(250)?.start()
     }
 
-    private fun setupTruckIdleAnimations() {
-        val bounceA = ObjectAnimator.ofFloat(binding.imgTruckA, View.TRANSLATION_Y, 0f, 6f, 0f).apply {
-            duration = 2000
-            repeatCount = ObjectAnimator.INFINITE
-            repeatMode = ObjectAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
+    private fun animateMoveSequence(srcId: Int, dstId: Int) {
+        activeAnimationsCount++; animatingBoxes.add(srcId); animatingBoxes.add(dstId); engine.selectedBoxIndex = null
+        val srcView = binding.glGameBoard.findViewWithTag<ViewGroup>(srcId); val dstView = binding.glGameBoard.findViewWithTag<ViewGroup>(dstId)
+        val srcBody = (srcView?.getChildAt(0) as? ViewGroup)?.getChildAt(0) as? ViewGroup
+        if (srcBody == null || dstView == null) { activeAnimationsCount--; renderBoard(); return }
+        val srcBox = engine.getBoxes().find { it.id == srcId }!!; val dstBox = engine.getBoxes().find { it.id == dstId }!!
+        val movingViews = mutableListOf<View>(); val color = srcBox.peekColor()
+        for (i in 0 until srcBody.childCount) {
+            val idx = srcBox.blocks.size - 1 - i
+            if (idx >= srcBox.hiddenLayers && srcBox.blocks[idx] == color && (dstBox.blocks.size + movingViews.size) < dstBox.capacity) movingViews.add(srcBody.getChildAt(i)) else break
         }
-        val bounceB = ObjectAnimator.ofFloat(binding.imgTruckB, View.TRANSLATION_Y, 0f, 6f, 0f).apply {
-            duration = 2200
-            repeatCount = ObjectAnimator.INFINITE
-            repeatMode = ObjectAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
+        if (movingViews.isEmpty()) { activeAnimationsCount--; return }
+        pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) + movingViews.size; engine.executeMove(srcBox, dstBox)
+        val rootLoc = IntArray(2); binding.root.getLocationOnScreen(rootLoc)
+        val dstLoc = IntArray(2); dstView.getLocationOnScreen(dstLoc)
+        val moveAnimators = mutableListOf<Animator>(); val density = resources.displayMetrics.density
+        movingViews.forEachIndexed { i, block ->
+            val blockLoc = IntArray(2); block.getLocationOnScreen(blockLoc)
+            val w = block.width; val h = block.height; (block.parent as ViewGroup).removeView(block); (binding.root as ViewGroup).addView(block, ViewGroup.LayoutParams(w, h))
+            block.x = (blockLoc[0] - rootLoc[0]).toFloat(); block.y = (blockLoc[1] - rootLoc[1]).toFloat()
+            val targetX = (dstLoc[0] - rootLoc[0]).toFloat() + (dstView.width - w) / 2f
+            val targetY = (dstLoc[1] - rootLoc[1]).toFloat() + dstView.height - (20 * density) - (dstBox.blocks.size - movingViews.size + (movingViews.size - 1 - i) + 1) * h
+            val path = Path().apply { moveTo(block.x, block.y); quadTo((block.x + targetX) / 2, (dstLoc[1] - rootLoc[1]).toFloat() - 150 * density, targetX, targetY) }
+            moveAnimators.add(ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply { duration = 400 + i * 50L; interpolator = AnticipateOvershootInterpolator(0.8f) })
         }
-        bounceA.start()
-        bounceB.start()
+        AnimatorSet().apply { playTogether(moveAnimators); addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(animation: Animator) { movingViews.forEach { (binding.root as ViewGroup).removeView(it) }; pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) - movingViews.size; finalizeMove(srcId, dstId) } }); start() }
+    }
+
+    private fun finalizeMove(srcId: Int, dstId: Int) {
+        val box = engine.getBoxes().find { it.id == dstId }!!
+        if (box.isComplete() && (pendingIncomingMap[dstId] ?: 0) == 0) { renderBoard(); playCompletionAnimation(binding.glGameBoard.findViewWithTag(dstId), dstId, srcId) }
+        else { engine.archiveAllReady(); animatingBoxes.remove(srcId); animatingBoxes.remove(dstId); activeAnimationsCount--; renderBoard(); checkGameResults() }
+    }
+
+    private fun playCompletionAnimation(view: View, boxId: Int, srcBoxId: Int) {
+        view.animate().scaleX(1.3f).scaleY(1.3f).setDuration(500).withEndAction {
+            view.animate().scaleX(1f).scaleY(1f).setDuration(200).withEndAction {
+                val box = engine.getBoxes().find { it.id == boxId }; val color = box?.blocks?.firstOrNull()
+                val bag = engine.getBoxSlots().find { it.targetColor == color && it.remaining() > 0 }
+                val truckView = if (bag != null && bag.filled + 1 >= bag.capacity) (if (engine.getBoxSlots().indexOf(bag) == 0) binding.truckContainerA else binding.truckContainerB) else null
+                engine.archiveBox(boxId); engine.archiveAllReady(); animatingBoxes.remove(srcBoxId); animatingBoxes.remove(boxId)
+                if (truckView != null && truckView.visibility == View.VISIBLE) animateTruckCompletion(truckView) { activeAnimationsCount--; renderBoard(); checkGameResults() }
+                else { activeAnimationsCount--; renderBoard(); checkGameResults() }
+            }.start()
+        }.start()
+        spawnParticles(view)
     }
 
     private fun animateTruckCompletion(truckView: View, onEnd: () -> Unit) {
         val screenWidth = resources.displayMetrics.widthPixels.toFloat()
-        val bounceY = ObjectAnimator.ofFloat(truckView, View.TRANSLATION_Y, 0f, -30f, 0f).apply { duration = 300 }
-        val driveOff = ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply {
-            duration = 700
-            interpolator = AnticipateOvershootInterpolator()
-        }
-        
-        // Hiệu ứng khói khi xuất phát
-        spawnSmokeParticles(truckView)
-        truckView.postDelayed({ soundManager?.play("move") }, 200)
-        
-        AnimatorSet().apply {
-            playSequentially(bounceY, driveOff)
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    truckView.translationX = -screenWidth
-                    onEnd()
-                    
-                    truckView.postDelayed({ soundManager?.play("move") }, 50)
-                    ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply {
-                        duration = 800
-                        interpolator = OvershootInterpolator()
-                        start()
-                    }
-                }
-            })
-            start()
-        }
-    }
-
-    private fun spawnSmokeParticles(anchor: View) {
-        val root = binding.root as ViewGroup
-        val loc = IntArray(2)
-        anchor.getLocationOnScreen(loc)
-        val centerX = loc[0].toFloat() + (anchor.width * 0.2f)
-        val centerY = loc[1].toFloat() + (anchor.height * 0.8f)
-
-        // Giảm từ 8 xuống 4 particle, dùng View đơn giản thay vì emoji
-        val smokeColors = intArrayOf(0xFFBBBBBB.toInt(), 0xFFCCCCCC.toInt(), 0xFF999999.toInt(), 0xFFAAAAAA.toInt())
-        repeat(4) { i ->
-            val size = (20 + i * 4).toInt()
-            val p = View(context).apply {
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(smokeColors[i % smokeColors.size])
-                }
-                alpha = 0.7f
-            }
-            root.addView(p, FrameLayout.LayoutParams(size, size))
-            p.x = centerX
-            p.y = centerY
-            p.animate()
-                .translationXBy(-(Random.nextFloat() * 150f + 30f))
-                .translationYBy(-(Random.nextFloat() * 80f + 20f))
-                .alpha(0f)
-                .scaleX(1.8f)
-                .scaleY(1.8f)
-                .setDuration(600)
-                .withEndAction { root.removeView(p) }
-                .start()
-        }
+        ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply { duration = 700; interpolator = AnticipateOvershootInterpolator(); addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(animation: Animator) { truckView.translationX = -screenWidth; onEnd(); ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply { duration = 800; interpolator = OvershootInterpolator(); start() } } }); start() }
     }
 
     private fun spawnParticles(anchor: View) {
-        val root = binding.root as ViewGroup
-        val loc = IntArray(2)
-        anchor.getLocationOnScreen(loc)
-
-        val centerX = loc[0].toFloat() + anchor.width / 2f
-        val centerY = loc[1].toFloat() + anchor.height / 2f
-
-        // Màu hạt lễ hội — dùng View hình tròn thay vì emoji TextView
-        // (nhẹ hơn ~5x về GPU: không cần render font/emoji)
-        val colors = intArrayOf(
-            0xFFFFD600.toInt(), 0xFFFF6D00.toInt(), 0xFF00E676.toInt(),
-            0xFF2979FF.toInt(), 0xFFE040FB.toInt(), 0xFFFF1744.toInt(),
-            0xFF00E5FF.toInt(), 0xFFFFEA00.toInt()
-        )
-
-        // 16 hạt thay vì 40 — đủ đẹp, nhẹ hơn 2.5x
-        repeat(16) { i ->
-            val color = colors[i % colors.size]
-            val sizeDp = (8 + (i % 4) * 3).toFloat()
-            val sizePx = (sizeDp * resources.displayMetrics.density).toInt()
-
-            val particle = View(context).apply {
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(color)
-                }
-            }
-            root.addView(particle, FrameLayout.LayoutParams(sizePx, sizePx))
-            particle.x = centerX
-            particle.y = centerY
-
-            val angle = (i * (360.0 / 16) + Random.nextDouble(-15.0, 15.0)) * Math.PI / 180.0
-            val velocity = Random.nextFloat() * 350f + 150f
-            val destX = centerX + (Math.cos(angle) * velocity).toFloat()
-            val destY = centerY + (Math.sin(angle) * velocity).toFloat() - 150f
-            val duration = 700L + (i % 4) * 60L  // 700–880ms, không ngẫu nhiên hoàn toàn
-
-            particle.animate()
-                .x(destX)
-                .y(destY)
-                .alpha(0f)
-                .scaleX(1.4f)
-                .scaleY(1.4f)
-                .rotation(Random.nextFloat() * 360f)  // Chỉ 360° thay vì 720°
-                .setDuration(duration)
-                .setInterpolator(DecelerateInterpolator())
-                .withEndAction { root.removeView(particle) }
-                .start()
-        }
+        val root = binding.root as ViewGroup; val loc = IntArray(2); anchor.getLocationOnScreen(loc)
+        repeat(15) { val p = TextView(requireContext()).apply { text = "✨"; textSize = 24f }; root.addView(p); p.x = loc[0] + anchor.width / 2f; p.y = loc[1] + anchor.height / 2f; p.animate().translationXBy(Random.nextInt(-300, 300).toFloat()).translationYBy(Random.nextInt(-300, 300).toFloat()).alpha(0f).scaleX(2f).scaleY(2f).setDuration(1000).withEndAction { root.removeView(p) }.start() }
     }
 
-    private fun triggerVibration(ms: Long) {
-        val prefs = requireContext().getSharedPreferences("game_settings", Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("vibration_on", true)) return
-
-        val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-        if (vibrator?.hasVibrator() == true) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(ms)
-            }
-        }
-    }
-
-    private fun playBackgroundMusic() {
-        GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen)
-    }
-
-    private fun checkGameResults() {
-        if (engine.isWin) {
-            showWinDialog()
-        } else if (engine.isGameOver && !engine.isWin) {
-            engine.isGameOver = true
-            showLoseDialog()
-        } else if (engine.isDeadlocked()) {
-            engine.isGameOver = true
-            showLoseDialog()
-        }
-    }
-
-    private fun showWinDialog() {
-        soundManager?.playWin()
-        isWinDialogShowing = true
-        
-        val dialogCard = binding.layoutWinDialog.winCard
-        binding.layoutWinDialog.root.visibility = View.VISIBLE
-        binding.layoutWinDialog.tvWinSubtitle.text = getString(R.string.win_dialog_subtitle, args.levelId)
-        
-        // Hoạt ảnh xuất hiện chuyên nghiệp
-        dialogCard.scaleX = 0.5f
-        dialogCard.scaleY = 0.5f
-        dialogCard.alpha = 0f
-        dialogCard.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .alpha(1f)
-            .setDuration(500)
-            .setInterpolator(OvershootInterpolator())
-            .withEndAction { 
-                spawnParticles(binding.tvLevelName)
-                spawnParticles(dialogCard)
-            }
-            .start()
-        
-        val prefs = requireContext().getSharedPreferences("game_prefs", 0)
-        val highest = prefs.getInt("highest_level", 1)
-        if (args.levelId + 1 > highest) {
-            prefs.edit().putInt("highest_level", args.levelId + 1).apply()
-        }
-
-        binding.layoutWinDialog.btnWinContinue.setOnClickListener {
-            GoldManager.addGold(requireContext(), 50)
-            navigateToNextLevel()
-        }
-    }
-
-    private fun showLoseDialog() {
-        soundManager?.playLose()
-        val vibrator = requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-        if (vibrator?.hasVibrator() == true) { vibrator.vibrate(200) }
-        
-        // Rung lắc bàn chơi trước khi hiện dialog
-        ObjectAnimator.ofFloat(binding.glGameBoard, View.TRANSLATION_X, 0f, 18f, -18f, 14f, -14f, 8f, -8f, 0f).apply { duration = 450; start() }
-        
-        isLoseDialogShowing = true
-        val dialogCard = binding.layoutLoseDialog.loseCard
-        binding.layoutLoseDialog.root.visibility = View.VISIBLE
-        
-        // Hoạt ảnh xuất hiện chuyên nghiệp
-        dialogCard.scaleX = 0.5f
-        dialogCard.scaleY = 0.5f
-        dialogCard.alpha = 0f
-        dialogCard.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .alpha(1f)
-            .setDuration(500)
-            .setInterpolator(OvershootInterpolator())
-            .start()
-
-        binding.layoutLoseDialog.btnLoseRetry.setOnClickListener {
-            activity?.recreate()
-        }
-        binding.layoutLoseDialog.btnLoseBack.setOnClickListener {
-            findNavController().popBackStack()
-        }
-    }
-
-    private fun navigateToNextLevel() {
-        val nextLevelId = args.levelId + 1
-        val bundle = Bundle().apply { putInt("levelId", nextLevelId) }
-        findNavController().navigate(R.id.action_LevelOneFragment_self, bundle)
-    }
-
-    private fun updateStatusUI() {
-        val progressText = if (engine.isBagMechanismEnabled) {
-            getString(R.string.progress_packed, engine.completedBoxesCount, engine.totalFullBoxesCount)
+    private fun checkGameResults() { if (engine.isWin) showWinDialog() else if (engine.isGameOver || engine.isDeadlocked()) showLoseDialog() }
+    private fun showWinDialog() { soundManager?.playWin(); isWinDialogShowing = true; binding.layoutWinDialog.root.visibility = View.VISIBLE; binding.layoutWinDialog.btnWinContinue.setOnClickListener { GoldManager.addGold(requireContext(), if (engine.isBossLevel) 150 else 50); navigateToNextLevel() } }
+    private fun showLoseDialog() { soundManager?.playLose() ; isLoseDialogShowing = true; binding.layoutLoseDialog.root.visibility = View.VISIBLE; binding.layoutLoseDialog.btnLoseRetry.setOnClickListener { activity?.recreate() }; binding.layoutLoseDialog.btnLoseBack.setOnClickListener { findNavController().popBackStack() } }
+    private fun navigateToNextLevel() { findNavController().navigate(R.id.action_LevelOneFragment_self, Bundle().apply { putInt("levelId", args.levelId + 1) }) }
+    private fun updateStatusUI() { 
+        if (engine.isBossLevel && engine.currentBossType == 1) {
+            binding.tvPackedProgress.visibility = View.GONE
         } else {
-            getString(R.string.progress_completed, engine.completedBoxesCount, engine.totalFullBoxesCount)
-        }
-        binding.tvPackedProgress.text = progressText
-    }
-
-    private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) {
-        tvFruit.visibility = View.VISIBLE
-        tvInfo.visibility = View.VISIBLE
-        tvTurns.visibility = View.VISIBLE
-        tvFruit.text = box.targetColor.fruitIcon
-        tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity)
-        tvTurns.text = "${box.turnsLeft}" 
-    }
-
-    private fun loadBannerAd() {
-        if (GoldManager.isVip(requireContext())) {
-            binding.adContainer.visibility = View.GONE
-            return
-        }
-        val adView = AdView(requireContext()).apply {
-            setAdSize(AdSize.BANNER)
-            adUnitId = "ca-app-pub-3940256099942544/6300978111"
-        }
-        binding.adContainer.addView(adView)
-        adView.loadAd(AdRequest.Builder().build())
-    }
-
-    private fun animateContainerBounce(view: View) {
-        val pvhX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1.08f, 1.0f)
-        val pvhY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.92f, 1.0f)
-        ObjectAnimator.ofPropertyValuesHolder(view, pvhX, pvhY).apply {
-            duration = 300
-            interpolator = OvershootInterpolator()
-            start()
+            binding.tvPackedProgress.visibility = View.VISIBLE
+            binding.tvPackedProgress.text = if (engine.isBagMechanismEnabled) getString(R.string.progress_packed, engine.completedBoxesCount, engine.totalFullBoxesCount) else getString(R.string.progress_completed, engine.completedBoxesCount, engine.totalFullBoxesCount) 
+            binding.tvPackedProgress.setTextColor(Color.WHITE)
+            binding.tvPackedProgress.setShadowLayer(8f, 2f, 2f, Color.BLACK)
         }
     }
-
-
-    override fun onResume() {
-        super.onResume()
-        GlobalMusicPlayer.resumeIfEnabled(requireContext())
-    }
-
-    override fun onPause() {
-        super.onPause()
-        GlobalMusicPlayer.pause()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
+    private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) { tvFruit.text = box.targetColor.fruitIcon; tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity); tvTurns.text = "${box.turnsLeft}" }
+    private fun loadBannerAd() { if (GoldManager.isVip(requireContext())) { binding.adContainer.visibility = View.GONE; return }; val adView = AdView(requireContext()).apply { setAdSize(AdSize.BANNER); adUnitId = "ca-app-pub-3940256099942544/6300978111" }; binding.adContainer.addView(adView); adView.loadAd(AdRequest.Builder().build()) }
+    private fun setupTruckIdleAnimations() { val bA = ObjectAnimator.ofFloat(binding.imgTruckA, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2000; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; val bB = ObjectAnimator.ofFloat(binding.imgTruckB, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2200; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; bA.start(); bB.start() }
+    private fun playBackgroundMusic() { GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen) }
+    override fun onResume() { super.onResume(); GlobalMusicPlayer.resumeIfEnabled(requireContext()) }
+    override fun onPause() { super.onPause(); GlobalMusicPlayer.pause() }
+    override fun onDestroyView() { super.onDestroyView(); _binding = null }
 }
