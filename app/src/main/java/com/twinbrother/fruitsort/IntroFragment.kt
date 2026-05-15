@@ -1,4 +1,4 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.os.Bundle
 import android.os.Handler
@@ -8,7 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.yourname.fruitsort.databinding.FragmentIntroBinding
+import com.twinbrother.fruitsort.databinding.FragmentIntroBinding
 
 class IntroFragment : Fragment() {
 

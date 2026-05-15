@@ -1,4 +1,4 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.graphics.Color
 import android.os.Bundle
@@ -9,8 +9,8 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.yourname.fruitsort.databinding.FragmentSecondBinding
-import com.yourname.fruitsort.databinding.ItemLevelCardBinding
+import com.twinbrother.fruitsort.databinding.FragmentSecondBinding
+import com.twinbrother.fruitsort.databinding.ItemLevelCardBinding
 
 class SecondFragment : Fragment() {
 

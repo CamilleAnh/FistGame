@@ -1,4 +1,4 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.content.DialogInterface
 import android.graphics.Color
@@ -10,8 +10,8 @@ import android.widget.Toast
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.yourname.fruitsort.databinding.DialogSkinShopBinding
-import com.yourname.fruitsort.databinding.ItemSkinCardBinding
+import com.twinbrother.fruitsort.databinding.DialogSkinShopBinding
+import com.twinbrother.fruitsort.databinding.ItemSkinCardBinding
 import com.example.a2dgame.SkinManager
 
 /**

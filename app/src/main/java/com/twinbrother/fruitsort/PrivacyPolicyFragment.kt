@@ -1,4 +1,4 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.os.Bundle
 import android.view.LayoutInflater

@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.yourname.fruitsort"
+    namespace = "com.twinbrother.fruitsort"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.yourname.fruitsort"
+        applicationId = "com.twinbrother.fruitsort"
         minSdk = 30
         targetSdk = 35
         versionCode = 1

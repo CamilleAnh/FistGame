@@ -1,10 +1,10 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.content.Context
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
-import com.yourname.fruitsort.databinding.ActivityMainBinding
+import com.twinbrother.fruitsort.databinding.ActivityMainBinding
 import com.google.android.gms.ads.MobileAds
 import androidx.core.view.WindowCompat
 import android.graphics.Color

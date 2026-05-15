@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/IntroFragment"
-        android:name="com.yourname.fruitsort.IntroFragment"
+        android:name="com.twinbrother.fruitsort.IntroFragment"
         android:label="Intro"
         tools:layout="@layout/fragment_intro">
         <action
@@ -21,7 +21,7 @@
 
     <fragment
         android:id="@+id/FirstFragment"
-        android:name="com.yourname.fruitsort.FirstFragment"
+        android:name="com.twinbrother.fruitsort.FirstFragment"
         android:label="@string/first_fragment_label"
         tools:layout="@layout/fragment_first">
 
@@ -45,7 +45,7 @@
     </fragment>
     <fragment
         android:id="@+id/SecondFragment"
-        android:name="com.yourname.fruitsort.SecondFragment"
+        android:name="com.twinbrother.fruitsort.SecondFragment"
         android:label="@string/second_fragment_label"
         tools:layout="@layout/fragment_second">
 
@@ -65,7 +65,7 @@
     </fragment>
     <fragment
         android:id="@+id/LevelOneFragment"
-        android:name="com.yourname.fruitsort.LevelOneFragment"
+        android:name="com.twinbrother.fruitsort.LevelOneFragment"
         android:label="Level One"
         tools:layout="@layout/fragment_level_one">
         <argument
@@ -79,13 +79,13 @@
 
     <fragment
         android:id="@+id/ShopFragment"
-        android:name="com.yourname.fruitsort.ShopFragment"
+        android:name="com.twinbrother.fruitsort.ShopFragment"
         android:label="Shop"
         tools:layout="@layout/fragment_shop" />
 
     <fragment
         android:id="@+id/PrivacyPolicyFragment"
-        android:name="com.yourname.fruitsort.PrivacyPolicyFragment"
+        android:name="com.twinbrother.fruitsort.PrivacyPolicyFragment"
         android:label="Privacy Policy"
         tools:layout="@layout/fragment_privacy_policy" />
 

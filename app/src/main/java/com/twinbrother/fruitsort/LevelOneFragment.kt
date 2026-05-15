@@ -1,4 +1,4 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -32,7 +32,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.appcompat.widget.PopupMenu
-import com.yourname.fruitsort.databinding.FragmentLevelOneBinding
+import com.twinbrother.fruitsort.databinding.FragmentLevelOneBinding
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView

@@ -1,4 +1,4 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -11,7 +11,7 @@ import android.view.ViewGroup
 import android.view.animation.AnticipateOvershootInterpolator
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
-import com.yourname.fruitsort.databinding.FragmentFirstBinding
+import com.twinbrother.fruitsort.databinding.FragmentFirstBinding
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams

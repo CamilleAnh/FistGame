@@ -1,4 +1,4 @@
-package com.yourname.fruitsort
+package com.twinbrother.fruitsort
 
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
@@ -10,7 +10,7 @@ import android.view.animation.OvershootInterpolator
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.yourname.fruitsort.databinding.FragmentShopBinding
+import com.twinbrother.fruitsort.databinding.FragmentShopBinding
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
