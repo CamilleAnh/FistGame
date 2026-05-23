@@ -127,7 +127,7 @@
             <ImageView
                 android:id="@+id/img_truck_a"
                 android:layout_width="match_parent"
-                android:layout_height="85dp"
+                android:layout_height="70dp"
                 android:src="@drawable/truck_blue_photoroom"
                 android:scaleType="fitCenter"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -192,7 +192,7 @@
             <ImageView
                 android:id="@+id/img_truck_b"
                 android:layout_width="match_parent"
-                android:layout_height="85dp"
+                android:layout_height="70dp"
                 android:src="@drawable/truck_blue_photoroom"
                 android:scaleType="fitCenter"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -253,8 +253,9 @@
         android:id="@+id/gl_game_board"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="4dp"
         android:clipChildren="false"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toTopOf="@id/ll_powerups"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

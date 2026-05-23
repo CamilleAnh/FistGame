@@ -177,13 +177,16 @@ class LevelOneFragment : Fragment() {
         val skinStyle = SkinManager.getSelectedStyle(requireContext())
         val density   = resources.displayMetrics.density
         
-        var cols = when { boxes.size <= 15 -> 5; boxes.size <= 25 -> 6; else -> 7 }
-        if (engine.isBossLevel && engine.currentBossType == 1 && cols < 6) cols = 6
+        var cols = when { boxes.size <= 7 -> 3; boxes.size <= 14 -> 4; boxes.size <= 24 -> 5; else -> 6 }
+        if (engine.isBossLevel && engine.currentBossType == 1 && cols < 5) cols = 5
         
-        val boxWidth = (resources.displayMetrics.widthPixels - (24 * density).toInt()) / cols
-        val boxHeight = (boxWidth * 1.5f).toInt()
-        val blockHeight = (boxWidth * 0.38f).toInt()
-        val stepY = boxHeight + (16 * density).toInt()
+        val horizontalGap = (8 * density).toInt()
+        val totalAvailableWidth = resources.displayMetrics.widthPixels - (24 * density).toInt()
+        val boxWidth = (totalAvailableWidth - (cols - 1) * horizontalGap) / cols
+        val boxHeight = (boxWidth * 1.3f).toInt()
+        val blockHeight = (boxHeight * 0.22f).toInt()
+        val firstRowTopPad = (16 * density).toInt()
+        val stepY = boxHeight + (12 * density).toInt()
 
         if (engine.isBagMechanismEnabled) {
             if (engine.isBossLevel && engine.currentBossType == 1) {
@@ -223,14 +226,71 @@ class LevelOneFragment : Fragment() {
             for (bIdx in 0 until visibleCount) {
                 val fruit = box.blocks[bIdx]
                 val isHidden = bIdx < box.hiddenLayers && !(engine.isBossLevel && engine.currentBossType == 4 && engine.selectedBoxIndex == box.id && bIdx == box.blocks.size - 1)
+                
+                val emojiText = if (isHidden) "?" else SkinManager.getIconForColor(fruit, requireContext())
+
                 val blockView = FrameLayout(requireContext()).apply {
-                    layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply { setMargins(2, -(blockHeight * 0.20).toInt(), 2, 0) }
-                    background = if (isHidden) GradientDrawable().apply { setColor(0xCC333333.toInt()); cornerRadius = 6 * density } else SkinManager.makeBlockDrawable(skinStyle, density)
-                    addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = if (isHidden) "?" else fruit.fruitIcon; textSize = 16f; setTextColor(if (isHidden) Color.WHITE else blockTextColor); setShadowLayer(2f, 1f, 1f, 0x88000000.toInt()) })
+                    layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply {
+                        setMargins(2, -(blockHeight * 0.15).toInt(), 2, 0)
+                    }
+                }
+
+                if (isHidden) {
+                    blockView.background = GradientDrawable().apply { setColor(0xCC333333.toInt()); cornerRadius = 6 * density }
+                    blockView.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = "?"; textSize = 16f; setTextColor(Color.WHITE); setShadowLayer(2f, 1f, 1f, 0x88000000.toInt()) })
+                } else {
+                    blockView.background = SkinManager.makeBlockDrawable(skinStyle, density)
+                    
+                    when (skinStyle.themeType) {
+                        SkinManager.ThemeType.CLASSIC -> {
+                            if (skinStyle.isWood) {
+                                val stickerSize = (blockHeight * 0.72f).toInt()
+                                val stickerFrame = FrameLayout(requireContext()).apply {
+                                    layoutParams = FrameLayout.LayoutParams(stickerSize, stickerSize).apply { gravity = Gravity.CENTER }
+                                    background = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = 3 * density; setStroke((0.8f * density).toInt(), Color.parseColor("#BCAAA4")) }
+                                    elevation = 2 * density
+                                    rotation = ((bIdx + box.id) % 5 - 2) * 2.5f
+                                }
+                                stickerFrame.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 14f; setShadowLayer(1f, 0.5f, 0.5f, 0x44000000) })
+                                blockView.addView(stickerFrame)
+                            } else {
+                                blockView.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 16f; setTextColor(blockTextColor); setShadowLayer(2f, 1f, 1f, 0x88000000.toInt()) })
+                            }
+                        }
+                        SkinManager.ThemeType.TECHNOLOGY -> {
+                            val screenFrame = FrameLayout(requireContext()).apply {
+                                layoutParams = FrameLayout.LayoutParams(-1, -1).apply { setMargins((4*density).toInt(), (4*density).toInt(), (4*density).toInt(), (4*density).toInt()) }
+                                background = GradientDrawable().apply { setColor(0xFF000000.toInt()); cornerRadius = 2 * density; setStroke((1 * density).toInt(), skinStyle.blockStrokeColor) }
+                            }
+                            screenFrame.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 14f; setShadowLayer(6f, 0f, 0f, skinStyle.blockStrokeColor) })
+                            blockView.addView(screenFrame)
+                        }
+                        SkinManager.ThemeType.DREAM -> {
+                            val bubble = FrameLayout(requireContext()).apply {
+                                layoutParams = FrameLayout.LayoutParams(-1, -1).apply { setMargins((2*density).toInt(), (2*density).toInt(), (2*density).toInt(), (2*density).toInt()) }
+                                background = GradientDrawable().apply { 
+                                    shape = GradientDrawable.OVAL
+                                    setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(skinStyle.blockBgColor, 150))
+                                    setStroke((1*density).toInt(), Color.WHITE) 
+                                }
+                            }
+                            bubble.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 16f; setShadowLayer(4f, 0f, 0f, Color.WHITE) })
+                            blockView.addView(bubble)
+                        }
+                        SkinManager.ThemeType.SPACE -> {
+                            val capsule = FrameLayout(requireContext()).apply {
+                                layoutParams = FrameLayout.LayoutParams(-1, -1).apply { setMargins((6*density).toInt(), (2*density).toInt(), (6*density).toInt(), (2*density).toInt()) }
+                                background = GradientDrawable().apply { setColor(0x88000000.toInt()); cornerRadius = 12 * density; setStroke((1*density).toInt(), skinStyle.blockStrokeColor) }
+                            }
+                            capsule.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 15f; setShadowLayer(4f, 0f, 0f, skinStyle.blockStrokeColor) })
+                            blockView.addView(capsule)
+                        }
+                    }
                 }
                 boxBody.addView(blockView, 0)
             }
             boxLayout.addView(boxBody)
+
             if (box.hasCobweb) boxLayout.addView(TextView(requireContext()).apply { text = "🕸️"; textSize = 36f; gravity = Gravity.CENTER; translationZ = 10f; layoutParams = FrameLayout.LayoutParams(-1, -1) })
             if (box.isFrozen) boxLayout.addView(FrameLayout(requireContext()).apply { background = GradientDrawable().apply { setColor(0x7780D8FF.toInt()); cornerRadius = 8 * density; setStroke((2 * density).toInt(), Color.WHITE) }; translationZ = 15f; layoutParams = FrameLayout.LayoutParams(-1, -1); addView(TextView(requireContext()).apply { text = "❄️"; textSize = 24f; gravity = Gravity.CENTER }) })
             if (box.isLockedByChain) boxLayout.addView(TextView(requireContext()).apply { text = "⛓️"; textSize = 32f; gravity = Gravity.CENTER; translationZ = 20f; layoutParams = FrameLayout.LayoutParams(-1, -1) })
@@ -258,10 +318,12 @@ class LevelOneFragment : Fragment() {
                 }
                 val megaBody = LinearLayout(requireContext()).apply {
                     orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-                    background = SkinManager.makeBoxBodyDrawable(skinStyle, density)
+                    val themeColor = SkinManager.getSelectedStyle(requireContext()).blockBgColor
+                    background = GradientDrawable().apply { setColor(themeColor); cornerRadius = 16 * density; setStroke((2 * density).toInt(), Color.WHITE) }
                     layoutParams = FrameLayout.LayoutParams(-1, -1)
                 }
-                megaBody.addView(TextView(requireContext()).apply { text = megaSlot.targetColor.fruitIcon; textSize = 64f; gravity = Gravity.CENTER; setShadowLayer(10f, 0f, 0f, Color.argb(100,0,0,0)) })
+                val megaEmoji = if (megaSlot != null) SkinManager.getIconForColor(megaSlot.targetColor, requireContext()) else ""
+                megaBody.addView(TextView(requireContext()).apply { text = megaEmoji; textSize = 64f; gravity = Gravity.CENTER; setShadowLayer(10f, 0f, 0f, Color.argb(100,0,0,0)) })
                 megaBody.addView(TextView(requireContext()).apply { text = "${megaSlot.filled} / ${megaSlot.capacity}"; textSize = 28f; setTextColor(Color.WHITE); setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setShadowLayer(8f, 2f, 2f, Color.BLACK) })
                 megaBody.addView(TextView(requireContext()).apply { text = "⏳ ${megaSlot.turnsLeft}"; textSize = 20f; setTextColor(Color.YELLOW); setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setShadowLayer(8f, 2f, 2f, Color.BLACK) })
                 megaContainer.addView(megaBody)
@@ -275,13 +337,41 @@ class LevelOneFragment : Fragment() {
             }
         } else {
             var currentIdx = 0
-            val rows = (boxes.size + cols - 1) / cols
-            for (r in 0 until rows) {
-                for (c in 0 until cols) {
+            var r = 0
+            
+            // Calculate total rows for vertical centering if needed
+            var tempIdx = 0
+            var totalRows = 0
+            while (tempIdx < boxes.size) {
+                val rowC = if (totalRows % 2 == 0) cols else (cols - 1)
+                tempIdx += rowC
+                totalRows++
+            }
+            
+            // Calculate starting Y to center vertically in available space if there are few rows
+            val boardHeight = binding.glGameBoard.height
+            val gridHeight = totalRows * stepY - (12 * density).toInt()
+            val startY = if (boardHeight > gridHeight + firstRowTopPad) {
+                firstRowTopPad + (boardHeight - gridHeight) / 3 // Slightly above center
+            } else {
+                firstRowTopPad
+            }
+
+            while (currentIdx < boxes.size) {
+                val isEvenRow = (r % 2 == 0)
+                val rowCols = if (isEvenRow) cols else (cols - 1)
+                
+                // Offset odd rows to center them between the even row boxes
+                val offsetX = if (isEvenRow) 0 else ((boxWidth + horizontalGap) / 2)
+                
+                for (c in 0 until rowCols) {
                     if (currentIdx >= boxes.size) break
                     val box = boxes[currentIdx++]
-                    createBoxContainer(box, (12 * density).toInt() + (c * boxWidth), r * stepY)
+                    val x = (12 * density).toInt() + offsetX + (c * (boxWidth + horizontalGap))
+                    val y = startY + r * stepY
+                    createBoxContainer(box, x, y)
                 }
+                r++
             }
         }
         updateStatusUI()
@@ -304,7 +394,7 @@ class LevelOneFragment : Fragment() {
         val selectedIdx = engine.selectedBoxIndex
         if (selectedIdx == null) {
             if (clickedBox.hasCobweb) { clickedBox.hasCobweb = false; renderBoard(); return }
-            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.isComplete()) { 
+            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.isComplete() && ((clickedBox.blocks.size - 1) >= clickedBox.hiddenLayers || (engine.isBossLevel && engine.currentBossType == 4))) { 
                 engine.selectedBoxIndex = index
                 animateSelection(binding.glGameBoard.findViewWithTag(index), true)
                 // For Type 4 blind mode, picking up reveals the fruit, so we re-render
@@ -321,7 +411,7 @@ class LevelOneFragment : Fragment() {
                 animateMoveSequence(selectedIdx, index) 
             } else { 
                 animateSelection(binding.glGameBoard.findViewWithTag(selectedIdx), false)
-                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isLockedByChain && !clickedBox.isComplete()) { 
+                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isLockedByChain && !clickedBox.isComplete() && ((clickedBox.blocks.size - 1) >= clickedBox.hiddenLayers || (engine.isBossLevel && engine.currentBossType == 4))) { 
                     engine.selectedBoxIndex = index
                     animateSelection(binding.glGameBoard.findViewWithTag(index), true) 
                 } else {
@@ -405,7 +495,37 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun animateSelection(boxView: View?, isSelected: Boolean) {
-        boxView?.animate()?.translationZ(if (isSelected) 20 * resources.displayMetrics.density else 0f)?.scaleX(if (isSelected) 1.1f else 1.0f)?.scaleY(if (isSelected) 1.1f else 1.0f)?.setDuration(250)?.start()
+        val d = resources.displayMetrics.density
+        boxView?.animate()
+            ?.translationZ(if (isSelected) 20 * d else 0f)
+            ?.translationY(if (isSelected) -10 * d else 0f)
+            ?.scaleX(if (isSelected) 1.05f else 1.0f)
+            ?.scaleY(if (isSelected) 1.05f else 1.0f)
+            ?.setDuration(200)
+            ?.start()
+        // Add/remove golden glow overlay
+        if (boxView is ViewGroup) {
+            val existingGlow = boxView.findViewWithTag<View>("glow")
+            if (isSelected && existingGlow == null) {
+                val glow = View(requireContext()).apply {
+                    tag = "glow"
+                    layoutParams = FrameLayout.LayoutParams(-1, -1)
+                    background = GradientDrawable().apply {
+                        setColor(Color.TRANSPARENT)
+                        cornerRadius = 10 * d
+                        setStroke((3 * d).toInt(), Color.parseColor("#FFEB3B"))
+                    }
+                    translationZ = 25 * d
+                    alpha = 0f
+                }
+                boxView.addView(glow)
+                glow.animate().alpha(1f).setDuration(200).start()
+            } else if (!isSelected && existingGlow != null) {
+                existingGlow.animate().alpha(0f).setDuration(150).withEndAction {
+                    (existingGlow.parent as? ViewGroup)?.removeView(existingGlow)
+                }.start()
+            }
+        }
     }
 
     private fun animateMoveSequence(srcId: Int, dstId: Int) {
@@ -443,8 +563,12 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun playCompletionAnimation(view: View, boxId: Int, srcBoxId: Int) {
-        view.animate().scaleX(1.3f).scaleY(1.3f).setDuration(500).withEndAction {
-            view.animate().scaleX(1f).scaleY(1f).setDuration(200).withEndAction {
+        // Wait for layout pass so view has correct position
+        view.post {
+            spawnParticles(view)
+        }
+        view.animate().scaleX(1.2f).scaleY(1.2f).setDuration(350).withEndAction {
+            view.animate().scaleX(1f).scaleY(1f).setDuration(150).withEndAction {
                 val box = engine.getBoxes().find { it.id == boxId }; val color = box?.blocks?.firstOrNull()
                 val bag = engine.getBoxSlots().find { it.targetColor == color && it.remaining() > 0 }
                 val truckView = if (bag != null && bag.filled + 1 >= bag.capacity) (if (engine.getBoxSlots().indexOf(bag) == 0) binding.truckContainerA else binding.truckContainerB) else null
@@ -453,17 +577,57 @@ class LevelOneFragment : Fragment() {
                 else { activeAnimationsCount--; renderBoard(); checkGameResults() }
             }.start()
         }.start()
-        spawnParticles(view)
+    }
+
+    private fun spawnParticles(anchor: View) {
+        val root = binding.root as? ViewGroup ?: return
+        val anchorLoc = IntArray(2); anchor.getLocationOnScreen(anchorLoc)
+        val rootLoc = IntArray(2); root.getLocationOnScreen(rootLoc)
+        val cx = (anchorLoc[0] - rootLoc[0]).toFloat() + anchor.width / 2f
+        val cy = (anchorLoc[1] - rootLoc[1]).toFloat() + anchor.height / 2f
+        if (cx <= 0f && cy <= 0f) return // skip if position is invalid
+
+        val colors = intArrayOf(
+            Color.parseColor("#FFD54F"), Color.parseColor("#FF7043"),
+            Color.parseColor("#66BB6A"), Color.parseColor("#42A5F5"),
+            Color.parseColor("#AB47BC"), Color.parseColor("#EF5350")
+        )
+        val d = resources.displayMetrics.density
+        repeat(8) { i ->
+            val size = ((6 + Random.nextInt(6)) * d).toInt()
+            val p = View(requireContext()).apply {
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(colors[i % colors.size])
+                }
+                alpha = 1f
+            }
+            root.addView(p, ViewGroup.LayoutParams(size, size))
+            p.x = cx - size / 2f; p.y = cy - size / 2f
+            val angle = (i * 45.0) + Random.nextInt(20)
+            val dist = (60 + Random.nextInt(80)) * d
+            p.animate()
+                .translationXBy((dist * Math.cos(Math.toRadians(angle))).toFloat())
+                .translationYBy((dist * Math.sin(Math.toRadians(angle))).toFloat())
+                .alpha(0f).scaleX(0.3f).scaleY(0.3f)
+                .setDuration(600L)
+                .withEndAction { root.removeView(p) }.start()
+        }
     }
 
     private fun animateTruckCompletion(truckView: View, onEnd: () -> Unit) {
         val screenWidth = resources.displayMetrics.widthPixels.toFloat()
-        ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply { duration = 700; interpolator = AnticipateOvershootInterpolator(); addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(animation: Animator) { truckView.translationX = -screenWidth; onEnd(); ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply { duration = 800; interpolator = OvershootInterpolator(); start() } } }); start() }
-    }
-
-    private fun spawnParticles(anchor: View) {
-        val root = binding.root as ViewGroup; val loc = IntArray(2); anchor.getLocationOnScreen(loc)
-        repeat(15) { val p = TextView(requireContext()).apply { text = "✨"; textSize = 24f }; root.addView(p); p.x = loc[0] + anchor.width / 2f; p.y = loc[1] + anchor.height / 2f; p.animate().translationXBy(Random.nextInt(-300, 300).toFloat()).translationYBy(Random.nextInt(-300, 300).toFloat()).alpha(0f).scaleX(2f).scaleY(2f).setDuration(1000).withEndAction { root.removeView(p) }.start() }
+        ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply {
+            duration = 700; interpolator = AnticipateOvershootInterpolator()
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    truckView.translationX = -screenWidth; onEnd()
+                    ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply {
+                        duration = 800; interpolator = OvershootInterpolator(); start()
+                    }
+                }
+            }); start()
+        }
     }
 
     private fun checkGameResults() { if (engine.isWin) showWinDialog() else if (engine.isGameOver || engine.isDeadlocked()) showLoseDialog() }
@@ -480,7 +644,7 @@ class LevelOneFragment : Fragment() {
             binding.tvPackedProgress.setShadowLayer(8f, 2f, 2f, Color.BLACK)
         }
     }
-    private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) { tvFruit.text = box.targetColor.fruitIcon; tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity); tvTurns.text = "${box.turnsLeft}" }
+    private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) { tvFruit.text = SkinManager.getIconForColor(box.targetColor, requireContext()); tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity); tvTurns.text = "${box.turnsLeft}" }
     private fun loadBannerAd() { if (GoldManager.isVip(requireContext())) { binding.adContainer.visibility = View.GONE; return }; val adView = AdView(requireContext()).apply { setAdSize(AdSize.BANNER); adUnitId = "ca-app-pub-3940256099942544/6300978111" }; binding.adContainer.addView(adView); adView.loadAd(AdRequest.Builder().build()) }
     private fun setupTruckIdleAnimations() { val bA = ObjectAnimator.ofFloat(binding.imgTruckA, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2000; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; val bB = ObjectAnimator.ofFloat(binding.imgTruckB, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2200; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; bA.start(); bB.start() }
     private fun playBackgroundMusic() { GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen) }

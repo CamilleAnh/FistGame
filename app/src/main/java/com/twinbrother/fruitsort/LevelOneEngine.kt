@@ -256,7 +256,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         val originalHiddenLimit = s.hiddenLayers 
         while (!s.isEmpty() && s.peekColor() == color && ((s.blocks.size - 1) >= originalHiddenLimit || (isBossLevel && currentBossType == 4)) && d.blocks.size < d.capacity) {
             d.blocks.push(s.blocks.pop())
-            if (s.hiddenLayers > s.blocks.size) s.hiddenLayers = s.blocks.size
+            if (s.hiddenLayers >= s.blocks.size) s.hiddenLayers = (s.blocks.size - 1).coerceAtLeast(0)
         }
         if (s.isEmpty()) s.hiddenLayers = 0
         consumeTurn()

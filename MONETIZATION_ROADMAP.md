@@ -1,24 +1,24 @@
 # 💰 KẾ HOẠCH PHÁT TRIỂN HỆ THỐNG KIẾM TIỀN (MONETIZATION ROADMAP)
 
-Phiên bản: 1.0
-Cập nhật lần cuối: 2026-04-05
+Phiên bản: 1.1
+Cập nhật lần cuối: 2026-05-24
 Mục tiêu: Đa dạng hóa nguồn thu nhập bên cạnh Quảng cáo, tăng tỷ lệ giữ chân người dùng (Retention).
 
 ## 1) Hệ thống Skin (Cá nhân hóa)
 Thay đổi diện mạo game để người chơi không bị nhàm chán. Người chơi dùng Coin (kiếm được hoặc mua) để mở khóa.
 
-### A. Skin Lọ (Tube Skins)
-- **Classic**: Lọ thủy tinh mặc định.
-- **Neon Glow**: Lọ phát sáng trong bóng tối.
-- **Laboratory**: Bình thí nghiệm chuyên nghiệp với thước đo.
-- **Ancient Vase**: Bình gốm cổ với hoa văn tinh xảo.
-- **Cyberpunk**: Lọ kim loại hiện đại với đèn LED chạy dọc.
+### A. Skin Thùng chứa (Box/Crate Skins)
+- **Classic**: Thùng gỗ mặc định với thanh gỗ ngang và đinh tán.
+- **Neon Glow**: Thùng phát sáng trong bóng tối.
+- **Premium Crate**: Thùng gỗ cao cấp với hoa văn tinh xảo.
+- **Ancient Crate**: Rương gỗ cổ với hoa văn chạm khắc.
+- **Cyberpunk**: Thùng kim loại hiện đại với đèn LED chạy dọc.
 
-### B. Skin Khối/Nước (Block Skins)
-- **Solid Color**: Màu trơn mặc định.
-- **Fruit Slices**: Khối màu biến thành lát trái cây (Cam, Dưa hấu, Chanh...).
+### B. Skin Trái cây / Khối (Fruit Block Skins)
+- **Emoji Fruits**: Icon trái cây mặc định (🍎, 🍊, 🍇...).
+- **Pixel Art Fruits**: Trái cây vẽ phong cách pixel retro.
 - **Emoji Blocks**: Mỗi khối có một biểu cảm khuôn mặt khác nhau.
-- **Sparkle/Jewel**: Khối màu lấp lánh như kim cương, hồng ngọc.
+- **Sparkle/Jewel**: Khối trái cây lấp lánh như kim cương, hồng ngọc.
 
 ### C. Chủ đề Bối cảnh (Background Themes)
 - **Deep Space**: Chơi giữa các vì sao.
@@ -29,17 +29,17 @@ Thay đổi diện mạo game để người chơi không bị nhàm chán. Ngư
 Bán các vật phẩm giúp vượt qua các màn BOSS cực khó trong `LEVEL_PRINCIPLES.md`.
 
 - **Gậy Phép (Undo)**: Quay lại 1 hoặc nhiều bước đi sai.
-- **Bình Dự Phòng (+1 Tube)**: Thêm ngay 1 ống trống vào bàn chơi hiện tại.
+- **Thùng Dự Phòng (+1 Thùng trống)**: Thêm ngay 1 thùng chứa trống vào bàn chơi hiện tại.
 - **Búa Phá Băng**: Phá hủy ngay lập tức tất cả các lớp Băng (Ice) trong màn chơi.
-- **Kính Hiển Vi (Reveal All)**: Lộ diện tất cả các khối đang bị ẩn (?) trong 5 lượt đi.
-- **Thêm Hiệp (+5 Turns)**: Cộng thêm 5 lượt cho tất cả các túi đang sắp hết hạn.
+- **Kính Hiển Vi (Reveal All)**: Lộ diện tất cả các khối trái cây đang bị ẩn (?) trong 5 lượt đi.
+- **Thêm Hiệp (+5 Turns)**: Cộng thêm 5 lượt cho tất cả các túi thu hoạch đang sắp hết hạn.
 
 ## 3) Các gói mua hàng trực tiếp (IAP - In-App Purchase)
 
 | Gói sản phẩm | Giá dự kiến | Quyền lợi |
 | :--- | :--- | :--- |
 | **No Ads** | $1.99 | Xóa vĩnh viễn Banner và Interstitial Ads. |
-| **Starter Bundle** | $2.99 | 1000 Coin + No Ads + 5 bình dự phòng. |
+| **Starter Bundle** | $2.99 | 1000 Coin + No Ads + 5 thùng dự phòng. |
 | **Collector's Pack** | $4.99 | Mở khóa toàn bộ Skin Neon + 2000 Coin. |
 | **Coin Packs** | $0.99 - $19.99 | Các gói nạp Coin từ ít đến nhiều. |
 

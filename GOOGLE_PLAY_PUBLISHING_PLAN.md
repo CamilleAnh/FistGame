@@ -22,7 +22,7 @@ Hệ thống đã được tối ưu hóa hiệu năng (Refactor 60 FPS) và tí
     - *Crash logs* (cho Crashlytics).
 
 ## 3) Chuẩn bị Store Listing (Marketing Assets)
-- **App Name**: Gợi ý: "Fruit Sort Puzzle: 1000+ Levels" hoặc "Color Water Sort: Fruit Edition".
+- **App Name**: Gợi ý: "Fruit Sort Puzzle: 1000+ Levels" hoặc "Fruit Crate Sort: Farm Edition".
 - **Graphic Assets**:
     - **Icon**: Thiết kế dựa trên 16 loại trái cây mới (🍏, 🍓, 🍇...).
     - **Screenshots**: Cần chụp ảnh ở Level 1 (Dễ), Level 80 (Mạng nhện) và Level 120 (Băng) để thể hiện sự đa dạng.

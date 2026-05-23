@@ -1,7 +1,7 @@
 # 📺 HỆ THỐNG QUẢNG CÁO & CHIẾN LƯỢC MONETIZATION
 
-Phiên bản: 1.0
-Cập nhật lần cuối: 2026-04-05
+Phiên bản: 1.1
+Cập nhật lần cuối: 2026-05-24
 Trạng thái: Đang triển khai tích hợp AdMob
 
 ## 1) Cơ chế Quảng cáo Hiện tại (Current State)
@@ -9,7 +9,7 @@ Trạng thái: Đang triển khai tích hợp AdMob
 Hiện tại, ứng dụng đã tích hợp Google Mobile Ads SDK và triển khai các thành phần cơ bản:
 - **Banner Ad**: Hiển thị cố định tại `ad_container` ở dưới cùng màn hình trong `LevelOneFragment`.
 - **Test ID**: Đang sử dụng ID thử nghiệm của Google để đảm bảo an toàn trong quá trình phát triển.
-- **Tối ưu UI**: Bình và bàn chơi đã được thu nhỏ (scale 1.6 - 1.8) để dành không gian 50dp cho Banner mà không gây tràn viền.
+- **Tối ưu UI**: Thùng chứa và bàn chơi đã được thu nhỏ (scale) để dành không gian 50dp cho Banner mà không gây tràn viền.
 
 ## 2) Các loại Quảng cáo triển khai
 
@@ -24,8 +24,8 @@ Hiện tại, ứng dụng đã tích hợp Google Mobile Ads SDK và triển kh
 Dựa trên độ khó của 1000 Level trong `LEVEL_PRINCIPLES.md`, hệ thống quảng cáo sẽ phát triển theo hướng cung cấp giá trị để người chơi vượt qua các màn BOSS:
 
 ### A. Rewarded Video (Xem để nhận quà)
-1. **Thêm ống nghiệm (+1 Tube)**: Khi bàn chơi quá chật (Level 400+), người chơi xem 1 Ads để có thêm 1 ống trống vĩnh viễn trong màn đó.
-2. **Hồi sinh (Revive)**: Khi một túi (Bag) về 0 lượt đi, thay vì Game Over, người chơi có thể xem Ads để nhận thêm 10 lượt đi cho túi đó.
+1. **Thêm thùng trống (+1 Box)**: Khi bàn chơi quá chật (Level 400+), người chơi xem 1 Ads để có thêm 1 thùng trống vĩnh viễn trong màn đó.
+2. **Hồi sinh (Revive)**: Khi một túi thu hoạch (Bag) về 0 lượt đi, thay vì Game Over, người chơi có thể xem Ads để nhận thêm 10 lượt đi cho túi đó.
 3. **Phá băng/Dọn nhện**: Xem Ads để dọn sạch toàn bộ mạng nhện hoặc phá toàn bộ băng trong 1 màn chơi.
 
 ### B. Interstitial (Quảng cáo xen kẽ)
@@ -36,7 +36,7 @@ Dựa trên độ khó của 1000 Level trong `LEVEL_PRINCIPLES.md`, hệ thốn
 Để cân bằng trải nghiệm người dùng, ứng dụng sẽ cung cấp các gói mua hàng:
 - **Remove Ads**: Xóa hoàn toàn Banner và Interstitial (giá dự kiến: $1.99).
 - **Starter Pack**: Gói khởi đầu bao gồm 500 Coin + No Ads.
-- **Coin Shop**: Dùng tiền thật mua Coin để đổi lấy các Item hỗ trợ (Gậy phép, Búa phá bình, v.v.) mà không cần xem Ads.
+- **Coin Shop**: Dùng tiền thật mua Coin để đổi lấy các Item hỗ trợ (Xáo trộn, Kính lúp, Búa phá băng, v.v.) mà không cần xem Ads.
 
 ## 5) Nguyên tắc lập trình Quảng cáo
 
