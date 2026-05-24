@@ -340,7 +340,6 @@ class LevelOneFragment : Fragment() {
             var currentIdx = 0
             var r = 0
             
-            // Calculate total rows for vertical centering if needed
             var tempIdx = 0
             var totalRows = 0
             while (tempIdx < boxes.size) {
@@ -349,11 +348,10 @@ class LevelOneFragment : Fragment() {
                 totalRows++
             }
             
-            // Calculate starting Y to center vertically in available space if there are few rows
             val boardHeight = binding.glGameBoard.height
             val gridHeight = totalRows * stepY - (12 * density).toInt()
             val startY = if (boardHeight > gridHeight + firstRowTopPad) {
-                firstRowTopPad + (boardHeight - gridHeight) / 3 // Slightly above center
+                firstRowTopPad + (boardHeight - gridHeight) / 3 
             } else {
                 firstRowTopPad
             }
@@ -361,10 +359,7 @@ class LevelOneFragment : Fragment() {
             while (currentIdx < boxes.size) {
                 val isEvenRow = (r % 2 == 0)
                 val rowCols = if (isEvenRow) cols else (cols - 1)
-                
-                // Offset odd rows to center them between the even row boxes
                 val offsetX = if (isEvenRow) 0 else ((boxWidth + horizontalGap) / 2)
-                
                 for (c in 0 until rowCols) {
                     if (currentIdx >= boxes.size) break
                     val box = boxes[currentIdx++]
@@ -394,11 +389,18 @@ class LevelOneFragment : Fragment() {
 
         val selectedIdx = engine.selectedBoxIndex
         if (selectedIdx == null) {
-            if (clickedBox.hasCobweb) { clickedBox.hasCobweb = false; renderBoard(); return }
+            // Sửa lỗi: Gọi clearCobweb để tốn lượt đi
+            if (clickedBox.hasCobweb) { 
+                if (engine.clearCobweb(index)) {
+                    soundManager?.play("drop")
+                    renderBoard()
+                    checkGameResults()
+                }
+                return 
+            }
             if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.isComplete() && ((clickedBox.blocks.size - 1) >= clickedBox.hiddenLayers || (engine.isBossLevel && engine.currentBossType == 4))) { 
                 engine.selectedBoxIndex = index
                 animateSelection(binding.glGameBoard.findViewWithTag(index), true)
-                // For Type 4 blind mode, picking up reveals the fruit, so we re-render
                 if (engine.isBossLevel && engine.currentBossType == 4) renderBoard()
             }
         } else if (selectedIdx == index) { 
@@ -446,21 +448,16 @@ class LevelOneFragment : Fragment() {
             val megaLoc = IntArray(2); megaContainer.getLocationOnScreen(megaLoc)
             targetX = (megaLoc[0] - rootLoc[0]).toFloat() + (megaContainer.width / 2f)
             targetY = (megaLoc[1] - rootLoc[1]).toFloat() + (megaContainer.height / 2f)
-            targetScale = 0f // Make it shrink into the center
+            targetScale = 0f 
             
-            // Wiggle mega container at the end
             megaContainer.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).withEndAction {
-                soundManager?.play("complete") // Vibration handled here or separately
+                soundManager?.play("complete")
                 megaContainer.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
             }.startDelay = 600
             
-            // Use vibration
             val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                vibrator?.vibrate(100)
-            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) vibrator?.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+            else vibrator?.vibrate(100)
         } else {
             val truckLoc = IntArray(2); binding.imgTruckA.getLocationOnScreen(truckLoc)
             targetX = (truckLoc[0] - rootLoc[0]).toFloat() + (binding.imgTruckA.width / 2f)
@@ -504,27 +501,20 @@ class LevelOneFragment : Fragment() {
             ?.scaleY(if (isSelected) 1.05f else 1.0f)
             ?.setDuration(200)
             ?.start()
-        // Add/remove golden glow overlay
         if (boxView is ViewGroup) {
             val existingGlow = boxView.findViewWithTag<View>("glow")
             if (isSelected && existingGlow == null) {
                 val glow = View(requireContext()).apply {
                     tag = "glow"
                     layoutParams = FrameLayout.LayoutParams(-1, -1)
-                    background = GradientDrawable().apply {
-                        setColor(Color.TRANSPARENT)
-                        cornerRadius = 10 * d
-                        setStroke((3 * d).toInt(), Color.parseColor("#FFEB3B"))
-                    }
+                    background = GradientDrawable().apply { setColor(Color.TRANSPARENT); cornerRadius = 10 * d; setStroke((3 * d).toInt(), Color.parseColor("#FFEB3B")) }
                     translationZ = 25 * d
                     alpha = 0f
                 }
                 boxView.addView(glow)
                 glow.animate().alpha(1f).setDuration(200).start()
             } else if (!isSelected && existingGlow != null) {
-                existingGlow.animate().alpha(0f).setDuration(150).withEndAction {
-                    (existingGlow.parent as? ViewGroup)?.removeView(existingGlow)
-                }.start()
+                existingGlow.animate().alpha(0f).setDuration(150).withEndAction { (existingGlow.parent as? ViewGroup)?.removeView(existingGlow) }.start()
             }
         }
     }
@@ -538,7 +528,7 @@ class LevelOneFragment : Fragment() {
         val movingViews = mutableListOf<View>(); val color = srcBox.peekColor()
         for (i in 0 until srcBody.childCount) {
             val idx = srcBox.blocks.size - 1 - i
-            if (idx >= srcBox.hiddenLayers && srcBox.blocks[idx] == color && (dstBox.blocks.size + movingViews.size) < dstBox.capacity) movingViews.add(srcBody.getChildAt(i)) else break
+            if (idx >= srcBox.hiddenLayers && srcBox.blocks[idx] == color && (dstBox.blocks.size + movingViews.size) < 4) movingViews.add(srcBody.getChildAt(i)) else break
         }
         if (movingViews.isEmpty()) { activeAnimationsCount--; return }
         pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) + movingViews.size; engine.executeMove(srcBox, dstBox)
@@ -559,15 +549,12 @@ class LevelOneFragment : Fragment() {
 
     private fun finalizeMove(srcId: Int, dstId: Int) {
         val box = engine.getBoxes().find { it.id == dstId }!!
-        if (box.isComplete() && (pendingIncomingMap[dstId] ?: 0) == 0) { renderBoard(); playCompletionAnimation(binding.glGameBoard.findViewWithTag(dstId), dstId, srcId) }
+        if (box.blocks.size == 4 && box.blocks.distinct().size == 1 && (pendingIncomingMap[dstId] ?: 0) == 0) { renderBoard(); playCompletionAnimation(binding.glGameBoard.findViewWithTag(dstId), dstId, srcId) }
         else { engine.archiveAllReady(); animatingBoxes.remove(srcId); animatingBoxes.remove(dstId); activeAnimationsCount--; renderBoard(); checkGameResults() }
     }
 
     private fun playCompletionAnimation(view: View, boxId: Int, srcBoxId: Int) {
-        // Wait for layout pass so view has correct position
-        view.post {
-            spawnParticles(view)
-        }
+        view.post { spawnParticles(view) }
         view.animate().scaleX(1.2f).scaleY(1.2f).setDuration(350).withEndAction {
             view.animate().scaleX(1f).scaleY(1f).setDuration(150).withEndAction {
                 val box = engine.getBoxes().find { it.id == boxId }; val color = box?.blocks?.firstOrNull()
@@ -586,65 +573,29 @@ class LevelOneFragment : Fragment() {
         val rootLoc = IntArray(2); root.getLocationOnScreen(rootLoc)
         val cx = (anchorLoc[0] - rootLoc[0]).toFloat() + anchor.width / 2f
         val cy = (anchorLoc[1] - rootLoc[1]).toFloat() + anchor.height / 2f
-        if (cx <= 0f && cy <= 0f) return // skip if position is invalid
-
-        val colors = intArrayOf(
-            Color.parseColor("#FFD54F"), Color.parseColor("#FF7043"),
-            Color.parseColor("#66BB6A"), Color.parseColor("#42A5F5"),
-            Color.parseColor("#AB47BC"), Color.parseColor("#EF5350")
-        )
+        if (cx <= 0f && cy <= 0f) return 
+        val colors = intArrayOf(Color.parseColor("#FFD54F"), Color.parseColor("#FF7043"), Color.parseColor("#66BB6A"), Color.parseColor("#42A5F5"), Color.parseColor("#AB47BC"), Color.parseColor("#EF5350"))
         val d = resources.displayMetrics.density
         repeat(8) { i ->
             val size = ((6 + Random.nextInt(6)) * d).toInt()
-            val p = View(requireContext()).apply {
-                background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(colors[i % colors.size])
-                }
-                alpha = 1f
-            }
+            val p = View(requireContext()).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(colors[i % colors.size]) }; alpha = 1f }
             root.addView(p, ViewGroup.LayoutParams(size, size))
             p.x = cx - size / 2f; p.y = cy - size / 2f
-            val angle = (i * 45.0) + Random.nextInt(20)
-            val dist = (60 + Random.nextInt(80)) * d
-            p.animate()
-                .translationXBy((dist * Math.cos(Math.toRadians(angle))).toFloat())
-                .translationYBy((dist * Math.sin(Math.toRadians(angle))).toFloat())
-                .alpha(0f).scaleX(0.3f).scaleY(0.3f)
-                .setDuration(600L)
-                .withEndAction { root.removeView(p) }.start()
+            val angle = (i * 45.0) + Random.nextInt(20); val dist = (60 + Random.nextInt(80)) * d
+            p.animate().translationXBy((dist * Math.cos(Math.toRadians(angle))).toFloat()).translationYBy((dist * Math.sin(Math.toRadians(angle))).toFloat()).alpha(0f).scaleX(0.3f).scaleY(0.3f).setDuration(600L).withEndAction { root.removeView(p) }.start()
         }
     }
 
     private fun animateTruckCompletion(truckView: View, onEnd: () -> Unit) {
         val screenWidth = resources.displayMetrics.widthPixels.toFloat()
-        ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply {
-            duration = 700; interpolator = AnticipateOvershootInterpolator()
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    truckView.translationX = -screenWidth; onEnd()
-                    ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply {
-                        duration = 800; interpolator = OvershootInterpolator(); start()
-                    }
-                }
-            }); start()
-        }
+        ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply { duration = 700; interpolator = AnticipateOvershootInterpolator(); addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(animation: Animator) { truckView.translationX = -screenWidth; onEnd(); ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply { duration = 800; interpolator = OvershootInterpolator(); start() } } }); start() }
     }
 
     private fun checkGameResults() { if (engine.isWin) showWinDialog() else if (engine.isGameOver || engine.isDeadlocked()) showLoseDialog() }
     private fun showWinDialog() { soundManager?.playWin(); isWinDialogShowing = true; binding.layoutWinDialog.root.visibility = View.VISIBLE; binding.layoutWinDialog.btnWinContinue.setOnClickListener { GoldManager.addGold(requireContext(), if (engine.isBossLevel) 150 else 50); navigateToNextLevel() } }
     private fun showLoseDialog() { soundManager?.playLose() ; isLoseDialogShowing = true; binding.layoutLoseDialog.root.visibility = View.VISIBLE; binding.layoutLoseDialog.btnLoseRetry.setOnClickListener { activity?.recreate() }; binding.layoutLoseDialog.btnLoseBack.setOnClickListener { findNavController().popBackStack() } }
     private fun navigateToNextLevel() { findNavController().navigate(R.id.action_LevelOneFragment_self, Bundle().apply { putInt("levelId", args.levelId + 1) }) }
-    private fun updateStatusUI() { 
-        if (engine.isBossLevel && engine.currentBossType == 1) {
-            binding.tvPackedProgress.visibility = View.GONE
-        } else {
-            binding.tvPackedProgress.visibility = View.VISIBLE
-            binding.tvPackedProgress.text = if (engine.isBagMechanismEnabled) getString(R.string.progress_packed, engine.completedBoxesCount, engine.totalFullBoxesCount) else getString(R.string.progress_completed, engine.completedBoxesCount, engine.totalFullBoxesCount) 
-            binding.tvPackedProgress.setTextColor(Color.parseColor("#5D4037"))
-            binding.tvPackedProgress.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
-        }
-    }
+    private fun updateStatusUI() { if (engine.isBossLevel && engine.currentBossType == 1) { binding.tvPackedProgress.visibility = View.GONE } else { binding.tvPackedProgress.visibility = View.VISIBLE; binding.tvPackedProgress.text = if (engine.isBagMechanismEnabled) getString(R.string.progress_packed, engine.completedBoxesCount, engine.totalFullBoxesCount) else getString(R.string.progress_completed, engine.completedBoxesCount, engine.totalFullBoxesCount); binding.tvPackedProgress.setTextColor(Color.parseColor("#5D4037")); binding.tvPackedProgress.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT) } }
     private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) { tvFruit.text = SkinManager.getIconForColor(box.targetColor, requireContext()); tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity); tvTurns.text = "${box.turnsLeft}" }
     private fun loadBannerAd() { if (GoldManager.isVip(requireContext())) { binding.adContainer.visibility = View.GONE; return }; val adView = AdView(requireContext()).apply { setAdSize(AdSize.BANNER); adUnitId = "ca-app-pub-3940256099942544/6300978111" }; binding.adContainer.addView(adView); adView.loadAd(AdRequest.Builder().build()) }
     private fun setupTruckIdleAnimations() { val bA = ObjectAnimator.ofFloat(binding.imgTruckA, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2000; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; val bB = ObjectAnimator.ofFloat(binding.imgTruckB, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2200; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; bA.start(); bB.start() }
