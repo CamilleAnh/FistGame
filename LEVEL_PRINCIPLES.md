@@ -1,55 +1,56 @@
-# ⚙️ NGUYÊN TẮC THIẾT KẾ 1000 LEVEL (PHIÊN BẢN HOÀN THIỆN 3.3)
+# ⚙️ NGUYÊN TẮC THIẾT KẾ 1000 LEVEL (PHIÊN BẢN HOÀN THIỆN 3.6)
 
-Được đồng bộ theo: `MASTER_PROMPT.md`, `GAME_SYSTEM_PRINCIPLES.md` và `AD_SYSTEM_PRINCIPLES.md`
+Được đồng bộ theo logic Engine mới nhất: Hỗ trợ đa dạng hóa lối chơi Boss và tối ưu áp lực thời gian.
 
 ## 💎 QUY TẮC CỐT LÕI
-1. **Thùng chứa cố định (4/4)**: Mọi kiện hàng (thùng chứa) khi bắt đầu màn chơi đều được **lấp đầy tuyệt đối đúng 4 loại trái cây**. Hình dáng thùng chứa được thiết kế dạng **khối vuông/hộp kiện hàng** lùn và rộng để tối ưu không gian hiển thị.
-2. **Trái cây cực đại (Max Fill)**: Hình ảnh trái cây (icon) được phóng to tối đa để che gần hết diện tích ô chứa, tạo cảm giác thùng hàng đầy đặn và bắt mắt.
-3. **Giao diện Ngang 4**: Bàn chơi luôn cố định hiển thị theo **4 cột hàng ngang**. Kích thước thùng tự động co giãn để vừa khít chiều ngang màn hình, đảm bảo không bị tràn viền ngay cả khi có nhiều hàng.
-4. **Thùng trung trung chuyển (Empty Crates)**: 
-    *   Duy trì **3 thùng trống hoàn toàn** cho đến Level 500 để đảm bảo không gian luân chuyển.
-    *   Level 500+ có thể giảm còn 2 thùng trống để tăng độ khó cực hạn.
-5. **Quy mô 16 loại Trái cây**: Hệ thống hỗ trợ tối đa 16 loại khác nhau (🍎, 🍓, 🍇...). Số lượng màu tăng dần theo cấp độ.
+1.  **Thùng chứa 4/4**: Mọi bình nhỏ khi bắt đầu đều chứa đủ 4 quả.
+2.  **Cố định 25 lượt đi**: Áp dụng cho TOÀN BỘ các màn (thường và Boss) để đảm bảo người chơi có đủ thời gian giải đố các ma trận cạm bẫy phức tạp.
+3.  **Trái cây cực đại**: Icon trái cây được phóng to tối đa để tạo cảm giác bình hàng đầy đặn.
+4.  **Hệ số nhân lũy tiến**: Số lượng bình tăng dần theo level: `multiplier = 1.1 + (levelId / 1000.0) * 0.5`.
 
 ---
 
-## 👹 HỆ THỐNG MÀN CHƠI BOSS (MILESTONES)
-Xuất hiện định kỳ mỗi **20 Level** (20, 40, 60, 80, 100...).
-*   **Nhận diện**: Background chuyển sang tông màu Đỏ/Tối, nhạc nền kịch tính hơn.
-*   **Đặc điểm khó**:
-    *   **Lượt đi cực ngắn**: Túi thu hoạch chỉ có **15 lượt** thay vì 25.
-    *   **Màu sắc đột biến**: Luôn có nhiều hơn màn thường 2 loại trái cây.
-    *   **Hỗn hợp cạm bẫy**: Boss Level 100+ sẽ xuất hiện cùng lúc 2 loại chướng ngại vật (vừa Ẩn đáy vừa Đóng băng).
-*   **Phần thưởng**: Thắng màn Boss nhận **x3 Gold** và cơ hội mở khóa skin Thùng hàng mới.
+## 👹 HỆ THỐNG 4 ĐẠI BOSS (XOAY VÒNG MỖI 20 LEVEL)
+Mỗi mốc 20 level sẽ xuất hiện một dạng Boss khác biệt về cơ chế thu hoạch:
+
+### 🍯 Boss Loại 1: SIÊU BÌNH CHỨA (Mega Container)
+*   **Cơ chế:** Ẩn toàn bộ xe tải. Xuất hiện 1 Bình Khổng Lồ ở trung tâm.
+*   **Lối chơi:** Đổ TRỰC TIẾP từng quả cùng loại vào bình trung tâm. Không cần gom đủ 4 quả mới gửi đi.
+*   **Đặc điểm khó:** Trái cây mục tiêu bị giấu sâu dưới đáy của các bình xung quanh.
+
+### 🕸️ Boss Loại 2: MA TRẬN MẠNG NHỆN (Spider Maze)
+*   **Cơ chế:** 100% các bình có chứa trái cây đều bị phủ mạng nhện ngay khi bắt đầu.
+*   **Lối chơi:** Người chơi phải tốn nhiều lượt chạm ban đầu để dọn dẹp "mặt bằng" trước khi có thể sắp xếp.
+
+### ❄️ Boss Loại 3: KHO LẠNH CẤP ĐÔNG (Deep Freeze)
+*   **Cơ chế:** Xuất hiện các "Bình Băng Vĩnh Cửu". 
+*   **Lối chơi:** Băng sẽ KHÔNG tan khi đổ trái cây vào. Chúng chỉ tự động vỡ ra khi người chơi hoàn thành thu hoạch thành công 1 túi hàng trên xe tải.
+
+### ❓ Boss Loại 4: KIỆN HÀNG BÍ MẬT (Blind Order)
+*   **Cơ chế:** 100% trái cây trên bàn chơi hiển thị dấu `?`.
+*   **Lối chơi:** Thử thách trí nhớ tuyệt đối. Người chơi phải nhớ vị trí các loại quả sau mỗi lần di chuyển hoặc sử dụng vật phẩm soi sáng.
 
 ---
 
-## 🎒 CƠ CHẾ TÚI THU HOẠCH (BAG-TIMER)
-*   **Lượt đi riêng biệt (25 lượt)**: Màn thường có 25 hiệp độc lập cho mỗi túi.
-*   **Logic trừ lượt**: Mỗi lần di chuyển trái cây, **tất cả** các túi hiện có đều bị trừ 1 lượt.
-*   **Hậu quả khi hết lượt**: Về **0 lượt** -> **GAME OVER**.
-
----
-
-## 🚫 HỆ THỐNG CHƯỚNG NGẠI VẬT
-1. **Kiện hàng bí ẩn (?) [Level 20+]**: Chỉ lộ trái cây đỉnh. Di chuyển đi mới lộ lớp dưới.
-2. **Mạng nhện 🕸️ [Level 80+]**: Khóa miệng thùng, tốn 1 lượt chạm để dọn.
-3. **Đóng băng ❄️ [Level 120+]**: Phải đổ đúng loại trái cây vào để phá băng.
-4. **Xích sắt ⛓️ [Level 160+]**: Tự động mở khi thu hoạch xong 1 túi bất kỳ.
+## 🚫 HỆ THỐNG CHƯỚNG NGẠI VẬT (MÀN THƯỜNG)
+1.  **Ẩn đáy (?) [Level 20+]**: Lộ diện 3 quả đỉnh, ẩn 1 quả đáy (Màn Boss sẽ ẩn sâu hơn).
+2.  **Đóng băng ❄️ [Level 80+]**: Đổ đúng màu vào để phá băng ngay lập tức.
+3.  **Xích sắt ⛓️ [Level 120+]**: Khóa bình hoàn toàn, mở khi hoàn thành 1 túi màu bất kỳ.
 
 ---
 
 ## 📈 LỘ TRÌNH PHÁT TRIỂN ĐỘ KHÓ
 | Cấp độ | Số màu | Tổng số thùng | Đặc điểm nổi bật |
 | :--- | :---: | :---: | :--- |
-| **1 - 19** | 3 - 4 | 6 - 7 | Thùng lộ diện hoàn toàn, dạy chơi. |
-| **20 - 99** | 5 - 8 | 10 - 15 | **BOSS 20/40/60/80**: Ẩn đáy (?) cực mạnh + 15 lượt đi. |
-| **100 - 399** | 9 - 12 | 15 - 20 | **BOSS 100/200/300**: Mạng nhện phủ kín 50% bàn chơi. |
-| **400 - 799** | 13 - 14 | 20 - 25 | **BOSS 400/600**: Đóng băng + Xích sắt đan xen. |
-| **800 - 1000** | **16** | ~30 | **FINAL BOSS (1000)**: 16 màu, 2 thùng trống, 10 lượt đi. |
+| **1 - 19** | 3 | 5 - 7 | Làm quen, không vật cản. |
+| **20 - 99** | 6 | 10 - 15 | Xuất hiện Ẩn đáy & Boss 20/40/60/80. |
+| **100 - 299** | 9 | 15 - 20 | Bàn chơi đông đúc, Mạng nhện xuất hiện thường xuyên. |
+| **300 - 599** | 12 | 20 - 25 | Đóng băng & Xích sắt xuất hiện dày đặc. |
+| **600 - 1000** | **14 - 16** | **~30** | **CỰC HẠN**: 16 màu, chỉ 2 bình trống, cạm bẫy chồng chéo. |
 
 ---
 
-## 💡 CHIẾN THUẬT & HIỂN THỊ
-*   **Độ tương phản**: Text màu **Vàng (#FFD54F)** trên nền kiện hàng gỗ.
-*   **Quản lý lượt**: Ưu tiên túi có số lượt hiển thị màu Đỏ.
+## 💰 PHẦN THƯỞNG & MONETIZATION
+*   **Màn thường:** Thắng nhận 50 Gold.
+*   **Màn Boss:** Thắng nhận **150 Gold (x3)**.
+*   **Hồi sinh:** Khi hết 25 lượt, người chơi có thể xem **Rewarded Ads** để nhận thêm 5 lượt đi cuối cùng.
