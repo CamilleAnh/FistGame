@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Drop Shadow / Bottom Border -->
+    <item android:top="4dp">
+        <shape android:shape="oval">
+            <solid android:color="#D84315" />
+        </shape>
+    </item>
+    <!-- Main Button Body -->
+    <item android:bottom="4dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFB74D" />
+            <stroke android:width="3dp" android:color="#A67B5B" />
+        </shape>
+    </item>
+</layer-list>

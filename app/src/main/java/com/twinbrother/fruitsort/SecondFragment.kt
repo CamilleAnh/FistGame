@@ -162,7 +162,7 @@ class SecondFragment : Fragment() {
                 // Badge & fruit
                 b.tvLevelBadge.text  = levelId.toString()
                 b.tvFruitIcon.text   = FRUIT_ICONS[(levelId - 1) % FRUIT_ICONS.size]
-                b.tvLevelName.text   = "Level $levelId"
+                b.tvLevelName.text   = b.root.context.getString(R.string.level_name_format, levelId)
 
                 when {
                     levelId < highestLevel -> {

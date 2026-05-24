@@ -85,4 +85,14 @@
     <string name="sound_label">Sound FX</string>
     <string name="vibration_label">Vibration</string>
     <string name="reset_settings_label">Reset All Settings</string>
+    <string name="play_now">PLAY NOW</string>
+    <string name="powerup_reroll_short">REROLL</string>
+    <string name="powerup_hint_short">HINT</string>
+    <string name="powerup_shuffle_short">SHUFFLE</string>
+    <string name="target_label">⭐ TARGET ⭐</string>
+    <string name="choose_level">CHOOSE LEVEL</string>
+    <string name="bottom_nav_home">Home</string>
+    <string name="bottom_nav_levels">Levels</string>
+    <string name="bottom_nav_shop">Shop</string>
+    <string name="bottom_nav_skins">Skins</string>
 </resources>

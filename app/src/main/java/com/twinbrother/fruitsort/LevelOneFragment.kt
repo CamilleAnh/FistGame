@@ -111,25 +111,26 @@ class LevelOneFragment : Fragment() {
 
     private fun updateGoldDisplay() {
         val gold = GoldManager.getGold(requireContext())
-        binding.tvGameGold.text = getString(R.string.gold_display_format, gold)
+        binding.tvGameGold.text = "%,d".format(gold)
+        val gems = GoldManager.getGems(requireContext())
+        binding.tvGameGems.text = "%,d".format(gems)
     }
 
     private fun setupSettings() {
         val settingsBinding = binding.layoutSettings
-        binding.btnSettings.setOnClickListener { anchor ->
-            val popup = PopupMenu(requireContext(), anchor)
-            popup.menu.add(0, 1, 0, getString(R.string.home_menu))
-            popup.menu.add(0, 2, 1, getString(R.string.reset_level))
-            popup.menu.add(0, 3, 2, getString(R.string.settings_menu))
-            popup.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    1 -> { findNavController().popBackStack(R.id.SecondFragment, false); true }
-                    2 -> { if (activeAnimationsCount > 0) return@setOnMenuItemClickListener true; engine = LevelOneEngine(args.levelId); renderBoard(); true }
-                    3 -> { showSettings(true); true }
-                    else -> false
-                }
-            }
-            popup.show()
+        
+        binding.ivBack.setOnClickListener { 
+            findNavController().popBackStack(R.id.SecondFragment, false) 
+        }
+
+        binding.btnResetLevel.setOnClickListener {
+            if (activeAnimationsCount > 0) return@setOnClickListener
+            engine = LevelOneEngine(args.levelId)
+            renderBoard()
+        }
+
+        binding.btnSettings.setOnClickListener {
+            showSettings(true)
         }
         settingsBinding.btnCloseSettings.setOnClickListener { showSettings(false) }
         settingsBinding.btnLangEn.setOnClickListener { changeLanguage("en") }
@@ -166,9 +167,9 @@ class LevelOneFragment : Fragment() {
     }
 
     private fun updatePowerupButtons() {
-        binding.btnRerollBags.text = "🎲 x$powerupReroll"
-        binding.btnMagnify.text = if (isMagnifyMode) "🔍 ✓" else "🔍 x$powerupMagnify"
-        binding.btnReshuffle.text = "🔀 x$powerupReshuffle"
+        binding.tvBadgeReroll.text = "$powerupReroll"
+        binding.tvBadgeMagnify.text = if (isMagnifyMode) "✓" else "$powerupMagnify"
+        binding.tvBadgeShuffle.text = "$powerupReshuffle"
     }
 
     private fun renderBoard() {
@@ -640,8 +641,8 @@ class LevelOneFragment : Fragment() {
         } else {
             binding.tvPackedProgress.visibility = View.VISIBLE
             binding.tvPackedProgress.text = if (engine.isBagMechanismEnabled) getString(R.string.progress_packed, engine.completedBoxesCount, engine.totalFullBoxesCount) else getString(R.string.progress_completed, engine.completedBoxesCount, engine.totalFullBoxesCount) 
-            binding.tvPackedProgress.setTextColor(Color.WHITE)
-            binding.tvPackedProgress.setShadowLayer(8f, 2f, 2f, Color.BLACK)
+            binding.tvPackedProgress.setTextColor(Color.parseColor("#5D4037"))
+            binding.tvPackedProgress.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
         }
     }
     private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) { tvFruit.text = SkinManager.getIconForColor(box.targetColor, requireContext()); tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity); tvTurns.text = "${box.turnsLeft}" }

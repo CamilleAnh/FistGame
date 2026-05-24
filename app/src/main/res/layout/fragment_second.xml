@@ -85,7 +85,7 @@
             android:layout_marginTop="14dp"
             android:fontFamily="sans-serif-black"
             android:letterSpacing="0.05"
-            android:text="CHOOSE LEVEL"
+            android:text="@string/choose_level"
             android:textColor="#FFD54F"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -145,7 +145,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Home"
+                android:text="@string/bottom_nav_home"
                 android:textColor="#78909C"
                 android:textSize="10sp" />
 
@@ -175,7 +175,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif-black"
-                android:text="LEVELS"
+                android:text="@string/bottom_nav_levels"
                 android:textColor="#FFFFFF"
                 android:textSize="9sp" />
 
@@ -204,7 +204,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Shop"
+                android:text="@string/bottom_nav_shop"
                 android:textColor="#78909C"
                 android:textSize="10sp" />
 
@@ -233,7 +233,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Skins"
+                android:text="@string/bottom_nav_skins"
                 android:textColor="#78909C"
                 android:textSize="10sp" />
 

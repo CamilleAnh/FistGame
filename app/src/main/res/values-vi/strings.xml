@@ -83,4 +83,14 @@
     <string name="sound_label">Âm thanh</string>
     <string name="vibration_label">Rung</string>
     <string name="reset_settings_label">Xóa toàn bộ cài đặt</string>
+    <string name="play_now">CHƠI NGAY</string>
+    <string name="powerup_reroll_short">ĐỔI TÚI</string>
+    <string name="powerup_hint_short">GỢI Ý</string>
+    <string name="powerup_shuffle_short">XÁO TRỘN</string>
+    <string name="target_label">⭐ NHIỆM VỤ ⭐</string>
+    <string name="choose_level">CHỌN MÀN CHƠI</string>
+    <string name="bottom_nav_home">Trang chủ</string>
+    <string name="bottom_nav_levels">Màn chơi</string>
+    <string name="bottom_nav_shop">Cửa hàng</string>
+    <string name="bottom_nav_skins">Giao diện</string>
 </resources>

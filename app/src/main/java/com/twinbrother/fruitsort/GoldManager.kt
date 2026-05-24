@@ -12,6 +12,7 @@ object GoldManager {
 
     private const val PREFS_NAME = "economy_data"
     private const val KEY_GOLD = "g"
+    private const val KEY_GEMS = "gems"
     private const val KEY_VIP = "vip"
     private const val SALT = "fruitsort_2026"
 
@@ -58,11 +59,24 @@ object GoldManager {
         return decode(encoded)
     }
 
+    fun getGems(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val encoded = prefs.getString(KEY_GEMS, null) ?: return 0
+        return decode(encoded)
+    }
+
     fun addGold(context: Context, amount: Int) {
         val current = getGold(context)
         val newVal = (current + amount).coerceAtLeast(0)
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putString(KEY_GOLD, encode(newVal)).apply()
+    }
+
+    fun addGems(context: Context, amount: Int) {
+        val current = getGems(context)
+        val newVal = (current + amount).coerceAtLeast(0)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_GEMS, encode(newVal)).apply()
     }
 
     /**
