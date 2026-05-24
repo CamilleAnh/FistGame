@@ -4,8 +4,7 @@ import java.util.Stack
 import kotlin.random.Random
 
 /**
- * Engine logic V3.8: Siết chặt độ khó lũy tiến & Sửa lỗi tương tác.
- * Đồng bộ chính xác cho package com.twinbrother.fruitsort
+ * Engine logic V3.8.2: Sửa lỗi hiển thị Boss 4 (Level 80) và tối ưu hóa logic di chuyển.
  */
 class LevelOneEngine(val levelId: Int = 1) {
 
@@ -78,7 +77,6 @@ class LevelOneEngine(val levelId: Int = 1) {
         isBossLevel = (levelId > 0 && levelId % 20 == 0)
         if (isBossLevel) currentBossType = ((levelId / 20 - 1) % 4) + 1
 
-        // 1. Phân bổ màu sắc tăng dần
         var numColors = when {
             levelId < 15 -> 3
             levelId < 40 -> 4
@@ -89,7 +87,6 @@ class LevelOneEngine(val levelId: Int = 1) {
         }
         if (isBossLevel) numColors = (numColors + 2).coerceAtMost(16)
 
-        // 2. Multiplier tăng mạnh hơn để bàn chơi luôn đông đúc
         val baseMultiplier = 1.2 + (levelId / 1000.0) * 0.7 
         val finalMultiplier = if (isBossLevel) baseMultiplier + 0.3 else baseMultiplier
 
@@ -112,7 +109,6 @@ class LevelOneEngine(val levelId: Int = 1) {
 
     private fun applyDifficultyScaling() {
         if (!isBossLevel) {
-            // MÀN THƯỜNG: Độ khó lan tỏa tích lũy
             if (levelId >= 15) {
                 val hideRate = (0.2 + (levelId / 500.0)).coerceAtMost(0.9)
                 boxes.filter { it.blocks.size >= 2 }.shuffled(random).take((totalFullBoxesCount * hideRate).toInt()).forEach { 
@@ -135,7 +131,12 @@ class LevelOneEngine(val levelId: Int = 1) {
             1 -> boxes.forEach { if (it.blocks.size >= 2) it.hiddenLayers = it.blocks.size - 1 }
             2 -> boxes.filter { !it.isEmpty() }.forEach { it.hasCobweb = true }
             3 -> boxes.filter { !it.isEmpty() }.shuffled(random).take(6).forEach { it.isFrozen = true }
-            4 -> boxes.forEach { if (!it.isEmpty()) it.hiddenLayers = it.blocks.size }
+            // Boss 4 (Level 80): Luôn hiển thị 1 quả trên cùng để người chơi có thể bắt đầu chơi
+            4 -> boxes.forEach { 
+                if (it.blocks.size >= 1) {
+                    it.hiddenLayers = (it.blocks.size - 1).coerceAtLeast(0)
+                }
+            }
         }
     }
 
@@ -198,27 +199,6 @@ class LevelOneEngine(val levelId: Int = 1) {
         return countMoved
     }
 
-    fun handleBoxClick(index: Int): Boolean {
-        if (isGameOver) return false
-        val clicked = boxes.getOrNull(index) ?: return false
-        if (clicked.isArchived || clicked.hasCobweb) return false
-        if (clicked.isLockedByChain || (clicked.isComplete() && !isBossLevel)) return false
-
-        val srcIdx = selectedBoxIndex
-        if (srcIdx == null) {
-            if (!clicked.isEmpty() && !clicked.isFrozen && ((clicked.blocks.size - 1) >= clicked.hiddenLayers || (isBossLevel && currentBossType == 4))) {
-                selectedBoxIndex = index
-                return true
-            }
-        } else {
-            if (srcIdx == index) { selectedBoxIndex = null; return true }
-            val src = boxes[srcIdx]
-            if (canMove(src, clicked)) { executeMove(src, clicked); selectedBoxIndex = null; return true }
-            selectedBoxIndex = if (!clicked.isEmpty() && !clicked.isFrozen) index else null
-        }
-        return false
-    }
-
     fun canMove(s: Box, d: Box) = !s.isEmpty() && d.blocks.size < 4 && 
             (d.isEmpty() || d.peekColor() == s.peekColor()) && ((s.blocks.size - 1) >= s.hiddenLayers || (isBossLevel && currentBossType == 4))
 
@@ -227,7 +207,9 @@ class LevelOneEngine(val levelId: Int = 1) {
         val originalHiddenLimit = s.hiddenLayers 
         while (!s.isEmpty() && s.peekColor() == color && ((s.blocks.size - 1) >= originalHiddenLimit || (isBossLevel && currentBossType == 4)) && d.blocks.size < 4) {
             d.blocks.push(s.blocks.pop())
-            if (s.hiddenLayers >= s.blocks.size && !s.isEmpty()) s.hiddenLayers = (s.blocks.size - 1).coerceAtLeast(0)
+            if (s.hiddenLayers >= s.blocks.size && !s.isEmpty()) {
+                s.hiddenLayers = (s.blocks.size - 1).coerceAtMost(originalHiddenLimit).coerceAtLeast(0)
+            }
         }
         if (s.isEmpty()) s.hiddenLayers = 0
         if (d.isFrozen) d.isFrozen = false
@@ -299,7 +281,7 @@ class LevelOneEngine(val levelId: Int = 1) {
         if (active.any { it.hasCobweb }) return false
         for (src in active) {
             if (src.isEmpty() || src.isFrozen || src.isLockedByChain) continue
-            if ((src.blocks.size - 1) < src.hiddenLayers) continue
+            if ((src.blocks.size - 1) < src.hiddenLayers && !(isBossLevel && currentBossType == 4)) continue
             if (isBossLevel && currentBossType == 1 && src.peekColor() == boxSlots.getOrNull(0)?.targetColor) return false
             for (dst in active) { if (src.id != dst.id && canMove(src, dst)) return false }
         }

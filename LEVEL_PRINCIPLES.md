@@ -1,6 +1,6 @@
-# ⚙️ NGUYÊN TẮC THIẾT KẾ 1000 LEVEL (PHIÊN BẢN HOÀN THIỆN 3.8)
+# ⚙️ NGUYÊN TẮC THIẾT KẾ 1000 LEVEL (PHIÊN BẢN HOÀN THIỆN 3.8.1)
 
-Tài liệu này đồng bộ với logic Engine V3.8, tập trung vào tính thử thách lũy tiến liên tục và hệ thống cạm bẫy dày đặc, sửa lỗi tàng hình và tương tác vật cản.
+Tài liệu này đồng bộ với logic Engine V3.8.1, tập trung vào tính thử thách lũy tiến liên tục và hệ thống cạm bẫy dày đặc, sửa lỗi tàng hình ở màn Boss 4 và tối ưu hóa tương tác vật cản.
 
 ## 💎 QUY TẮC CỐT LÕI
 1.  **Thùng chứa 4/4**: Mọi bình nhỏ khi bắt đầu đều chứa đủ 4 quả (trừ 2-3 bình trung chuyển trống).
@@ -15,7 +15,11 @@ Tài liệu này đồng bộ với logic Engine V3.8, tập trung vào tính th
 Màn Boss là "đỉnh nhọn" của độ khó trong mỗi giai đoạn:
 *   **Màu sắc:** Tăng đột ngột **+2 loại màu** so với màn thường liền kề.
 *   **Quy mô:** Tăng thêm **+30% số lượng bình** (`multiplier + 0.3`).
-*   **Vật cản:** Kích hoạt trạng thái cực hạn tùy theo loại Boss (ví dụ: Boss 1 đổ trực tiếp, Boss 2 phủ nhện 100%, Boss 4 ẩn 100%).
+*   **Vật cản:** Kích hoạt trạng thái cực hạn tùy theo loại Boss:
+    *   Boss 1: Đổ trực tiếp vào xe tải.
+    *   Boss 2: Phủ nhện 100% các bình có chứa quả.
+    *   Boss 3: Đóng băng ngẫu nhiên các bình chiến lược.
+    *   Boss 4: Ẩn các lớp dưới (hiện lớp trên cùng) để tạo tính bất ngờ nhưng vẫn đảm bảo chơi được.
 
 ---
 
