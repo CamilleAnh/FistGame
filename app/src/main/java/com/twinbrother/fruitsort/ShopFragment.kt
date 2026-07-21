@@ -186,7 +186,9 @@ class ShopFragment : Fragment() {
         if (_binding == null) return
         val ctx = requireContext()
         val gold = GoldManager.getGold(ctx)
-        binding.tvShopGold.text = getString(R.string.gold_display_format, gold)
+        binding.tvShopGold.text = "🪙 %,d".format(gold)
+        val gems = GoldManager.getGems(ctx)
+        binding.tvShopGems.text = "💎 %,d".format(gems)
 
         // Update Daily & Ads status
         val canClaim = GoldManager.canClaimDaily(ctx)

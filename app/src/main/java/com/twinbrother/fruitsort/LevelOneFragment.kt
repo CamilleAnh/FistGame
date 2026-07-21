@@ -1,49 +1,30 @@
 package com.twinbrother.fruitsort
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
-import android.animation.ValueAnimator
+import android.animation.*
 import android.content.Context
 import android.graphics.Color
-import android.graphics.Path
-import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AnticipateOvershootInterpolator
-import android.view.animation.DecelerateInterpolator
-import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
-import android.widget.FrameLayout
-import android.widget.GridLayout
-import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import androidx.appcompat.widget.PopupMenu
 import com.twinbrother.fruitsort.databinding.FragmentLevelOneBinding
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.graphics.ColorUtils
-import kotlin.random.Random
-
-import com.example.a2dgame.SkinManager
+import kotlinx.coroutines.launch
 
 class LevelOneFragment : Fragment() {
 
@@ -51,22 +32,11 @@ class LevelOneFragment : Fragment() {
     private val binding get() = _binding!!
     
     private val args: LevelOneFragmentArgs by navArgs()
-    private lateinit var engine: LevelOneEngine
+    private val viewModel: GameViewModel by viewModels()
     private var soundManager: SoundManager? = null
-
-    private var powerupReroll    = 1
-    private var powerupMagnify   = 1
-    private var powerupReshuffle = 1
-    private var isMagnifyMode    = false
-
-    private var isWinDialogShowing = false
-    private var isLoseDialogShowing = false
-
-    private val wiggleAnimators = mutableMapOf<View, Animator>()
-    
-    private var activeAnimationsCount = 0
-    private val animatingBoxes = mutableSetOf<Int>()
-    private val pendingIncomingMap = mutableMapOf<Int, Int>()
+    private var hasShownResult = false
+    private var isAnimating = false
+    private val runningAnimators = mutableListOf<ObjectAnimator>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -78,34 +48,63 @@ class LevelOneFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val levelId = args.levelId
-        engine = LevelOneEngine(levelId)
+        
+        binding.gameBoardView.clearAnimations()
+        viewModel.initLevel(args.levelId, requireContext())
         soundManager = SoundManager(requireContext())
-        soundManager?.setEnabled(true)
         
-        setupUIForBossStatus()
-        
+        setupObservers()
+        setupListeners()
         loadBannerAd()
         playBackgroundMusic()
-        renderBoard()
-
-        binding.ivBack.setOnClickListener {
-            findNavController().popBackStack()
-        }
-
-        setupSettings()
-        setupPowerups()
-        updateGoldDisplay()
         setupTruckIdleAnimations()
     }
 
-    private fun setupUIForBossStatus() {
-        if (engine.isBossLevel) {
-            binding.tvLevelName.text = "👹 BOSS LV ${args.levelId}"
-            binding.tvLevelName.setTextColor(Color.RED)
-        } else {
-            binding.tvLevelName.text = getString(R.string.level_name_format, args.levelId)
-            binding.tvLevelName.setTextColor(Color.WHITE)
+    private fun setupObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.engine.collect { engine ->
+                        engine?.let {
+                            binding.gameBoardView.setEngine(it)
+                            binding.gameBoardView.setSkinStyle(SkinManager.getSelectedStyle(requireContext()))
+                            updateStatusUI(it)
+                            updateTrucksUI(it)
+                            setupUIForBossStatus(it)
+                            updateGoldDisplay()
+                            checkGameResults(it)
+                        }
+                    }
+                }
+                launch {
+                    // Observe version counter to refresh UI when engine state mutates
+                    viewModel.stateVersion.collect { _ ->
+                        viewModel.engine.value?.let { engine ->
+                            binding.gameBoardView.setEngine(engine)
+                            binding.gameBoardView.setSkinStyle(SkinManager.getSelectedStyle(requireContext()))
+                            updateStatusUI(engine)
+                            updateTrucksUI(engine)
+                            updateGoldDisplay()
+                            checkGameResults(engine)
+                        }
+                    }
+                }
+                launch {
+                    viewModel.selectedBoxIndex.collect { index ->
+                        binding.gameBoardView.setSelectedBox(index)
+                    }
+                }
+                launch {
+                    viewModel.powerupState.collect { state ->
+                        updatePowerupButtons(state)
+                    }
+                }
+                launch {
+                    viewModel.isMagnifyMode.collect { isMode ->
+                        binding.tvBadgeMagnify.text = if (isMode) "✓" else viewModel.powerupState.value.reveal.toString()
+                    }
+                }
+            }
         }
     }
 
@@ -116,79 +115,201 @@ class LevelOneFragment : Fragment() {
         binding.tvGameGems.text = "%,d".format(gems)
     }
 
-    private fun setupSettings() {
-        val settingsBinding = binding.layoutSettings
-        
-        binding.ivBack.setOnClickListener { 
-            findNavController().popBackStack(R.id.SecondFragment, false) 
+    private fun setupListeners() {
+        binding.ivBack.setOnClickListener {
+            findNavController().popBackStack(R.id.SecondFragment, false)
+        }
+
+        binding.gameBoardView.setOnBoxClickListener { id ->
+            handleBoxTap(id)
         }
 
         binding.btnResetLevel.setOnClickListener {
-            if (activeAnimationsCount > 0) return@setOnClickListener
-            engine = LevelOneEngine(args.levelId)
-            renderBoard()
+            binding.gameBoardView.clearAnimations()
+            viewModel.resetLevel(requireContext())
         }
 
-        binding.btnSettings.setOnClickListener {
-            showSettings(true)
+        binding.btnSettings.setOnClickListener { showSettings(true) }
+        binding.layoutSettings.btnCloseSettings.setOnClickListener { showSettings(false) }
+        binding.layoutSettings.btnLangEn.setOnClickListener { changeLanguage("en") }
+        binding.layoutSettings.btnLangVi.setOnClickListener { changeLanguage("vi") }
+
+        setupPowerupListeners()
+    }
+
+    private fun setupPowerupListeners() {
+        binding.btnRerollBags.setOnClickListener {
+            val engine = viewModel.engine.value ?: return@setOnClickListener
+            if (viewModel.consumeReroll(requireContext())) {
+                engine.rerollBags()
+                engine.archiveAllReady()
+                viewModel.triggerStateUpdate()
+            }
         }
-        settingsBinding.btnCloseSettings.setOnClickListener { showSettings(false) }
-        settingsBinding.btnLangEn.setOnClickListener { changeLanguage("en") }
-        settingsBinding.btnLangVi.setOnClickListener { changeLanguage("vi") }
-        val prefs = requireContext().getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE)
-        settingsBinding.switchMusic.isChecked = prefs.getBoolean("music_on", true)
-        settingsBinding.switchSound.isChecked = prefs.getBoolean("sound_on", true)
-        settingsBinding.switchVibration.isChecked = prefs.getBoolean("vibration_on", true)
-        settingsBinding.switchMusic.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("music_on", isChecked).apply(); GlobalMusicPlayer.setEnabled(requireContext(), isChecked) }
-        settingsBinding.switchSound.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("sound_on", isChecked).apply(); soundManager?.setEnabled(isChecked) }
-        settingsBinding.switchVibration.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("vibration_on", isChecked).apply() }
+        binding.btnMagnify.setOnClickListener {
+            viewModel.setMagnifyMode(!viewModel.isMagnifyMode.value)
+        }
+        binding.btnReshuffle.setOnClickListener {
+            val engine = viewModel.engine.value ?: return@setOnClickListener
+            if (viewModel.consumeShuffle(requireContext())) {
+                engine.shuffleAllBoxes()
+                viewModel.triggerStateUpdate()
+            }
+        }
+        // Undo button
+        binding.btnUndo.setOnClickListener {
+            val engine = viewModel.engine.value ?: return@setOnClickListener
+            if (engine.isGameOver) return@setOnClickListener
+            if (viewModel.consumeUndo(requireContext())) {
+                if (engine.undoLastMove()) {
+                    soundManager?.play("drop")
+                    viewModel.triggerStateUpdate()
+                    updateUndoBadge()
+                }
+            }
+        }
+        // Hint guide button
+        binding.btnHintGuide.setOnClickListener {
+            val engine = viewModel.engine.value ?: return@setOnClickListener
+            if (engine.isGameOver) return@setOnClickListener
+            if (viewModel.consumeHint(requireContext())) {
+                val hint = engine.findBestHint()
+                if (hint != null) {
+                    binding.gameBoardView.showHintHighlight(hint.first, hint.second)
+                    soundManager?.play("pickup")
+                    updateHintBadge()
+                }
+            }
+        }
     }
 
-    private fun changeLanguage(langCode: String) {
-        if (langCode == LanguageManager.getSavedLanguage(requireContext())) return
-        LanguageManager.setLocale(requireContext(), langCode)
-        activity?.recreate()
+    private fun updateUndoBadge() {
+        val state = viewModel.powerupState.value
+        val engine = viewModel.engine.value
+        val historySize = engine?.moveHistory?.size ?: 0
+        binding.tvBadgeUndo.text = if (state.freeUndo > 0) "${state.freeUndo}" else if (historySize > 0) "💎" else "0"
     }
 
-    private fun showSettings(show: Boolean) {
-        val overlay = binding.layoutSettings.root
-        overlay.visibility = if (show) View.VISIBLE else View.GONE
+    private fun updateHintBadge() {
+        val state = viewModel.powerupState.value
+        binding.tvBadgeHint.text = if (state.freeHint > 0) "${state.freeHint}" else "💎"
     }
 
-    private fun setupPowerups() {
-        val ctx = requireContext()
-        powerupReroll    = 1 + GoldManager.getRerollCount(ctx)
-        powerupMagnify   = 1 + GoldManager.getRevealCount(ctx)
-        powerupReshuffle = 1 + GoldManager.getShuffleCount(ctx)
-        updatePowerupButtons()
-        binding.btnRerollBags.setOnClickListener { if (powerupReroll > 0 && activeAnimationsCount == 0) { powerupReroll--; engine.rerollBags(); engine.archiveAllReady(); renderBoard(); updatePowerupButtons() } }
-        binding.btnMagnify.setOnClickListener { if (powerupMagnify > 0 && activeAnimationsCount == 0) { isMagnifyMode = !isMagnifyMode; updatePowerupButtons() } }
-        binding.btnReshuffle.setOnClickListener { if (powerupReshuffle > 0 && activeAnimationsCount == 0) { powerupReshuffle--; engine.shuffleAllBoxes(); renderBoard(); updatePowerupButtons() } }
-    }
+    private fun handleBoxTap(id: Int) {
+        val engine = viewModel.engine.value ?: return
+        if (engine.isGameOver || isAnimating) return
 
-    private fun updatePowerupButtons() {
-        binding.tvBadgeReroll.text = "$powerupReroll"
-        binding.tvBadgeMagnify.text = if (isMagnifyMode) "✓" else "$powerupMagnify"
-        binding.tvBadgeShuffle.text = "$powerupReshuffle"
-    }
-
-    private fun renderBoard() {
-        binding.glGameBoard.removeAllViews()
-        val boxes = engine.getBoxes().filter { !it.isArchived }
-        val skinStyle = SkinManager.getSelectedStyle(requireContext())
-        val density   = resources.displayMetrics.density
+        val clickedBox = engine.getBoxes().find { it.id == id } ?: return
         
-        var cols = when { boxes.size <= 7 -> 3; boxes.size <= 14 -> 4; boxes.size <= 24 -> 5; else -> 6 }
-        if (engine.isBossLevel && engine.currentBossType == 1 && cols < 5) cols = 5
-        
-        val horizontalGap = (8 * density).toInt()
-        val totalAvailableWidth = resources.displayMetrics.widthPixels - (24 * density).toInt()
-        val boxWidth = (totalAvailableWidth - (cols - 1) * horizontalGap) / cols
-        val boxHeight = (boxWidth * 1.3f).toInt()
-        val blockHeight = (boxHeight * 0.22f).toInt()
-        val firstRowTopPad = (16 * density).toInt()
-        val stepY = boxHeight + (12 * density).toInt()
+        if (viewModel.isMagnifyMode.value) {
+            if (clickedBox.hiddenLayers > 0 && viewModel.consumeReveal(requireContext())) {
+                engine.revealHiddenLayers(id)
+                soundManager?.play("complete")
+            }
+            viewModel.setMagnifyMode(false)
+            viewModel.triggerStateUpdate()
+            return
+        }
 
+        // Logic for Boss Type 1 (direct pour)
+        if (engine.isBossLevel && engine.currentBossType == 1) {
+            val truck = engine.getBoxSlots().getOrNull(0)
+            if (truck != null && !clickedBox.isEmpty() && clickedBox.peekColor() == truck.targetColor && !clickedBox.isFrozen && !clickedBox.hasCobweb) {
+                // Animate pour to center truck
+                val fruitColor = clickedBox.peekColor()
+                val movedCount = engine.pourFruitsToTruck(id)
+                
+                if (movedCount > 0) {
+                    isAnimating = true
+                    binding.gameBoardView.animateMove(fruitColor, id, -1, movedCount)
+                    binding.root.postDelayed({
+                        isAnimating = false
+                        viewModel.triggerStateUpdate()
+                    }, 450)
+                }
+                return
+            }
+        }
+
+        val selectedIdx = viewModel.selectedBoxIndex.value
+        if (selectedIdx == null) {
+            if (clickedBox.hasCobweb) {
+                if (engine.clearCobweb(id)) {
+                    soundManager?.play("drop")
+                    viewModel.triggerStateUpdate()
+                }
+                return
+            }
+            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.isComplete()) {
+                viewModel.setSelectedBox(id)
+            }
+        } else if (selectedIdx == id) {
+            viewModel.setSelectedBox(null)
+        } else {
+            val srcBox = engine.getBoxes().find { it.id == selectedIdx } ?: run {
+                viewModel.setSelectedBox(null)
+                return
+            }
+            if (engine.canMove(srcBox, clickedBox)) {
+                val fruitColor = srcBox.peekColor()
+                val movedCount = engine.executeMove(srcBox, clickedBox)
+                
+                if (movedCount > 0) {
+                    binding.gameBoardView.animateMove(fruitColor, selectedIdx, id, movedCount)
+                    val archivedIds = engine.archiveAllReady()
+                    viewModel.setSelectedBox(null)
+                    
+                    // Check for combo and show popup
+                    if (archivedIds.isNotEmpty() && engine.comboCounter >= 2) {
+                        binding.gameBoardView.showComboPopup(engine.comboCounter)
+                        // Combo bonus gold
+                        val comboBonus = when {
+                            engine.comboCounter >= 4 -> 50
+                            engine.comboCounter >= 3 -> 25
+                            engine.comboCounter >= 2 -> 10
+                            else -> 0
+                        }
+                        if (comboBonus > 0) GoldManager.addGold(requireContext(), comboBonus)
+                        // Gem bonus for x4+ combo
+                        if (engine.comboCounter >= 4) GoldManager.addGems(requireContext(), GoldManager.GEM_REWARD_COMBO_4)
+                    }
+                    
+                    // Delay state update slightly so the animation can be seen starting
+                    binding.root.postDelayed({
+                        viewModel.triggerStateUpdate()
+                    }, 100)
+                    
+                    soundManager?.play("move")
+                }
+            } else {
+                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.isComplete()) {
+                    viewModel.setSelectedBox(id)
+                } else {
+                    viewModel.setSelectedBox(null)
+                }
+            }
+        }
+    }
+
+    private fun setupUIForBossStatus(engine: LevelOneEngine) {
+        if (engine.isBossLevel) {
+            binding.tvLevelName.text = getString(R.string.boss_level_format, args.levelId)
+            binding.tvLevelName.setTextColor(Color.RED)
+        } else {
+            binding.tvLevelName.text = getString(R.string.level_name_format, args.levelId)
+            binding.tvLevelName.setTextColor(Color.WHITE)
+        }
+    }
+
+    private fun updatePowerupButtons(state: GameViewModel.PowerupState) {
+        binding.tvBadgeReroll.text = "${state.reroll}"
+        binding.tvBadgeMagnify.text = if (viewModel.isMagnifyMode.value) "✓" else "${state.reveal}"
+        binding.tvBadgeShuffle.text = "${state.shuffle}"
+        updateUndoBadge()
+        updateHintBadge()
+    }
+
+    private fun updateTrucksUI(engine: LevelOneEngine) {
         if (engine.isBagMechanismEnabled) {
             if (engine.isBossLevel && engine.currentBossType == 1) {
                 binding.llBoxes.visibility = View.GONE
@@ -197,410 +318,179 @@ class LevelOneFragment : Fragment() {
                 val slots = engine.getBoxSlots()
                 binding.truckContainerB.visibility = if (slots.size >= 2) View.VISIBLE else View.INVISIBLE
                 binding.truckContainerA.visibility = if (slots.size >= 1) View.VISIBLE else View.INVISIBLE
-                binding.truckContainerA.updateLayoutParams<LinearLayout.LayoutParams> { width = 0; weight = 1f; marginEnd = (4 * density).toInt() }
-                binding.imgTruckA.scaleX = 1.0f; binding.imgTruckA.scaleY = 1.0f
-                binding.tvBoxAFruit.textSize = 32f
-                binding.tvBoxAInfo.textSize = 12f
+                
                 slots.getOrNull(0)?.let { updateBoxUI(binding.tvBoxAFruit, binding.tvBoxAInfo, binding.tvBoxATurns, it) }
                 slots.getOrNull(1)?.let { updateBoxUI(binding.tvBoxBFruit, binding.tvBoxBInfo, binding.tvBoxBTurns, it) }
             }
-        } else { binding.llBoxes.visibility = View.GONE }
-
-        val isDarkSkin = ColorUtils.calculateLuminance(skinStyle.blockBgColor) < 0.5
-        val blockTextColor = if (isDarkSkin) Color.WHITE else Color.BLACK
-
-        val createBoxContainer: (LevelOneEngine.Box, Int, Int) -> Unit = { box, leftMar, topMar ->
-            val boxContainer = FrameLayout(requireContext()).apply {
-                tag = box.id
-                layoutParams = FrameLayout.LayoutParams(boxWidth, boxHeight).apply { leftMargin = leftMar; topMargin = topMar }
-                setOnClickListener { handleBoxTap(box.id) }
-            }
-            val boxLayout = FrameLayout(requireContext()).apply { layoutParams = FrameLayout.LayoutParams(-1, -1) }
-            val boxBody = LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL; gravity = Gravity.BOTTOM
-                background = SkinManager.makeBoxBodyDrawable(skinStyle, density)
-                setPadding((8 * density).toInt(), (2 * density).toInt(), (8 * density).toInt(), (16 * density).toInt())
-                layoutParams = FrameLayout.LayoutParams(-1, -1)
-            }
-            val pending = pendingIncomingMap[box.id] ?: 0
-            val visibleCount = (box.blocks.size - pending).coerceAtLeast(0)
-            for (bIdx in 0 until visibleCount) {
-                val fruit = box.blocks[bIdx]
-                val isHidden = bIdx < box.hiddenLayers && !(engine.isBossLevel && engine.currentBossType == 4 && engine.selectedBoxIndex == box.id && bIdx == box.blocks.size - 1)
-                
-                val emojiText = if (isHidden) "?" else SkinManager.getIconForColor(fruit, requireContext())
-
-                val blockView = FrameLayout(requireContext()).apply {
-                    layoutParams = LinearLayout.LayoutParams(-1, blockHeight).apply {
-                        setMargins(2, -(blockHeight * 0.15).toInt(), 2, 0)
-                    }
-                }
-
-                if (isHidden) {
-                    blockView.background = GradientDrawable().apply { setColor(0xCC333333.toInt()); cornerRadius = 6 * density }
-                    blockView.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = "?"; textSize = 16f; setTextColor(Color.WHITE); setShadowLayer(2f, 1f, 1f, 0x88000000.toInt()) })
-                } else {
-                    blockView.background = SkinManager.makeBlockDrawable(skinStyle, density)
-                    
-                    when (skinStyle.themeType) {
-                        SkinManager.ThemeType.CLASSIC -> {
-                            if (skinStyle.isWood) {
-                                val stickerSize = (blockHeight * 0.72f).toInt()
-                                val stickerFrame = FrameLayout(requireContext()).apply {
-                                    layoutParams = FrameLayout.LayoutParams(stickerSize, stickerSize).apply { gravity = Gravity.CENTER }
-                                    background = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = 3 * density; setStroke((0.8f * density).toInt(), Color.parseColor("#BCAAA4")) }
-                                    elevation = 2 * density
-                                    rotation = ((bIdx + box.id) % 5 - 2) * 2.5f
-                                }
-                                stickerFrame.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 14f; setShadowLayer(1f, 0.5f, 0.5f, 0x44000000) })
-                                blockView.addView(stickerFrame)
-                            } else {
-                                blockView.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 16f; setTextColor(blockTextColor); setShadowLayer(2f, 1f, 1f, 0x88000000.toInt()) })
-                            }
-                        }
-                        SkinManager.ThemeType.TECHNOLOGY -> {
-                            val screenFrame = FrameLayout(requireContext()).apply {
-                                layoutParams = FrameLayout.LayoutParams(-1, -1).apply { setMargins((4*density).toInt(), (4*density).toInt(), (4*density).toInt(), (4*density).toInt()) }
-                                background = GradientDrawable().apply { setColor(0xFF000000.toInt()); cornerRadius = 2 * density; setStroke((1 * density).toInt(), skinStyle.blockStrokeColor) }
-                            }
-                            screenFrame.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 14f; setShadowLayer(6f, 0f, 0f, skinStyle.blockStrokeColor) })
-                            blockView.addView(screenFrame)
-                        }
-                        SkinManager.ThemeType.DREAM -> {
-                            val bubble = FrameLayout(requireContext()).apply {
-                                layoutParams = FrameLayout.LayoutParams(-1, -1).apply { setMargins((2*density).toInt(), (2*density).toInt(), (2*density).toInt(), (2*density).toInt()) }
-                                background = GradientDrawable().apply { 
-                                    shape = GradientDrawable.OVAL
-                                    setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(skinStyle.blockBgColor, 150))
-                                    setStroke((1*density).toInt(), Color.WHITE) 
-                                }
-                            }
-                            bubble.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 16f; setShadowLayer(4f, 0f, 0f, Color.WHITE) })
-                            blockView.addView(bubble)
-                        }
-                        SkinManager.ThemeType.SPACE -> {
-                            val capsule = FrameLayout(requireContext()).apply {
-                                layoutParams = FrameLayout.LayoutParams(-1, -1).apply { setMargins((6*density).toInt(), (2*density).toInt(), (6*density).toInt(), (2*density).toInt()) }
-                                background = GradientDrawable().apply { setColor(0x88000000.toInt()); cornerRadius = 12 * density; setStroke((1*density).toInt(), skinStyle.blockStrokeColor) }
-                            }
-                            capsule.addView(TextView(requireContext()).apply { gravity = Gravity.CENTER; text = emojiText; textSize = 15f; setShadowLayer(4f, 0f, 0f, skinStyle.blockStrokeColor) })
-                            blockView.addView(capsule)
-                        }
-                    }
-                }
-                boxBody.addView(blockView, 0)
-            }
-            boxLayout.addView(boxBody)
-
-            if (box.hasCobweb) boxLayout.addView(TextView(requireContext()).apply { text = "🕸️"; textSize = 36f; gravity = Gravity.CENTER; translationZ = 10f; layoutParams = FrameLayout.LayoutParams(-1, -1) })
-            if (box.isFrozen) boxLayout.addView(FrameLayout(requireContext()).apply { background = GradientDrawable().apply { setColor(0x7780D8FF.toInt()); cornerRadius = 8 * density; setStroke((2 * density).toInt(), Color.WHITE) }; translationZ = 15f; layoutParams = FrameLayout.LayoutParams(-1, -1); addView(TextView(requireContext()).apply { text = "❄️"; textSize = 24f; gravity = Gravity.CENTER }) })
-            if (box.isLockedByChain) boxLayout.addView(TextView(requireContext()).apply { text = "⛓️"; textSize = 32f; gravity = Gravity.CENTER; translationZ = 20f; layoutParams = FrameLayout.LayoutParams(-1, -1) })
-            boxContainer.addView(boxLayout); binding.glGameBoard.addView(boxContainer)
-        }
-
-        if (engine.isBossLevel && engine.currentBossType == 1) {
-            val sw = resources.displayMetrics.widthPixels.toFloat()
-            val availableWidth = sw - 24 * density
-            val center_x = availableWidth / 2f
-            val center_y = center_x * 1.3f // Giãn khoảng cách dọc
-            val rx = center_x - boxWidth / 2f - 4 * density
-            val ry = center_y - boxHeight / 2f + 16 * density // Mở rộng bán kính dọc thêm chút
-            
-            val megaSlot = engine.getBoxSlots().getOrNull(0)
-            if (megaSlot != null) {
-                val megaWidth = (boxWidth * 2.5f).toInt()
-                val megaHeight = (boxWidth * 2.5f).toInt()
-                val megaContainer = FrameLayout(requireContext()).apply {
-                    tag = "mega_container"
-                    layoutParams = FrameLayout.LayoutParams(megaWidth, megaHeight).apply {
-                        leftMargin = (center_x - megaWidth / 2f + 12 * density).toInt()
-                        topMargin = (center_y - megaHeight / 2f).toInt()
-                    }
-                }
-                val megaBody = LinearLayout(requireContext()).apply {
-                    orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-                    val themeColor = SkinManager.getSelectedStyle(requireContext()).blockBgColor
-                    background = GradientDrawable().apply { setColor(themeColor); cornerRadius = 16 * density; setStroke((2 * density).toInt(), Color.WHITE) }
-                    layoutParams = FrameLayout.LayoutParams(-1, -1)
-                }
-                val megaEmoji = if (megaSlot != null) SkinManager.getIconForColor(megaSlot.targetColor, requireContext()) else ""
-                megaBody.addView(TextView(requireContext()).apply { text = megaEmoji; textSize = 64f; gravity = Gravity.CENTER; setShadowLayer(10f, 0f, 0f, Color.argb(100,0,0,0)) })
-                megaBody.addView(TextView(requireContext()).apply { text = "${megaSlot.filled} / ${megaSlot.capacity}"; textSize = 28f; setTextColor(Color.WHITE); setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setShadowLayer(8f, 2f, 2f, Color.BLACK) })
-                megaBody.addView(TextView(requireContext()).apply { text = "⏳ ${megaSlot.turnsLeft}"; textSize = 20f; setTextColor(Color.YELLOW); setTypeface(null, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER; setShadowLayer(8f, 2f, 2f, Color.BLACK) })
-                megaContainer.addView(megaBody)
-                binding.glGameBoard.addView(megaContainer)
-            }
-            boxes.forEachIndexed { index, box ->
-                val angle = index.toDouble() * 2.0 * Math.PI / boxes.size
-                var x = center_x + rx * Math.cos(angle)
-                var y = center_y + ry * Math.sin(angle)
-                createBoxContainer(box, (x - boxWidth / 2f + 12 * density).toInt(), (y - boxHeight / 2f).toInt())
-            }
         } else {
-            var currentIdx = 0
-            var r = 0
-            
-            var tempIdx = 0
-            var totalRows = 0
-            while (tempIdx < boxes.size) {
-                val rowC = if (totalRows % 2 == 0) cols else (cols - 1)
-                tempIdx += rowC
-                totalRows++
-            }
-            
-            val boardHeight = binding.glGameBoard.height
-            val gridHeight = totalRows * stepY - (12 * density).toInt()
-            val startY = if (boardHeight > gridHeight + firstRowTopPad) {
-                firstRowTopPad + (boardHeight - gridHeight) / 3 
-            } else {
-                firstRowTopPad
-            }
-
-            while (currentIdx < boxes.size) {
-                val isEvenRow = (r % 2 == 0)
-                val rowCols = if (isEvenRow) cols else (cols - 1)
-                val offsetX = if (isEvenRow) 0 else ((boxWidth + horizontalGap) / 2)
-                for (c in 0 until rowCols) {
-                    if (currentIdx >= boxes.size) break
-                    val box = boxes[currentIdx++]
-                    val x = (12 * density).toInt() + offsetX + (c * (boxWidth + horizontalGap))
-                    val y = startY + r * stepY
-                    createBoxContainer(box, x, y)
-                }
-                r++
-            }
+            binding.llBoxes.visibility = View.GONE
         }
-        updateStatusUI()
     }
 
-    private fun handleBoxTap(index: Int) {
-        if (engine.isGameOver || animatingBoxes.contains(index)) return
-        val clickedBox = engine.getBoxes().find { it.id == index } ?: return
-        if (isMagnifyMode) { if (clickedBox.hiddenLayers > 0) { powerupMagnify--; engine.revealHiddenLayers(index); soundManager?.play("complete") }; isMagnifyMode = false; updatePowerupButtons(); renderBoard(); return }
-        
-        // --- LOGIC MEGA TRUCK DIRECT POUR ---
+    private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) {
+        tvFruit.text = SkinManager.getIconForColor(box.targetColor, requireContext())
+        tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity)
+        tvTurns.text = "${box.turnsLeft}"
+    }
+
+    private fun updateStatusUI(engine: LevelOneEngine) {
         if (engine.isBossLevel && engine.currentBossType == 1) {
-            val truck = engine.getBoxSlots().getOrNull(0)
-            if (truck != null && !clickedBox.isEmpty() && clickedBox.peekColor() == truck.targetColor && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.hasCobweb) {
-                animatePourToTruck(index)
-                return
-            }
-        }
-
-        val selectedIdx = engine.selectedBoxIndex
-        if (selectedIdx == null) {
-            // Sửa lỗi: Gọi clearCobweb để tốn lượt đi
-            if (clickedBox.hasCobweb) { 
-                if (engine.clearCobweb(index)) {
-                    soundManager?.play("drop")
-                    renderBoard()
-                    checkGameResults()
-                }
-                return 
-            }
-            if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.isLockedByChain && !clickedBox.isComplete() && ((clickedBox.blocks.size - 1) >= clickedBox.hiddenLayers || (engine.isBossLevel && engine.currentBossType == 4))) { 
-                engine.selectedBoxIndex = index
-                animateSelection(binding.glGameBoard.findViewWithTag(index), true)
-                if (engine.isBossLevel && engine.currentBossType == 4) renderBoard()
-            }
-        } else if (selectedIdx == index) { 
-            engine.selectedBoxIndex = null
-            animateSelection(binding.glGameBoard.findViewWithTag(index), false)
-            if (engine.isBossLevel && engine.currentBossType == 4) renderBoard()
-        }
-        else { 
-            val srcBox = engine.getBoxes().find { it.id == selectedIdx }!!
-            if (engine.canMove(srcBox, clickedBox)) {
-                animateMoveSequence(selectedIdx, index) 
-            } else { 
-                animateSelection(binding.glGameBoard.findViewWithTag(selectedIdx), false)
-                if (!clickedBox.isEmpty() && !clickedBox.isFrozen && !clickedBox.hasCobweb && !clickedBox.isLockedByChain && !clickedBox.isComplete() && ((clickedBox.blocks.size - 1) >= clickedBox.hiddenLayers || (engine.isBossLevel && engine.currentBossType == 4))) { 
-                    engine.selectedBoxIndex = index
-                    animateSelection(binding.glGameBoard.findViewWithTag(index), true) 
-                } else {
-                    engine.selectedBoxIndex = null 
-                }
-                if (engine.isBossLevel && engine.currentBossType == 4) renderBoard()
-            } 
-        }
-    }
-
-    private fun animatePourToTruck(srcId: Int) {
-        activeAnimationsCount++; animatingBoxes.add(srcId)
-        val srcView = binding.glGameBoard.findViewWithTag<ViewGroup>(srcId)
-        val srcBody = (srcView?.getChildAt(0) as? ViewGroup)?.getChildAt(0) as? ViewGroup
-        if (srcBody == null) { activeAnimationsCount--; return }
-        
-        val count = engine.pourFruitsToTruck(srcId)
-        if (count == 0) { activeAnimationsCount--; animatingBoxes.remove(srcId); return }
-        
-        val movingViews = mutableListOf<View>()
-        for (i in 0 until count) movingViews.add(srcBody.getChildAt(i))
-        
-        val rootLoc = IntArray(2); binding.root.getLocationOnScreen(rootLoc)
-        val moveAnimators = mutableListOf<Animator>(); val density = resources.displayMetrics.density
-        
-        val targetX: Float
-        val targetY: Float
-        val targetScale: Float
-        val megaContainer = binding.glGameBoard.findViewWithTag<View>("mega_container")
-        if (megaContainer != null) {
-            val megaLoc = IntArray(2); megaContainer.getLocationOnScreen(megaLoc)
-            targetX = (megaLoc[0] - rootLoc[0]).toFloat() + (megaContainer.width / 2f)
-            targetY = (megaLoc[1] - rootLoc[1]).toFloat() + (megaContainer.height / 2f)
-            targetScale = 0f 
-            
-            megaContainer.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).withEndAction {
-                soundManager?.play("complete")
-                megaContainer.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
-            }.startDelay = 600
-            
-            val vibrator = requireContext().getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) vibrator?.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-            else vibrator?.vibrate(100)
+            binding.tvPackedProgress.visibility = View.GONE
         } else {
-            val truckLoc = IntArray(2); binding.imgTruckA.getLocationOnScreen(truckLoc)
-            targetX = (truckLoc[0] - rootLoc[0]).toFloat() + (binding.imgTruckA.width / 2f)
-            targetY = (truckLoc[1] - rootLoc[1]).toFloat() + (binding.imgTruckA.height / 2f)
-            targetScale = 0f
+            binding.tvPackedProgress.visibility = View.VISIBLE
+            binding.tvPackedProgress.text = if (engine.isBagMechanismEnabled) 
+                getString(R.string.progress_packed, engine.completedBoxesCount, engine.totalFullBoxesCount) 
+            else 
+                getString(R.string.progress_completed, engine.completedBoxesCount, engine.totalFullBoxesCount)
         }
+    }
 
-        soundManager?.play("move")
-        movingViews.forEachIndexed { i, block ->
-            val blockLoc = IntArray(2); block.getLocationOnScreen(blockLoc)
-            val w = block.width; val h = block.height; (block.parent as ViewGroup).removeView(block); (binding.root as ViewGroup).addView(block, ViewGroup.LayoutParams(w, h))
-            block.x = (blockLoc[0] - rootLoc[0]).toFloat(); block.y = (blockLoc[1] - rootLoc[1]).toFloat()
-            val destX = targetX - (w / 2f)
-            val destY = targetY - (h / 2f)
-            val path = Path().apply { moveTo(block.x, block.y); quadTo((block.x + destX) / 2, (destY) - 200 * density, destX, destY) }
-            moveAnimators.add(ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply { duration = 500 + i * 80L; interpolator = DecelerateInterpolator() })
-            moveAnimators.add(ObjectAnimator.ofFloat(block, View.ALPHA, 1f, 0f).apply { duration = 500 + i * 80L; startDelay = 200L })
-            moveAnimators.add(ObjectAnimator.ofFloat(block, View.SCALE_X, 1f, targetScale).apply { duration = 500 + i * 80L; startDelay = 100L })
-            moveAnimators.add(ObjectAnimator.ofFloat(block, View.SCALE_Y, 1f, targetScale).apply { duration = 500 + i * 80L; startDelay = 100L })
+    private fun checkGameResults(engine: LevelOneEngine) {
+        if (hasShownResult) return
+        if (engine.isGameOver) {
+            hasShownResult = true
+            if (engine.isWin) showWinDialog() else showLoseDialog()
+        } else if (engine.isDeadlocked()) {
+            hasShownResult = true
+            showLoseDialog()
+        }
+    }
+
+    private fun showWinDialog() {
+        soundManager?.playWin()
+        saveProgress()
+        
+        val engine = viewModel.engine.value
+        val stars = engine?.calculateStars() ?: 3
+        
+        // Save star rating
+        GoldManager.setLevelStars(requireContext(), args.levelId, stars)
+        
+        // Calculate gems earned
+        var gemsEarned = 0
+        if (stars >= 3) gemsEarned += GoldManager.GEM_REWARD_3_STARS
+        if (engine?.isBossLevel == true) gemsEarned += GoldManager.GEM_REWARD_BOSS
+        if (gemsEarned > 0) GoldManager.addGems(requireContext(), gemsEarned)
+        
+        // Update star display
+        binding.layoutWinDialog.tvWinStars.text = when (stars) {
+            3 -> getString(R.string.star_rating_3)
+            2 -> getString(R.string.star_rating_2)
+            else -> getString(R.string.star_rating_1)
         }
         
-        AnimatorSet().apply {
-            playTogether(moveAnimators)
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    movingViews.forEach { (binding.root as ViewGroup).removeView(it) }
-                    animatingBoxes.remove(srcId); activeAnimationsCount--
-                    renderBoard(); checkGameResults()
+        // Show gems earned
+        if (gemsEarned > 0) {
+            binding.layoutWinDialog.tvWinGems.visibility = View.VISIBLE
+            binding.layoutWinDialog.tvWinGems.text = getString(R.string.gems_earned, gemsEarned)
+        } else {
+            binding.layoutWinDialog.tvWinGems.visibility = View.GONE
+        }
+        
+        binding.layoutWinDialog.root.visibility = View.VISIBLE
+        binding.layoutWinDialog.btnWinContinue.setOnClickListener {
+            GoldManager.addGold(requireContext(), 50)
+            navigateToNextLevel()
+        }
+        binding.layoutWinDialog.btnWinWatchX3.setOnClickListener {
+            binding.layoutWinDialog.btnWinWatchX3.isEnabled = false
+            binding.layoutWinDialog.pbWinLoading.visibility = View.VISIBLE
+            binding.layoutWinDialog.tvWinWatching.visibility = View.VISIBLE
+            AdManager.showRewardedAd(
+                activity = requireActivity(),
+                onRewarded = {
+                    if (_binding == null) return@showRewardedAd
+                    GoldManager.addGold(requireContext(), 150)
+                    binding.layoutWinDialog.pbWinLoading.visibility = View.GONE
+                    binding.layoutWinDialog.tvWinWatching.visibility = View.GONE
+                    navigateToNextLevel()
+                },
+                onFailed = {
+                    if (_binding == null) return@showRewardedAd
+                    binding.layoutWinDialog.btnWinWatchX3.isEnabled = true
+                    binding.layoutWinDialog.pbWinLoading.visibility = View.GONE
+                    binding.layoutWinDialog.tvWinWatching.visibility = View.GONE
                 }
-            })
-            start()
+            )
         }
     }
 
-    private fun animateSelection(boxView: View?, isSelected: Boolean) {
-        val d = resources.displayMetrics.density
-        boxView?.animate()
-            ?.translationZ(if (isSelected) 20 * d else 0f)
-            ?.translationY(if (isSelected) -10 * d else 0f)
-            ?.scaleX(if (isSelected) 1.05f else 1.0f)
-            ?.scaleY(if (isSelected) 1.05f else 1.0f)
-            ?.setDuration(200)
-            ?.start()
-        if (boxView is ViewGroup) {
-            val existingGlow = boxView.findViewWithTag<View>("glow")
-            if (isSelected && existingGlow == null) {
-                val glow = View(requireContext()).apply {
-                    tag = "glow"
-                    layoutParams = FrameLayout.LayoutParams(-1, -1)
-                    background = GradientDrawable().apply { setColor(Color.TRANSPARENT); cornerRadius = 10 * d; setStroke((3 * d).toInt(), Color.parseColor("#FFEB3B")) }
-                    translationZ = 25 * d
-                    alpha = 0f
-                }
-                boxView.addView(glow)
-                glow.animate().alpha(1f).setDuration(200).start()
-            } else if (!isSelected && existingGlow != null) {
-                existingGlow.animate().alpha(0f).setDuration(150).withEndAction { (existingGlow.parent as? ViewGroup)?.removeView(existingGlow) }.start()
-            }
+    private fun saveProgress() {
+        val prefs = requireContext().getSharedPreferences("game_prefs", 0)
+        val current = prefs.getInt("highest_level", 1)
+        val nextLevel = args.levelId + 1
+        if (nextLevel > current) {
+            prefs.edit().putInt("highest_level", nextLevel).apply()
         }
     }
 
-    private fun animateMoveSequence(srcId: Int, dstId: Int) {
-        activeAnimationsCount++; animatingBoxes.add(srcId); animatingBoxes.add(dstId); engine.selectedBoxIndex = null
-        val srcView = binding.glGameBoard.findViewWithTag<ViewGroup>(srcId); val dstView = binding.glGameBoard.findViewWithTag<ViewGroup>(dstId)
-        val srcBody = (srcView?.getChildAt(0) as? ViewGroup)?.getChildAt(0) as? ViewGroup
-        if (srcBody == null || dstView == null) { activeAnimationsCount--; renderBoard(); return }
-        val srcBox = engine.getBoxes().find { it.id == srcId }!!; val dstBox = engine.getBoxes().find { it.id == dstId }!!
-        val movingViews = mutableListOf<View>(); val color = srcBox.peekColor()
-        for (i in 0 until srcBody.childCount) {
-            val idx = srcBox.blocks.size - 1 - i
-            if (idx >= srcBox.hiddenLayers && srcBox.blocks[idx] == color && (dstBox.blocks.size + movingViews.size) < 4) movingViews.add(srcBody.getChildAt(i)) else break
-        }
-        if (movingViews.isEmpty()) { activeAnimationsCount--; return }
-        pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) + movingViews.size; engine.executeMove(srcBox, dstBox)
-        val rootLoc = IntArray(2); binding.root.getLocationOnScreen(rootLoc)
-        val dstLoc = IntArray(2); dstView.getLocationOnScreen(dstLoc)
-        val moveAnimators = mutableListOf<Animator>(); val density = resources.displayMetrics.density
-        movingViews.forEachIndexed { i, block ->
-            val blockLoc = IntArray(2); block.getLocationOnScreen(blockLoc)
-            val w = block.width; val h = block.height; (block.parent as ViewGroup).removeView(block); (binding.root as ViewGroup).addView(block, ViewGroup.LayoutParams(w, h))
-            block.x = (blockLoc[0] - rootLoc[0]).toFloat(); block.y = (blockLoc[1] - rootLoc[1]).toFloat()
-            val targetX = (dstLoc[0] - rootLoc[0]).toFloat() + (dstView.width - w) / 2f
-            val targetY = (dstLoc[1] - rootLoc[1]).toFloat() + dstView.height - (20 * density) - (dstBox.blocks.size - movingViews.size + (movingViews.size - 1 - i) + 1) * h
-            val path = Path().apply { moveTo(block.x, block.y); quadTo((block.x + targetX) / 2, (dstLoc[1] - rootLoc[1]).toFloat() - 150 * density, targetX, targetY) }
-            moveAnimators.add(ObjectAnimator.ofFloat(block, View.X, View.Y, path).apply { duration = 400 + i * 50L; interpolator = AnticipateOvershootInterpolator(0.8f) })
-        }
-        AnimatorSet().apply { playTogether(moveAnimators); addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(animation: Animator) { movingViews.forEach { (binding.root as ViewGroup).removeView(it) }; pendingIncomingMap[dstId] = (pendingIncomingMap[dstId] ?: 0) - movingViews.size; finalizeMove(srcId, dstId) } }); start() }
+    private fun navigateToNextLevel() {
+        findNavController().navigate(
+            R.id.action_LevelOneFragment_self,
+            Bundle().apply { putInt("levelId", args.levelId + 1) }
+        )
     }
 
-    private fun finalizeMove(srcId: Int, dstId: Int) {
-        val box = engine.getBoxes().find { it.id == dstId }!!
-        if (box.blocks.size == 4 && box.blocks.distinct().size == 1 && (pendingIncomingMap[dstId] ?: 0) == 0) { renderBoard(); playCompletionAnimation(binding.glGameBoard.findViewWithTag(dstId), dstId, srcId) }
-        else { engine.archiveAllReady(); animatingBoxes.remove(srcId); animatingBoxes.remove(dstId); activeAnimationsCount--; renderBoard(); checkGameResults() }
+    private fun showLoseDialog() {
+        soundManager?.playLose()
+        binding.layoutLoseDialog.root.visibility = View.VISIBLE
+        binding.layoutLoseDialog.btnLoseRetry.setOnClickListener {
+            hasShownResult = false
+            binding.layoutLoseDialog.root.visibility = View.GONE
+            viewModel.resetLevel(requireContext())
+        }
+        binding.layoutLoseDialog.btnLoseBack.setOnClickListener { findNavController().popBackStack() }
     }
 
-    private fun playCompletionAnimation(view: View, boxId: Int, srcBoxId: Int) {
-        view.post { spawnParticles(view) }
-        view.animate().scaleX(1.2f).scaleY(1.2f).setDuration(350).withEndAction {
-            view.animate().scaleX(1f).scaleY(1f).setDuration(150).withEndAction {
-                val box = engine.getBoxes().find { it.id == boxId }; val color = box?.blocks?.firstOrNull()
-                val bag = engine.getBoxSlots().find { it.targetColor == color && it.remaining() > 0 }
-                val truckView = if (bag != null && bag.filled + 1 >= bag.capacity) (if (engine.getBoxSlots().indexOf(bag) == 0) binding.truckContainerA else binding.truckContainerB) else null
-                engine.archiveBox(boxId); engine.archiveAllReady(); animatingBoxes.remove(srcBoxId); animatingBoxes.remove(boxId)
-                if (truckView != null && truckView.visibility == View.VISIBLE) animateTruckCompletion(truckView) { activeAnimationsCount--; renderBoard(); checkGameResults() }
-                else { activeAnimationsCount--; renderBoard(); checkGameResults() }
-            }.start()
+    private fun showSettings(show: Boolean) {
+        binding.layoutSettings.root.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+    private fun changeLanguage(langCode: String) {
+        if (langCode == LanguageManager.getSavedLanguage(requireContext())) return
+        LanguageManager.setLocale(requireContext(), langCode)
+        activity?.recreate()
+    }
+
+    private fun loadBannerAd() {
+        if (GoldManager.isVip(requireContext())) {
+            binding.adContainer.visibility = View.GONE
+            return
+        }
+        val adView = AdView(requireContext()).apply { 
+            setAdSize(AdSize.BANNER)
+            adUnitId = "ca-app-pub-3940256099942544/6300978111" 
+        }
+        binding.adContainer.addView(adView)
+        adView.loadAd(AdRequest.Builder().build())
+    }
+
+    private fun setupTruckIdleAnimations() {
+        ObjectAnimator.ofFloat(binding.imgTruckA, View.TRANSLATION_Y, 0f, 6f, 0f).apply {
+            duration = 2000; repeatCount = -1; repeatMode = ValueAnimator.REVERSE
+            runningAnimators.add(this)
+        }.start()
+        ObjectAnimator.ofFloat(binding.imgTruckB, View.TRANSLATION_Y, 0f, 6f, 0f).apply {
+            duration = 2200; repeatCount = -1; repeatMode = ValueAnimator.REVERSE
+            runningAnimators.add(this)
         }.start()
     }
 
-    private fun spawnParticles(anchor: View) {
-        val root = binding.root as? ViewGroup ?: return
-        val anchorLoc = IntArray(2); anchor.getLocationOnScreen(anchorLoc)
-        val rootLoc = IntArray(2); root.getLocationOnScreen(rootLoc)
-        val cx = (anchorLoc[0] - rootLoc[0]).toFloat() + anchor.width / 2f
-        val cy = (anchorLoc[1] - rootLoc[1]).toFloat() + anchor.height / 2f
-        if (cx <= 0f && cy <= 0f) return 
-        val colors = intArrayOf(Color.parseColor("#FFD54F"), Color.parseColor("#FF7043"), Color.parseColor("#66BB6A"), Color.parseColor("#42A5F5"), Color.parseColor("#AB47BC"), Color.parseColor("#EF5350"))
-        val d = resources.displayMetrics.density
-        repeat(8) { i ->
-            val size = ((6 + Random.nextInt(6)) * d).toInt()
-            val p = View(requireContext()).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(colors[i % colors.size]) }; alpha = 1f }
-            root.addView(p, ViewGroup.LayoutParams(size, size))
-            p.x = cx - size / 2f; p.y = cy - size / 2f
-            val angle = (i * 45.0) + Random.nextInt(20); val dist = (60 + Random.nextInt(80)) * d
-            p.animate().translationXBy((dist * Math.cos(Math.toRadians(angle))).toFloat()).translationYBy((dist * Math.sin(Math.toRadians(angle))).toFloat()).alpha(0f).scaleX(0.3f).scaleY(0.3f).setDuration(600L).withEndAction { root.removeView(p) }.start()
-        }
-    }
-
-    private fun animateTruckCompletion(truckView: View, onEnd: () -> Unit) {
-        val screenWidth = resources.displayMetrics.widthPixels.toFloat()
-        ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, 0f, screenWidth).apply { duration = 700; interpolator = AnticipateOvershootInterpolator(); addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(animation: Animator) { truckView.translationX = -screenWidth; onEnd(); ObjectAnimator.ofFloat(truckView, View.TRANSLATION_X, -screenWidth, 0f).apply { duration = 800; interpolator = OvershootInterpolator(); start() } } }); start() }
-    }
-
-    private fun checkGameResults() { if (engine.isWin) showWinDialog() else if (engine.isGameOver || engine.isDeadlocked()) showLoseDialog() }
-    private fun showWinDialog() { soundManager?.playWin(); isWinDialogShowing = true; binding.layoutWinDialog.root.visibility = View.VISIBLE; binding.layoutWinDialog.btnWinContinue.setOnClickListener { GoldManager.addGold(requireContext(), if (engine.isBossLevel) 150 else 50); navigateToNextLevel() } }
-    private fun showLoseDialog() { soundManager?.playLose() ; isLoseDialogShowing = true; binding.layoutLoseDialog.root.visibility = View.VISIBLE; binding.layoutLoseDialog.btnLoseRetry.setOnClickListener { activity?.recreate() }; binding.layoutLoseDialog.btnLoseBack.setOnClickListener { findNavController().popBackStack() } }
-    private fun navigateToNextLevel() { findNavController().navigate(R.id.action_LevelOneFragment_self, Bundle().apply { putInt("levelId", args.levelId + 1) }) }
-    private fun updateStatusUI() { if (engine.isBossLevel && engine.currentBossType == 1) { binding.tvPackedProgress.visibility = View.GONE } else { binding.tvPackedProgress.visibility = View.VISIBLE; binding.tvPackedProgress.text = if (engine.isBagMechanismEnabled) getString(R.string.progress_packed, engine.completedBoxesCount, engine.totalFullBoxesCount) else getString(R.string.progress_completed, engine.completedBoxesCount, engine.totalFullBoxesCount); binding.tvPackedProgress.setTextColor(Color.parseColor("#5D4037")); binding.tvPackedProgress.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT) } }
-    private fun updateBoxUI(tvFruit: TextView, tvInfo: TextView, tvTurns: TextView, box: LevelOneEngine.BoxSlot) { tvFruit.text = SkinManager.getIconForColor(box.targetColor, requireContext()); tvInfo.text = getString(R.string.bag_numeric_format, box.filled, box.capacity); tvTurns.text = "${box.turnsLeft}" }
-    private fun loadBannerAd() { if (GoldManager.isVip(requireContext())) { binding.adContainer.visibility = View.GONE; return }; val adView = AdView(requireContext()).apply { setAdSize(AdSize.BANNER); adUnitId = "ca-app-pub-3940256099942544/6300978111" }; binding.adContainer.addView(adView); adView.loadAd(AdRequest.Builder().build()) }
-    private fun setupTruckIdleAnimations() { val bA = ObjectAnimator.ofFloat(binding.imgTruckA, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2000; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; val bB = ObjectAnimator.ofFloat(binding.imgTruckB, View.TRANSLATION_Y, 0f, 6f, 0f).apply { duration = 2200; repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE }; bA.start(); bB.start() }
     private fun playBackgroundMusic() { GlobalMusicPlayer.playIfEnabled(requireContext(), R.raw.nhacnen) }
-    override fun onResume() { super.onResume(); GlobalMusicPlayer.resumeIfEnabled(requireContext()) }
+    override fun onResume() { 
+        super.onResume()
+        GlobalMusicPlayer.resumeIfEnabled(requireContext())
+        binding.gameBoardView.setSkinStyle(SkinManager.getSelectedStyle(requireContext()))
+        updateGoldDisplay()
+        viewModel.refreshPowerupCounts(requireContext())
+    }
     override fun onPause() { super.onPause(); GlobalMusicPlayer.pause() }
-    override fun onDestroyView() { super.onDestroyView(); _binding = null }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        runningAnimators.forEach { it.cancel() }
+        runningAnimators.clear()
+        soundManager?.release()
+        soundManager = null
+        _binding = null
+    }
 }

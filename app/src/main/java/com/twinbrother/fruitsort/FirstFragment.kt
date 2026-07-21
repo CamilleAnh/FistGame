@@ -17,6 +17,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.constraintlayout.widget.ConstraintLayout
 import android.widget.Toast
+import com.twinbrother.fruitsort.BuildConfig
 
 class FirstFragment : Fragment() {
 
@@ -46,18 +47,19 @@ class FirstFragment : Fragment() {
             findNavController().navigate(R.id.action_FirstFragment_to_PrivacyPolicyFragment)
         }
 
-        // Test Buttons Logic
-        binding.btnTestGold.setOnClickListener {
-            GoldManager.addGold(requireContext(), 99999)
-            updateGoldDisplay()
-            Toast.makeText(context, "Added 99999 Gold!", Toast.LENGTH_SHORT).show()
-        }
-
-        binding.btnTestUnlock.setOnClickListener {
-            requireContext().getSharedPreferences("game_prefs", 0).edit {
-                putInt("highest_level", 100)
+        binding.llTestButtons.visibility = if (BuildConfig.DEBUG) View.VISIBLE else View.GONE
+        if (BuildConfig.DEBUG) {
+            binding.btnTestGold.setOnClickListener {
+                GoldManager.addGold(requireContext(), 99999)
+                updateGoldDisplay()
+                Toast.makeText(context, "Added 99999 Gold!", Toast.LENGTH_SHORT).show()
             }
-            Toast.makeText(context, "All Levels Unlocked!", Toast.LENGTH_SHORT).show()
+            binding.btnTestUnlock.setOnClickListener {
+                requireContext().getSharedPreferences("game_prefs", 0).edit {
+                    putInt("highest_level", 100)
+                }
+                Toast.makeText(context, "All Levels Unlocked!", Toast.LENGTH_SHORT).show()
+            }
         }
 
         setupSettings()
@@ -74,7 +76,9 @@ class FirstFragment : Fragment() {
 
     private fun updateGoldDisplay() {
         val gold = GoldManager.getGold(requireContext())
-        binding.tvHomeGold.text = getString(R.string.gold_display_format, gold)
+        binding.tvHomeGold.text = "%,d".format(gold)
+        val gems = GoldManager.getGems(requireContext())
+        binding.tvHomeGems.text = "%,d".format(gems)
     }
 
     private fun startBgMusic() {
@@ -129,7 +133,8 @@ class FirstFragment : Fragment() {
             settingsBinding.switchMusic.isChecked = true
             settingsBinding.switchSound.isChecked = true
             settingsBinding.switchVibration.isChecked = true
-            changeLanguage("en")
+            LanguageManager.setLocale(requireContext(), "en")
+            activity?.recreate()
         }
     }
 

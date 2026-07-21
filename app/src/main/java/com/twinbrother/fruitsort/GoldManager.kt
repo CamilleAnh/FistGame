@@ -17,9 +17,11 @@ object GoldManager {
     private const val SALT = "fruitsort_2026"
 
     // Power-up inventory keys
-    private const val KEY_PU_REROLL = "pu_reroll"
-    private const val KEY_PU_REVEAL = "pu_reveal"
+    private const val KEY_PU_REROLL  = "pu_reroll"
+    private const val KEY_PU_REVEAL  = "pu_reveal"
     private const val KEY_PU_SHUFFLE = "pu_shuffle"
+    private const val KEY_PU_UNDO    = "pu_undo"
+    private const val KEY_PU_HINT    = "pu_hint"
 
     // Daily & Ads
     private const val KEY_LAST_DAILY_CLAIM = "last_daily_claim"
@@ -30,6 +32,8 @@ object GoldManager {
     const val PRICE_REROLL = 100
     const val PRICE_REVEAL = 150
     const val PRICE_SHUFFLE = 200
+    const val PRICE_UNDO    = 150
+    const val PRICE_HINT    = 200
 
     // Vàng thưởng
     const val REWARD_BASE = 50
@@ -107,11 +111,13 @@ object GoldManager {
 
     fun claimDaily(context: Context): Int {
         if (!canClaimDaily(context)) return 0
-        val reward = 100 // Có thể làm logic tăng dần theo ngày sau
-        addGold(context, reward)
+        val rewardGold = 200
+        val rewardGems = 3
+        addGold(context, rewardGold)
+        addGems(context, rewardGems)
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putLong(KEY_LAST_DAILY_CLAIM, System.currentTimeMillis()).apply()
-        return reward
+        return rewardGold
     }
 
     fun getAdsWatchedToday(context: Context): Int {
@@ -167,14 +173,24 @@ object GoldManager {
     fun getShuffleCount(context: Context): Int =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_PU_SHUFFLE, 0)
 
+    fun getUndoCount(context: Context): Int =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_PU_UNDO, 0)
+
+    fun getHintCount(context: Context): Int =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_PU_HINT, 0)
+
     fun addReroll(context: Context, amount: Int = 1) = addPowerup(context, KEY_PU_REROLL, amount)
     fun addReveal(context: Context, amount: Int = 1) = addPowerup(context, KEY_PU_REVEAL, amount)
     fun addShuffle(context: Context, amount: Int = 1) = addPowerup(context, KEY_PU_SHUFFLE, amount)
+    fun addUndo(context: Context, amount: Int = 1) = addPowerup(context, KEY_PU_UNDO, amount)
+    fun addHint(context: Context, amount: Int = 1) = addPowerup(context, KEY_PU_HINT, amount)
 
-    /** Trừ 1 reroll, return true nếu còn hàng */
+    /** Trừ 1 powerup, return true nếu còn hàng */
     fun useReroll(context: Context): Boolean = usePowerup(context, KEY_PU_REROLL)
     fun useReveal(context: Context): Boolean = usePowerup(context, KEY_PU_REVEAL)
     fun useShuffle(context: Context): Boolean = usePowerup(context, KEY_PU_SHUFFLE)
+    fun useUndo(context: Context): Boolean = usePowerup(context, KEY_PU_UNDO)
+    fun useHint(context: Context): Boolean = usePowerup(context, KEY_PU_HINT)
 
     private fun addPowerup(context: Context, key: String, amount: Int) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -208,4 +224,67 @@ object GoldManager {
         addShuffle(context)
         return true
     }
+
+    fun buyUndo(context: Context): Boolean {
+        if (!spendGold(context, PRICE_UNDO)) return false
+        addUndo(context)
+        return true
+    }
+
+    fun buyHint(context: Context): Boolean {
+        if (!spendGold(context, PRICE_HINT)) return false
+        addHint(context)
+        return true
+    }
+
+    /** Đổi 500 Gold -> 5 Gems */
+    fun exchangeGoldForGems(context: Context): Boolean {
+        if (!spendGold(context, 500)) return false
+        addGems(context, 5)
+        return true
+    }
+
+    /** Đổi 5 Gems -> 500 Gold */
+    fun exchangeGemsForGold(context: Context): Boolean {
+        if (!spendGems(context, 5)) return false
+        addGold(context, 500)
+        return true
+    }
+
+    // ───── Level Stars ─────
+
+    fun setLevelStars(context: Context, levelId: Int, stars: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val key = "stars_$levelId"
+        val currentStars = prefs.getInt(key, 0)
+        if (stars > currentStars) {
+            prefs.edit().putInt(key, stars).apply()
+        }
+    }
+
+    fun getLevelStars(context: Context, levelId: Int): Int {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt("stars_$levelId", 0)
+    }
+
+    // ───── Gems Spending ─────
+
+    fun spendGems(context: Context, amount: Int): Boolean {
+        val current = getGems(context)
+        if (current < amount) return false
+        val newVal = current - amount
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_GEMS, encode(newVal)).apply()
+        return true
+    }
+
+    // Gem costs
+    const val GEM_COST_UNDO = 1
+    const val GEM_COST_EXTRA_TURNS = 2
+    const val GEM_COST_HINT = 3
+
+    // Gem rewards
+    const val GEM_REWARD_3_STARS = 1
+    const val GEM_REWARD_BOSS = 3
+    const val GEM_REWARD_COMBO_4 = 1
 }

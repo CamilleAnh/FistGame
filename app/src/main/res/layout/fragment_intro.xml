@@ -7,14 +7,24 @@
     android:background="@drawable/hinh_nen"
     tools:context=".IntroFragment">
 
-    <!-- Game Title with Shadow/Outline effect -->
+    <!-- Soft Overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#660F172A" />
+
+    <!-- Game Title with Glassmorphism Card -->
     <LinearLayout
         android:id="@+id/ll_title"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
+        android:layout_marginHorizontal="36dp"
+        android:layout_marginTop="80dp"
         android:gravity="center"
         android:orientation="vertical"
+        android:background="@drawable/ui_glass_card"
+        android:paddingVertical="28dp"
+        android:elevation="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -24,37 +34,35 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:shadowColor="#FF000000"
-            android:shadowDx="4"
+            android:shadowColor="#FF6D00"
+            android:shadowDx="0"
             android:shadowDy="4"
-            android:shadowRadius="8"
+            android:shadowRadius="16"
             android:text="FRUIT SORT"
             android:textColor="#FFFFFF"
-            android:textSize="48sp"
-            android:textStyle="bold" />
+            android:textSize="44sp"
+            android:letterSpacing="0.05" />
 
         <TextView
             android:id="@+id/tv_title_sub"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-condensed-light"
-            android:shadowColor="#FF000000"
-            android:shadowDx="3"
-            android:shadowDy="3"
-            android:shadowRadius="6"
-            android:text="FARM PUZZLE"
-            android:textColor="#FFEB3B"
-            android:textSize="32sp"
-            android:textStyle="bold|italic" />
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif-black"
+            android:text="🌾 FARM PUZZLE 🌾"
+            android:textColor="#FFD54F"
+            android:textSize="16sp"
+            android:letterSpacing="0.15" />
     </LinearLayout>
 
-
-    <!-- Loading Button & ProgressBar at bottom -->
+    <!-- Loading Container -->
     <FrameLayout
         android:id="@+id/fl_loading_container"
-        android:layout_width="280dp"
-        android:layout_height="55dp"
-        android:layout_marginBottom="60dp"
+        android:layout_width="290dp"
+        android:layout_height="56dp"
+        android:layout_marginBottom="70dp"
+        android:background="@drawable/ui_glass_card"
+        android:elevation="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -74,8 +82,9 @@
             android:layout_gravity="center"
             android:text="LOADING..."
             android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textSize="20sp"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="0.1" />
     </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

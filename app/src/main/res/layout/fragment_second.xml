@@ -7,7 +7,13 @@
     android:background="@drawable/backgroup_fragment_second"
     tools:context=".SecondFragment">
 
-    <!-- Safe area top guideline (notch/status bar) -->
+    <!-- Dark Contrast Overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#550F172A" />
+
+    <!-- Safe area top guideline -->
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/safe_top_guideline"
         android:layout_width="wrap_content"
@@ -33,17 +39,17 @@
             android:id="@+id/tv_gold"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/currency_pill_bg"
+            android:background="@drawable/ui_pill_gold_3d"
             android:fontFamily="sans-serif-black"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="7dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
             android:text="🪙 0"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
-            android:elevation="4dp" />
+            android:textSize="14sp"
+            android:elevation="8dp" />
 
         <View
-            android:layout_width="8dp"
+            android:layout_width="12dp"
             android:layout_height="1dp" />
 
         <!-- Gem display pill -->
@@ -51,14 +57,14 @@
             android:id="@+id/tv_gems"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/gem_pill_bg"
+            android:background="@drawable/ui_pill_gem_3d"
             android:fontFamily="sans-serif-black"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="7dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
             android:text="💎 0"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
-            android:elevation="4dp" />
+            android:textSize="14sp"
+            android:elevation="8dp" />
 
     </LinearLayout>
 
@@ -67,11 +73,11 @@
         android:id="@+id/main_panel"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginHorizontal="14dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/dialog_premium_bg"
-        android:elevation="10dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/ui_glass_card_premium"
+        android:elevation="14dp"
         app:layout_constraintBottom_toTopOf="@+id/bottom_nav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -82,12 +88,16 @@
             android:id="@+id/tv_level_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="16dp"
             android:fontFamily="sans-serif-black"
-            android:letterSpacing="0.05"
+            android:letterSpacing="0.08"
             android:text="@string/choose_level"
             android:textColor="#FFD54F"
-            android:textSize="20sp"
+            android:textSize="22sp"
+            android:shadowColor="#000000"
+            android:shadowDx="0"
+            android:shadowDy="2"
+            android:shadowRadius="4"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -97,10 +107,10 @@
             android:id="@+id/rv_levels"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:clipToPadding="false"
             android:overScrollMode="never"
-            android:paddingBottom="8dp"
+            android:paddingBottom="12dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -108,14 +118,14 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ─── BOTTOM NAVIGATION BAR ───────────────── -->
+    <!-- ─── FLOATING GLASS BOTTOM NAVIGATION ───────────────── -->
     <LinearLayout
         android:id="@+id/bottom_nav"
         android:layout_width="0dp"
         android:layout_height="68dp"
         android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/nav_bar_bg"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/ui_glass_card_premium"
         android:elevation="16dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -139,14 +149,14 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_home"
-                app:tint="#78909C" />
+                app:tint="#94A3B8" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/bottom_nav_home"
-                android:textColor="#78909C"
+                android:textColor="#94A3B8"
                 android:textSize="10sp" />
 
         </LinearLayout>
@@ -157,7 +167,7 @@
             android:layout_width="0dp"
             android:layout_height="52dp"
             android:layout_weight="1"
-            android:background="@drawable/nav_active_bg"
+            android:background="@drawable/ui_btn_primary_gradient"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
@@ -177,7 +187,7 @@
                 android:fontFamily="sans-serif-black"
                 android:text="@string/bottom_nav_levels"
                 android:textColor="#FFFFFF"
-                android:textSize="9sp" />
+                android:textSize="10sp" />
 
         </LinearLayout>
 
@@ -205,7 +215,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/bottom_nav_shop"
-                android:textColor="#78909C"
+                android:textColor="#94A3B8"
                 android:textSize="10sp" />
 
         </LinearLayout>
@@ -234,7 +244,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="@string/bottom_nav_skins"
-                android:textColor="#78909C"
+                android:textColor="#94A3B8"
                 android:textSize="10sp" />
 
         </LinearLayout>

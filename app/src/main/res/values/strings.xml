@@ -8,6 +8,7 @@
     <string name="previous">Previous</string>
 
     <string name="level_name_format">LEVEL %1$d</string>
+    <string name="boss_level_format">👹 BOSS LV %1$d</string>
     <string name="game_complete_toast">LEVEL COMPLETE!</string>
     <string name="game_over_toast">YOU LOST! NO MORE MOVES.</string>
     <string name="game_over_title">GAME OVER!</string>
@@ -89,6 +90,13 @@
     <string name="powerup_reroll_short">REROLL</string>
     <string name="powerup_hint_short">HINT</string>
     <string name="powerup_shuffle_short">SHUFFLE</string>
+    <string name="powerup_undo_short">UNDO</string>
+    <string name="powerup_guide_short">GUIDE</string>
+    <string name="combo_popup">COMBO x%1$d! 🔥</string>
+    <string name="gems_earned">💎 +%1$d</string>
+    <string name="star_rating_3">✨ ⭐ ⭐ ⭐ ✨</string>
+    <string name="star_rating_2">⭐ ⭐ ☆</string>
+    <string name="star_rating_1">⭐ ☆ ☆</string>
     <string name="target_label">⭐ TARGET ⭐</string>
     <string name="choose_level">CHOOSE LEVEL</string>
     <string name="bottom_nav_home">Home</string>

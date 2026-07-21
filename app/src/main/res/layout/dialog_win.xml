@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Win Dialog Overlay – hiện khi người chơi thắng màn -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#CC000000"
+    android:background="#DD0F172A"
     android:clickable="true"
     android:focusable="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/win_card"
-        android:layout_width="320dp"
+        android:layout_width="340dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:background="@drawable/dialog_premium_bg"
+        android:background="@drawable/ui_glass_card_premium"
         android:padding="28dp"
         android:elevation="30dp">
 
@@ -23,17 +22,33 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="✨ ⭐ ⭐ ⭐ ✨"
-            android:textSize="32sp"
+            android:textSize="34sp"
             android:letterSpacing="0.1"
             android:shadowColor="#FFD54F"
             android:shadowDx="0"
             android:shadowDy="0"
-            android:shadowRadius="15"
+            android:shadowRadius="20"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Premium Title -->
+        <!-- Gems Earned -->
+        <TextView
+            android:id="@+id/tv_win_gems"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="💎 +1"
+            android:textColor="#B388FF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-black"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_win_stars" />
+
+        <!-- Victory Title -->
         <TextView
             android:id="@+id/tv_win_title"
             android:layout_width="wrap_content"
@@ -41,15 +56,15 @@
             android:layout_marginTop="12dp"
             android:text="VICTORY!"
             android:textColor="#FFD54F"
-            android:textSize="34sp"
+            android:textSize="36sp"
             android:fontFamily="sans-serif-black"
             android:shadowColor="#000000"
-            android:shadowDx="3"
-            android:shadowDy="3"
-            android:shadowRadius="6"
+            android:shadowDx="0"
+            android:shadowDy="4"
+            android:shadowRadius="8"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_win_stars" />
+            app:layout_constraintTop_toBottomOf="@id/tv_win_gems" />
 
         <TextView
             android:id="@+id/tv_win_subtitle"
@@ -57,7 +72,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Level Complete!"
-            android:textColor="#CCFFFFFF"
+            android:textColor="#E2E8F0"
             android:textSize="16sp"
             android:fontFamily="sans-serif-medium"
             app:layout_constraintEnd_toEndOf="parent"
@@ -66,9 +81,9 @@
 
         <View
             android:id="@+id/win_divider"
-            android:layout_width="60dp"
+            android:layout_width="80dp"
             android:layout_height="3dp"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             android:background="#FFD54F"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -78,12 +93,12 @@
             android:id="@+id/tv_win_reward_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             android:text="COLLECT YOUR REWARD"
-            android:textColor="#AAFFFFFF"
+            android:textColor="#94A3B8"
             android:textSize="12sp"
             android:letterSpacing="0.1"
-            android:textStyle="bold"
+            android:fontFamily="sans-serif-black"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/win_divider" />
@@ -109,12 +124,11 @@
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_win_continue"
                     android:layout_width="match_parent"
-                    android:layout_height="60dp"
-                    android:background="@drawable/powerup_button_bg"
-                    app:backgroundTint="#4CAF50"
-                    android:text="NEXT"
+                    android:layout_height="58dp"
+                    android:background="@drawable/ui_btn_secondary_3d"
+                    android:text="NEXT ➔"
                     android:textColor="#FFFFFF"
-                    android:textSize="18sp"
+                    android:textSize="16sp"
                     android:fontFamily="sans-serif-black"
                     android:elevation="6dp" />
 
@@ -141,12 +155,11 @@
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_win_watch_x3"
                     android:layout_width="match_parent"
-                    android:layout_height="60dp"
-                    android:background="@drawable/powerup_button_bg"
-                    app:backgroundTint="#FFD54F"
+                    android:layout_height="58dp"
+                    android:background="@drawable/ui_btn_primary_3d"
                     android:text="🎁 X3"
-                    android:textColor="#1A1A2E"
-                    android:textSize="18sp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
                     android:fontFamily="sans-serif-black"
                     android:elevation="6dp" />
 
@@ -179,7 +192,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Loading reward..."
-            android:textColor="#AAFFFFFF"
+            android:textColor="#94A3B8"
             android:textSize="12sp"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"

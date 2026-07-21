@@ -69,7 +69,8 @@ class SecondFragment : Fragment() {
         if (_binding == null) return
         val gold = GoldManager.getGold(requireContext())
         binding.tvGold.text = "🪙 ${formatGold(gold)}"
-        binding.tvGems.text = "💎 0"   // Reserved for future gem currency
+        val gems = GoldManager.getGems(requireContext())
+        binding.tvGems.text = "💎 ${formatGold(gems)}"
     }
 
     private fun formatGold(gold: Int): String =
@@ -83,9 +84,12 @@ class SecondFragment : Fragment() {
             findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
         }
 
-        // Play / Levels → already here, scroll to top
+        // Play / Levels → already here, scroll to current active level
         binding.navBtnPlay.setOnClickListener {
-            binding.rvLevels.smoothScrollToPosition(0)
+            val prefs = requireContext().getSharedPreferences("game_prefs", android.content.Context.MODE_PRIVATE)
+            val highest = prefs.getInt("highest_level", 1)
+            val targetPos = (highest - 1).coerceAtLeast(0)
+            binding.rvLevels.smoothScrollToPosition(targetPos)
         }
 
         // Shop → ShopFragment
@@ -166,8 +170,14 @@ class SecondFragment : Fragment() {
 
                 when {
                     levelId < highestLevel -> {
-                        // ✅ Completed — 3 gold stars, warm card
-                        b.tvStars.text       = "⭐⭐⭐"
+                        // ✅ Completed — show actual stars earned
+                        val savedStars = GoldManager.getLevelStars(b.root.context, levelId)
+                        b.tvStars.text = when {
+                            savedStars >= 3 -> "⭐⭐⭐"
+                            savedStars == 2 -> "⭐⭐☆"
+                            savedStars == 1 -> "⭐☆☆"
+                            else -> "⭐⭐⭐" // default for levels completed before star system
+                        }
                         b.lockOverlay.visibility  = View.GONE
                         b.ivLockIcon.visibility   = View.GONE
                         b.root.setCardBackgroundColor(Color.parseColor("#FFF3E0"))

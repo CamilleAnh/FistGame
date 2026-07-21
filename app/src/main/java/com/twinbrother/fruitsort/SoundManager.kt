@@ -2,7 +2,6 @@ package com.twinbrother.fruitsort
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.MediaPlayer
 import android.media.SoundPool
 import android.util.Log
 
@@ -10,7 +9,6 @@ class SoundManager(context: Context) {
     private val soundPool: SoundPool
     private val sounds = mutableMapOf<String, Int>()
     private var isEnabled = true
-    private val appContext = context.applicationContext
 
     init {
         val attrs = AudioAttributes.Builder()
@@ -19,15 +17,17 @@ class SoundManager(context: Context) {
             .build()
         
         soundPool = SoundPool.Builder()
-            .setMaxStreams(5)
+            .setMaxStreams(8)
             .setAudioAttributes(attrs)
             .build()
 
-        // Load sounds dynamically to avoid "Unresolved reference" errors if files are missing
+        // Load sounds dynamically
         loadSound(context, "pickup", "sfx_pickup")
         loadSound(context, "drop", "sfx_drop")
         loadSound(context, "move", "sfx_move")
         loadSound(context, "complete", "sfx_complete")
+        loadSound(context, "win", "sfx_win")
+        loadSound(context, "lose", "sfx_gameover")
         
         val prefs = context.getSharedPreferences("game_settings", Context.MODE_PRIVATE)
         isEnabled = prefs.getBoolean("sound_on", true)
@@ -45,7 +45,6 @@ class SoundManager(context: Context) {
     fun play(name: String) {
         if (!isEnabled) return
         val id = sounds[name] ?: return
-        // Slight pitch variation for juicy feel (0.95 to 1.05)
         val pitch = 0.95f + (Math.random().toFloat() * 0.1f)
         soundPool.play(id, 1f, 1f, 1, 0, pitch)
     }
@@ -55,40 +54,24 @@ class SoundManager(context: Context) {
     }
 
     /**
-     * Win sound: plays sfx_win.mp3 via MediaPlayer
+     * Win sound: plays via SoundPool for low latency
      */
     fun playWin() {
-        if (!isEnabled) return
-        playOneShot("sfx_win")
+        play("win")
     }
 
     /**
-     * Lose sound: plays sfx_gameover.mp3 via MediaPlayer
+     * Lose sound: plays via SoundPool for low latency
      */
     fun playLose() {
-        if (!isEnabled) return
-        playOneShot("sfx_gameover")
-    }
-
-    /**
-     * Play a raw resource file once and auto-release when done.
-     */
-    private fun playOneShot(resName: String) {
-        val resId = appContext.resources.getIdentifier(resName, "raw", appContext.packageName)
-        if (resId == 0) {
-            Log.w("SoundManager", "Resource not found: $resName")
-            return
-        }
-        try {
-            val mp = MediaPlayer.create(appContext, resId) ?: return
-            mp.setOnCompletionListener { it.release() }
-            mp.start()
-        } catch (e: Exception) {
-            Log.e("SoundManager", "Error playing $resName: ${e.message}")
-        }
+        play("lose")
     }
 
     fun release() {
-        soundPool.release()
+        try {
+            soundPool.release()
+        } catch (e: Exception) {
+            Log.e("SoundManager", "Error releasing soundPool: ${e.message}")
+        }
     }
 }

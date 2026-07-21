@@ -7,6 +7,7 @@
     <string name="previous">Quay lại</string>
 
     <string name="level_name_format">MÀN %1$d</string>
+    <string name="boss_level_format">👹 BOSS MÀN %1$d</string>
     <string name="game_complete_toast">MÀN CHƠI HOÀN THÀNH!</string>
     <string name="game_over_toast">BẠN ĐÃ THUA! HẾT LƯỢT ĐI.</string>
     <string name="game_over_title">BẠN ĐÃ THUA!</string>
@@ -87,6 +88,13 @@
     <string name="powerup_reroll_short">ĐỔI TÚI</string>
     <string name="powerup_hint_short">GỢI Ý</string>
     <string name="powerup_shuffle_short">XÁO TRỘN</string>
+    <string name="powerup_undo_short">HOÀN TÁC</string>
+    <string name="powerup_guide_short">CHỈ DẪN</string>
+    <string name="combo_popup">COMBO x%1$d! 🔥</string>
+    <string name="gems_earned">💎 +%1$d</string>
+    <string name="star_rating_3">✨ ⭐ ⭐ ⭐ ✨</string>
+    <string name="star_rating_2">⭐ ⭐ ☆</string>
+    <string name="star_rating_1">⭐ ☆ ☆</string>
     <string name="target_label">⭐ NHIỆM VỤ ⭐</string>
     <string name="choose_level">CHỌN MÀN CHƠI</string>
     <string name="bottom_nav_home">Trang chủ</string>
